@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <cloud-backup>
+        <include domain="file" path="sky_windows.json" />
+        <include domain="sharedpref" path="starwindow_settings.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <include domain="file" path="sky_windows.json" />
+        <include domain="sharedpref" path="starwindow_settings.xml" />
+    </device-transfer>
+</data-extraction-rules>
