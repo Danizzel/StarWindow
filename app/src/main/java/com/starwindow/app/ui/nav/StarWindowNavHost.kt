@@ -10,7 +10,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.starwindow.app.appContainer
+import com.starwindow.app.ui.calibration.CalibrationScreen
+import com.starwindow.app.ui.calibration.CalibrationViewModel
 import com.starwindow.app.ui.capture.CaptureScreen
 import com.starwindow.app.ui.capture.CaptureViewModel
 import com.starwindow.app.ui.windows.WindowDetailScreen
@@ -20,6 +23,7 @@ import com.starwindow.app.ui.windows.WindowListViewModel
 
 object Routes {
     const val CAPTURE = "capture"
+    const val CALIBRATION = "calibration"
     const val WINDOW_LIST = "windows"
     const val WINDOW_DETAIL = "windows/{windowId}"
 
@@ -43,6 +47,18 @@ fun StarWindowNavHost(
             CaptureScreen(
                 viewModel = viewModel,
                 onOpenWindows = { navController.navigate(Routes.WINDOW_LIST) },
+                onOpenCalibration = { navController.navigate(Routes.CALIBRATION) },
+            )
+        }
+
+        composable(Routes.CALIBRATION) {
+            val viewModel: CalibrationViewModel =
+                viewModel(factory = CalibrationViewModel.factory(container))
+            val settings by container.settingsStore.settings.collectAsStateWithLifecycle()
+            CalibrationScreen(
+                viewModel = viewModel,
+                settings = settings,
+                onBack = { navController.popBackStack() },
             )
         }
 

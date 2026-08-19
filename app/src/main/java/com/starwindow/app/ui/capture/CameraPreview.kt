@@ -4,20 +4,28 @@ import android.content.Context
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
 import android.util.Log
+import androidx.camera.camera2.interop.Camera2CameraInfo
+import androidx.camera.camera2.interop.ExperimentalCamera2Interop
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.google.common.util.concurrent.ListenableFuture
 import com.starwindow.app.core.camera.CameraIntrinsics
+import com.starwindow.app.core.camera.ExposureCapabilities
+import com.starwindow.app.core.camera.ExposureSettings
+import com.starwindow.app.core.camera.NightVisionController
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -28,9 +36,21 @@ data class PreviewStreamInfo(
     /** Buffer size in sensor orientation. */
     val streamWidth: Int,
     val streamHeight: Int,
-    /** Rotation CameraX applies to make the buffer upright on screen. */
-    val rotationDegrees: Int,
-)
+    /** How far the sensor is mounted rotated relative to the device's natural orientation. */
+    val sensorOrientationDegrees: Int,
+    val exposureCapabilities: ExposureCapabilities,
+) {
+    /**
+     * Rotation applied to the buffer to make it upright for the given display rotation.
+     *
+     * Computed live rather than cached: the activity handles configuration changes itself, so
+     * nothing gets rebuilt when the phone is turned. A cached value would keep the portrait
+     * rotation while the view size switches to landscape, and every angle-per-pixel calculation
+     * downstream would be wrong.
+     */
+    fun rotationDegreesFor(displayRotationDegrees: Int): Int =
+        ((sensorOrientationDegrees - displayRotationDegrees) % 360 + 360) % 360
+}
 
 /**
  * The viewfinder.
@@ -40,16 +60,19 @@ data class PreviewStreamInfo(
  * angle-per-pixel scale. Letterbox bars are a small price for a viewfinder whose geometry is known
  * exactly.
  */
+@OptIn(ExperimentalCamera2Interop::class)
 @Composable
 fun CameraPreview(
-    modifier: Modifier = Modifier,
+    exposure: ExposureSettings,
     onStreamInfo: (PreviewStreamInfo) -> Unit,
+    modifier: Modifier = Modifier,
     onError: (String) -> Unit = {},
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val currentOnStreamInfo by rememberUpdatedState(onStreamInfo)
     val currentOnError by rememberUpdatedState(onError)
+    var nightVision by remember { mutableStateOf<NightVisionController?>(null) }
 
     val previewView = remember {
         PreviewView(context).apply {
@@ -67,7 +90,7 @@ fun CameraPreview(
             preview.setSurfaceProvider(previewView.surfaceProvider)
 
             cameraProvider.unbindAll()
-            cameraProvider.bindToLifecycle(
+            val camera = cameraProvider.bindToLifecycle(
                 lifecycleOwner,
                 CameraSelector.DEFAULT_BACK_CAMERA,
                 preview,
@@ -79,13 +102,28 @@ fun CameraPreview(
                 return@LaunchedEffect
             }
 
-            val cameraId = backCameraId(context)
+            // Ask CameraX which camera it actually bound, instead of guessing the first
+            // back-facing one — phones with several rear lenses would otherwise have us read the
+            // field of view of a lens that is not in use.
+            val cameraId = Camera2CameraInfo.from(camera.cameraInfo).cameraId
+            val characteristics = cameraCharacteristics(context, cameraId)
+
+            val capabilities = characteristics
+                ?.let { ExposureCapabilities.fromCharacteristics(it) }
+                ?: ExposureCapabilities.NONE
+
+            nightVision = NightVisionController(camera, capabilities)
+
             currentOnStreamInfo(
                 PreviewStreamInfo(
-                    intrinsics = readIntrinsics(context, cameraId),
+                    intrinsics = characteristics
+                        ?.let { CameraIntrinsics.fromCharacteristics(cameraId, it) }
+                        ?: CameraIntrinsics.FALLBACK,
                     streamWidth = resolution.resolution.width,
                     streamHeight = resolution.resolution.height,
-                    rotationDegrees = resolution.rotationDegrees,
+                    sensorOrientationDegrees = characteristics
+                        ?.get(CameraCharacteristics.SENSOR_ORIENTATION) ?: 90,
+                    exposureCapabilities = capabilities,
                 )
             )
         } catch (e: Exception) {
@@ -94,37 +132,20 @@ fun CameraPreview(
         }
     }
 
+    // Applied to the running camera, so moving a slider changes the image straight away instead of
+    // tearing the preview down and building it again.
+    LaunchedEffect(nightVision, exposure) {
+        nightVision?.apply(exposure)
+    }
+
     AndroidView(factory = { previewView }, modifier = modifier)
 }
 
-/**
- * The camera id CameraX bound to.
- *
- * CameraX does not expose the id through a stable API, so we match on the lens facing and take the
- * first back-facing camera — which is what [CameraSelector.DEFAULT_BACK_CAMERA] selects too.
- * If a device ever hands CameraX a different physical camera, the field of view read here would be
- * wrong; the manual FOV calibration in the settings is the escape hatch for that.
- */
-private fun backCameraId(context: Context): String? {
+private fun cameraCharacteristics(context: Context, cameraId: String): CameraCharacteristics? {
     val manager = context.getSystemService(Context.CAMERA_SERVICE) as? CameraManager ?: return null
-    return runCatching {
-        manager.cameraIdList.firstOrNull { id ->
-            manager.getCameraCharacteristics(id)
-                .get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_BACK
-        }
-    }.getOrNull()
-}
-
-private fun readIntrinsics(context: Context, cameraId: String?): CameraIntrinsics {
-    if (cameraId == null) return CameraIntrinsics.FALLBACK
-    val manager = context.getSystemService(Context.CAMERA_SERVICE) as? CameraManager
-        ?: return CameraIntrinsics.FALLBACK
-    return runCatching {
-        CameraIntrinsics.fromCharacteristics(cameraId, manager.getCameraCharacteristics(cameraId))
-    }.getOrElse {
-        Log.w(TAG, "Kameradaten nicht lesbar, Standardwerte werden benutzt", it)
-        CameraIntrinsics.FALLBACK
-    }
+    return runCatching { manager.getCameraCharacteristics(cameraId) }
+        .onFailure { Log.w(TAG, "Kameradaten für $cameraId nicht lesbar", it) }
+        .getOrNull()
 }
 
 /** Suspends until a [ListenableFuture] completes, without pulling in the Guava coroutine adapter. */

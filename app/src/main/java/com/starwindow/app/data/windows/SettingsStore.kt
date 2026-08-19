@@ -1,13 +1,35 @@
 package com.starwindow.app.data.windows
 
 import android.content.Context
+import android.util.Log
 import androidx.core.content.edit
 import com.starwindow.app.core.astro.ObserverLocation
+import com.starwindow.app.core.calibration.Calibration
+import com.starwindow.app.core.camera.ExposureSettings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
-/** User preferences that survive restarts. Small enough that SharedPreferences is the right tool. */
+/**
+ * Everything the app remembers between runs, apart from the windows themselves.
+ *
+ * Stored as a single serialized blob rather than as a heap of individual preference keys: the
+ * settings already have to be serializable for the calibration, and one blob keeps related values —
+ * a field of view factor and the measurement it came from, say — from ever drifting apart.
+ */
+@Serializable
+data class Settings(
+    val magnitudeLimit: Double = 6.0,
+    val showGraticule: Boolean = true,
+    val showCatalogOverlay: Boolean = true,
+    val manualLocation: ObserverLocation? = null,
+    val calibration: Calibration = Calibration.NONE,
+    val exposure: ExposureSettings = ExposureSettings.AUTO,
+)
+
 class SettingsStore(context: Context) {
 
     private val prefs = context.applicationContext.getSharedPreferences(NAME, Context.MODE_PRIVATE)
@@ -15,79 +37,46 @@ class SettingsStore(context: Context) {
     private val state = MutableStateFlow(read())
     val settings: StateFlow<Settings> = state.asStateFlow()
 
-    fun setFovScale(value: Double) = update { it.copy(fovScale = value.coerceIn(0.5, 2.0)) }
+    val current: Settings get() = state.value
 
-    fun setManualLocation(location: ObserverLocation?) = update {
-        it.copy(manualLocation = location)
-    }
+    fun setManualLocation(location: ObserverLocation?) = update { it.copy(manualLocation = location) }
 
-    fun setMagnitudeLimit(value: Double) = update { it.copy(magnitudeLimit = value.coerceIn(0.0, 12.0)) }
+    fun setMagnitudeLimit(value: Double) =
+        update { it.copy(magnitudeLimit = value.coerceIn(0.0, 12.0)) }
 
     fun setShowGraticule(value: Boolean) = update { it.copy(showGraticule = value) }
 
     fun setShowCatalogOverlay(value: Boolean) = update { it.copy(showCatalogOverlay = value) }
 
-    private fun update(transform: (Settings) -> Settings) {
+    fun setCalibration(calibration: Calibration) = update { it.copy(calibration = calibration) }
+
+    fun setExposure(exposure: ExposureSettings) = update { it.copy(exposure = exposure) }
+
+    /** Applies [transform] to the stored settings and persists the result. */
+    fun update(transform: (Settings) -> Settings) {
         val next = transform(state.value)
-        prefs.edit {
-            putFloat(KEY_FOV_SCALE, next.fovScale.toFloat())
-            putFloat(KEY_MAGNITUDE_LIMIT, next.magnitudeLimit.toFloat())
-            putBoolean(KEY_SHOW_GRATICULE, next.showGraticule)
-            putBoolean(KEY_SHOW_CATALOG, next.showCatalogOverlay)
-            val manual = next.manualLocation
-            if (manual == null) {
-                remove(KEY_MANUAL_LAT)
-                remove(KEY_MANUAL_LON)
-                remove(KEY_MANUAL_ELEVATION)
-            } else {
-                putFloat(KEY_MANUAL_LAT, manual.latitudeDeg.toFloat())
-                putFloat(KEY_MANUAL_LON, manual.longitudeDeg.toFloat())
-                putFloat(KEY_MANUAL_ELEVATION, manual.elevationM.toFloat())
-            }
-        }
+        prefs.edit { putString(KEY_SETTINGS, json.encodeToString(next)) }
         state.value = next
     }
 
     private fun read(): Settings {
-        val manual = if (prefs.contains(KEY_MANUAL_LAT) && prefs.contains(KEY_MANUAL_LON)) {
-            ObserverLocation(
-                latitudeDeg = prefs.getFloat(KEY_MANUAL_LAT, 0f).toDouble(),
-                longitudeDeg = prefs.getFloat(KEY_MANUAL_LON, 0f).toDouble(),
-                elevationM = prefs.getFloat(KEY_MANUAL_ELEVATION, 0f).toDouble(),
-                manual = true,
-            )
-        } else {
-            null
+        val stored = prefs.getString(KEY_SETTINGS, null) ?: return Settings()
+        return try {
+            json.decodeFromString<Settings>(stored)
+        } catch (e: Exception) {
+            // Settings are not worth crashing over; start clean and note it.
+            Log.w(TAG, "Einstellungen nicht lesbar, es wird mit den Voreinstellungen begonnen", e)
+            Settings()
         }
-        return Settings(
-            fovScale = prefs.getFloat(KEY_FOV_SCALE, 1f).toDouble(),
-            magnitudeLimit = prefs.getFloat(KEY_MAGNITUDE_LIMIT, 6f).toDouble(),
-            showGraticule = prefs.getBoolean(KEY_SHOW_GRATICULE, true),
-            showCatalogOverlay = prefs.getBoolean(KEY_SHOW_CATALOG, true),
-            manualLocation = manual,
-        )
     }
 
     companion object {
+        private const val TAG = "SettingsStore"
         private const val NAME = "starwindow_settings"
-        private const val KEY_FOV_SCALE = "fov_scale"
-        private const val KEY_MAGNITUDE_LIMIT = "magnitude_limit"
-        private const val KEY_SHOW_GRATICULE = "show_graticule"
-        private const val KEY_SHOW_CATALOG = "show_catalog"
-        private const val KEY_MANUAL_LAT = "manual_lat"
-        private const val KEY_MANUAL_LON = "manual_lon"
-        private const val KEY_MANUAL_ELEVATION = "manual_elevation"
+        private const val KEY_SETTINGS = "settings_json"
+        private val json = Json {
+            ignoreUnknownKeys = true
+            encodeDefaults = true
+        }
     }
 }
-
-/**
- * @param fovScale corrects a wrong field of view reported by the camera. Raise it when markers
- *   drift outwards faster than the image while panning.
- */
-data class Settings(
-    val fovScale: Double = 1.0,
-    val magnitudeLimit: Double = 6.0,
-    val showGraticule: Boolean = true,
-    val showCatalogOverlay: Boolean = true,
-    val manualLocation: ObserverLocation? = null,
-)

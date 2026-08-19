@@ -20,7 +20,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.NightlightRound
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
@@ -46,9 +48,10 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.starwindow.app.core.camera.PreviewFit
+import com.starwindow.app.core.camera.ExposureMode
 import com.starwindow.app.core.camera.SkyProjection
 import com.starwindow.app.core.sensors.compassAccuracyLabel
+import com.starwindow.app.ui.components.rememberSkyViewport
 import com.starwindow.app.ui.theme.StarWindowColors
 
 /**
@@ -58,6 +61,7 @@ import com.starwindow.app.ui.theme.StarWindowColors
 fun CaptureScreen(
     viewModel: CaptureViewModel,
     onOpenWindows: () -> Unit,
+    onOpenCalibration: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -73,6 +77,7 @@ fun CaptureScreen(
     }
     var showSaveDialog by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
+    var showNightVision by remember { mutableStateOf(false) }
     var viewSize by remember { mutableStateOf(IntSize.Zero) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -101,31 +106,11 @@ fun CaptureScreen(
         }
     }
 
-    val focalPx = remember(state.streamInfo, viewSize, state.settings.fovScale) {
-        val info = state.streamInfo
-        if (info == null || viewSize == IntSize.Zero) {
-            0.0
-        } else {
-            SkyProjection.focalLengthInViewPixels(
-                intrinsics = info.intrinsics,
-                streamWidth = info.streamWidth,
-                streamHeight = info.streamHeight,
-                rotationDegrees = info.rotationDegrees,
-                viewWidthPx = viewSize.width.toFloat(),
-                viewHeightPx = viewSize.height.toFloat(),
-                fit = PreviewFit.FIT_CENTER,
-                fovScale = state.settings.fovScale,
-            )
-        }
-    }
-
-    val visibleFovDeg = remember(focalPx, viewSize) {
-        if (focalPx <= 0.0 || viewSize == IntSize.Zero) {
-            null
-        } else {
-            2.0 * Math.toDegrees(kotlin.math.atan(viewSize.width / (2.0 * focalPx)))
-        }
-    }
+    val viewport = rememberSkyViewport(
+        streamInfo = state.streamInfo,
+        viewSize = viewSize,
+        fovScale = state.settings.calibration.fovScale,
+    )
 
     Box(modifier = modifier.fillMaxSize().background(StarWindowColors.Night)) {
         if (hasCameraPermission) {
@@ -133,12 +118,12 @@ fun CaptureScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .onSizeChanged { viewSize = it }
-                    .pointerInput(focalPx) {
+                    .pointerInput(viewport) {
                         detectTapGestures { offset ->
                             val attitude = attitudeState.value ?: return@detectTapGestures
                             val projection = SkyProjection(
                                 attitude = attitude,
-                                focalPx = focalPx,
+                                focalPx = viewport.focalPx,
                                 viewWidthPx = size.width.toFloat(),
                                 viewHeightPx = size.height.toFloat(),
                             )
@@ -149,13 +134,14 @@ fun CaptureScreen(
                     }
             ) {
                 CameraPreview(
-                    modifier = Modifier.fillMaxSize(),
+                    exposure = state.settings.exposure,
                     onStreamInfo = viewModel::onStreamInfo,
+                    modifier = Modifier.fillMaxSize(),
                     onError = viewModel::onCameraError,
                 )
                 SkyOverlay(
                     attitudeState = attitudeState,
-                    focalPx = focalPx,
+                    focalPx = viewport.focalPx,
                     anchors = state.anchors,
                     shape = state.shape,
                     catalog = state.catalog,
@@ -184,10 +170,13 @@ fun CaptureScreen(
                 state = state,
                 compassAccuracy = hudAttitude?.accuracy,
                 declinationDeg = hudAttitude?.magneticDeclinationDeg,
-                visibleFovDeg = visibleFovDeg,
+                visibleFovDeg = viewport.visibleFovDeg,
                 hasOrientationSensor = viewModel.hasOrientationSensor,
+                nightMode = state.settings.exposure.mode == ExposureMode.NIGHT,
                 onOpenWindows = onOpenWindows,
                 onOpenSettings = { showSettings = true },
+                onOpenNightVision = { showNightVision = true },
+                onOpenCalibration = onOpenCalibration,
             )
 
             Spacer(Modifier.weight(1f))
@@ -207,7 +196,7 @@ fun CaptureScreen(
             defaultName = "",
             onDismiss = { showSaveDialog = false },
             onConfirm = { name ->
-                viewModel.saveWindow(name, visibleFovDeg)
+                viewModel.saveWindow(name, viewport.visibleFovDeg)
                 showSaveDialog = false
             },
         )
@@ -218,9 +207,23 @@ fun CaptureScreen(
             settings = state.settings,
             observer = state.observer,
             onDismiss = { showSettings = false },
-            onFovScaleChange = viewModel::setFovScale,
             onToggleGraticule = viewModel::toggleGraticule,
             onToggleCatalog = viewModel::toggleCatalogOverlay,
+            onManualLocation = viewModel::setManualLocation,
+            onOpenCalibration = {
+                showSettings = false
+                onOpenCalibration()
+            },
+        )
+    }
+
+    if (showNightVision) {
+        NightVisionDialog(
+            exposure = state.settings.exposure,
+            capabilities = state.streamInfo?.exposureCapabilities,
+            onExposureChange = viewModel::setExposure,
+            onModeChange = viewModel::setExposureMode,
+            onDismiss = { showNightVision = false },
         )
     }
 
@@ -254,8 +257,11 @@ private fun CaptureHud(
     declinationDeg: Double?,
     visibleFovDeg: Double?,
     hasOrientationSensor: Boolean,
+    nightMode: Boolean,
     onOpenWindows: () -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenNightVision: () -> Unit,
+    onOpenCalibration: () -> Unit,
 ) {
     Surface(color = Color.Black.copy(alpha = 0.55f)) {
         Row(
@@ -294,6 +300,16 @@ private fun CaptureHud(
                         color = StarWindowColors.Crosshair,
                     )
                 }
+            }
+            IconButton(onClick = onOpenNightVision) {
+                Icon(
+                    Icons.Filled.NightlightRound,
+                    contentDescription = "Sucher / Nachtsicht",
+                    tint = if (nightMode) StarWindowColors.WindowStroke else StarWindowColors.Starlight,
+                )
+            }
+            IconButton(onClick = onOpenCalibration) {
+                Icon(Icons.Filled.Tune, contentDescription = "Kalibrierung", tint = StarWindowColors.Starlight)
             }
             IconButton(onClick = onOpenSettings) {
                 Icon(Icons.Filled.Settings, contentDescription = "Einstellungen", tint = StarWindowColors.Starlight)

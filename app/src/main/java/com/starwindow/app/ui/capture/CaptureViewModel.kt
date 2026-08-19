@@ -7,6 +7,8 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.starwindow.app.AppContainer
 import com.starwindow.app.core.astro.Horizontal
 import com.starwindow.app.core.astro.ObserverLocation
+import com.starwindow.app.core.camera.ExposureMode
+import com.starwindow.app.core.camera.ExposureSettings
 import com.starwindow.app.core.geometry.AltAzBoxWindow
 import com.starwindow.app.core.geometry.CircleWindow
 import com.starwindow.app.core.geometry.PolygonWindow
@@ -109,6 +111,9 @@ class CaptureViewModel(
         viewModelScope.launch {
             settingsStore.settings.collect { settings ->
                 _uiState.update { it.copy(settings = settings) }
+                // The tracker stamps the calibration onto every attitude, so no consumer can end
+                // up with an uncorrected direction by accident.
+                orientationTracker.updateCalibration(settings.calibration)
                 applyObserver(settings.manualLocation ?: lastFix)
             }
         }
@@ -169,7 +174,28 @@ class CaptureViewModel(
 
     fun consumeMessage() = _uiState.update { it.copy(message = null) }
 
-    fun setFovScale(scale: Double) = settingsStore.setFovScale(scale)
+    fun setExposure(exposure: ExposureSettings) = settingsStore.setExposure(exposure)
+
+    /**
+     * Switches the viewfinder between automatic and night mode. Entering night mode seeds sensible
+     * values for this particular camera rather than whatever was left over from another device.
+     */
+    fun setExposureMode(mode: ExposureMode) {
+        val capabilities = _uiState.value.streamInfo?.exposureCapabilities
+        val current = _uiState.value.settings.exposure
+        val next = when {
+            mode == ExposureMode.AUTO -> current.copy(mode = ExposureMode.AUTO)
+            capabilities == null -> current.copy(mode = ExposureMode.NIGHT)
+            current.mode == ExposureMode.NIGHT -> current
+            else -> ExposureSettings.nightDefault(capabilities)
+        }
+        settingsStore.setExposure(next)
+    }
+
+    fun setManualLocation(location: ObserverLocation?) {
+        settingsStore.setManualLocation(location)
+        applyObserver(location ?: lastFix)
+    }
 
     fun toggleGraticule() =
         settingsStore.setShowGraticule(!_uiState.value.settings.showGraticule)

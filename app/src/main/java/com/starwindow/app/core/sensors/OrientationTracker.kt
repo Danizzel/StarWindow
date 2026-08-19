@@ -10,6 +10,8 @@ import android.os.Build
 import android.view.Surface
 import android.view.WindowManager
 import com.starwindow.app.core.astro.ObserverLocation
+import com.starwindow.app.core.astro.Rotation3
+import com.starwindow.app.core.calibration.Calibration
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.abs
 import kotlin.math.acos
@@ -35,6 +37,7 @@ class OrientationTracker(context: Context) {
     private val appContext = context.applicationContext
     private val sensorManager = appContext.getSystemService(Context.SENSOR_SERVICE) as SensorManager
     private val location = AtomicReference<ObserverLocation?>(null)
+    private val calibration = AtomicReference(Calibration.NONE)
 
     /** True when the device can deliver a fused orientation at all. */
     val isAvailable: Boolean get() = preferredSensor() != null
@@ -42,6 +45,14 @@ class OrientationTracker(context: Context) {
     /** Feed the latest position in so the declination stays right as the user travels. */
     fun updateLocation(observer: ObserverLocation?) {
         location.set(observer)
+    }
+
+    /**
+     * Feed the measured calibration in. Every attitude from here on carries it, so no consumer can
+     * accidentally work with an uncorrected direction.
+     */
+    fun updateCalibration(value: Calibration) {
+        calibration.set(value)
     }
 
     private fun preferredSensor(): Sensor? =
@@ -63,6 +74,8 @@ class OrientationTracker(context: Context) {
             var accuracy = SensorManager.SENSOR_STATUS_UNRELIABLE
             var declinationDeg = 0.0
             var declinationForLocation: ObserverLocation? = null
+            var correction: Rotation3 = Rotation3.IDENTITY
+            var correctionFor: Calibration? = null
 
             val listener = object : SensorEventListener {
                 override fun onSensorChanged(event: SensorEvent) {
@@ -83,12 +96,21 @@ class OrientationTracker(context: Context) {
                         declinationDeg = current?.let { declinationDegFor(it) } ?: 0.0
                     }
 
+                    // Rebuilding the correction matrix per event would be wasteful; it only
+                    // changes when the user recalibrates.
+                    val currentCalibration = calibration.get()
+                    if (currentCalibration !== correctionFor) {
+                        correctionFor = currentCalibration
+                        correction = currentCalibration.correction
+                    }
+
                     trySend(
                         DeviceAttitude(
                             rotationMatrix = remapped.copyOf(),
                             magneticDeclinationDeg = declinationDeg,
                             accuracy = accuracy,
                             timestampMs = System.currentTimeMillis(),
+                            correction = correction,
                         )
                     )
                 }

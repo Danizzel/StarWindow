@@ -1,7 +1,8 @@
 # StarWindow – was noch fehlt
 
-Stand: Grundgerüst gepusht. Die Rechenkette Bildschirm → Himmel steht und ist durch 54 Unit-Tests
-abgesichert; die Android-/Compose-Schicht ist noch von keinem Compiler gesehen worden.
+Stand: Grundgerüst, Nachtsicht-Sucher und Kalibrierung gepusht. Die Rechenkette Bildschirm → Himmel
+steht und ist durch 89 Unit-Tests abgesichert; die Android-/Compose-Schicht ist noch von keinem
+Compiler gesehen worden.
 
 Reihenfolge ist bewusst: Abschnitt 1 blockiert alles andere, Abschnitt 2 sind Stellen, die ich beim
 Nachlesen des eigenen Codes als tatsächlich unfertig verifiziert habe (kein Raten).
@@ -13,7 +14,7 @@ Nachlesen des eigenen Codes als tatsächlich unfertig verifiziert habe (kein Rat
 - [ ] **Projekt in Android Studio synchronisieren und kompilieren.** Google Maven war in der
       Bauumgebung nicht erreichbar, deswegen konnte die UI-Schicht (Compose, CameraX, Sensoren)
       nicht übersetzt werden. Erwartbar sind Import- und Signaturkorrekturen, kein Umbau.
-- [ ] **`./gradlew :app:testDebugUnitTest`** laufen lassen – muss grün sein (54 Tests).
+- [ ] **`./gradlew :app:testDebugUnitTest`** laufen lassen – muss grün sein (89 Tests).
 - [ ] **Auf echtem Gerät starten.** Emulatoren haben weder brauchbaren Kompass noch Kamera.
 - [ ] **Feldabgleich am Himmel:** auf einen bekannten hellen Stern zielen und prüfen, ob dessen
       Katalogmarkierung darauf sitzt. Sitzt sie daneben → Kompass kalibrieren (Achterbewegung).
@@ -27,24 +28,16 @@ Nachlesen des eigenen Codes als tatsächlich unfertig verifiziert habe (kein Rat
 
 ### 2.1 Fehler
 
-- [ ] **Bildfeld stimmt nach Gerätedrehung nicht mehr.** `PreviewStreamInfo.rotationDegrees` wird in
-      `CameraPreview.kt` einmalig im `LaunchedEffect(previewView)` gelesen. Weil die Activity
-      `configChanges="orientation|screenSize"` selbst behandelt, wird beim Drehen nichts neu
-      gebaut: `viewSize` aktualisiert sich, `rotationDegrees` bleibt stehen → falscher
-      Grad-pro-Pixel-Maßstab im Querformat.
-      *Lösung:* Displaydrehung pro Frame aus dem Display lesen statt zu cachen, oder über einen
-      `DisplayManager.DisplayListener` neu melden.
-- [ ] **Kamera-ID wird geraten.** `backCameraId()` nimmt die erste rückseitige Kamera, nicht
-      zwingend die, an die CameraX gebunden hat. Auf Geräten mit mehreren Rückkameras kann damit
-      das Bildfeld einer anderen Linse gelesen werden.
-      *Lösung:* `Camera2CameraInfo.from(camera.cameraInfo).cameraId` mit
-      `@OptIn(ExperimentalCamera2Interop::class)`.
+- [x] ~~Bildfeld stimmt nach Gerätedrehung nicht mehr.~~ `PreviewStreamInfo` merkt sich jetzt die
+      statische Sensororientierung; die Drehung wird über `rememberDisplayRotationDegrees()` live
+      aus dem Display gelesen. **Auf dem Gerät im Querformat gegenprüfen.**
+- [x] ~~Kamera-ID wird geraten.~~ `Camera2CameraInfo.from(camera.cameraInfo).cameraId` liefert die
+      Kamera, an die CameraX tatsächlich gebunden hat.
 
 ### 2.2 Halb verdrahtet – API da, Bedienung fehlt
 
-- [ ] **Standort von Hand eingeben.** `SettingsStore.setManualLocation()` existiert und wird vom
-      ViewModel bevorzugt ausgewertet, hat aber kein Eingabefeld. Ohne GPS (drinnen, Testbetrieb)
-      lässt sich derzeit keine Position setzen.
+- [x] ~~Standort von Hand eingeben.~~ Eingabefelder für Breite und Länge im Einstellungsdialog,
+      mit Rückschalter auf GPS.
 - [ ] **Grenzgröße in der Kameraansicht.** `Settings.magnitudeLimit` wird gespeichert, aber
       nirgends gelesen – das Overlay zeichnet immer alle 115 Objekte. Die Detailansicht hat eine
       eigene, davon unabhängige Auswahl. Beides auf eine Quelle zusammenführen.
@@ -64,12 +57,11 @@ Nachlesen des eigenen Codes als tatsächlich unfertig verifiziert habe (kein Rat
 
 ## 3. Damit es nachts wirklich benutzbar ist
 
-Der wichtigste inhaltliche Block – bei echter Dunkelheit zeigt die Standardvorschau fast nichts.
-
-- [ ] **Lange Belichtung / hohe Empfindlichkeit** über Camera2-Interop, damit Sterne und die
-      Silhouetten von Dach und Baum überhaupt im Sucher erscheinen. Ohne das zeichnet man das
-      Fenster praktisch blind gegen ein schwarzes Bild.
-- [ ] **Belichtungskorrektur-Regler** als kleine Zwischenlösung.
+- [x] ~~Lange Belichtung / hohe Empfindlichkeit~~ über Camera2-Interop
+      (`NightVisionController`): Belichtungszeit und ISO von Hand, Fokus auf unendlich, umgeschaltet
+      am laufenden Bild ohne Neubinden. **Auf echter Hardware gegenprüfen** – die tatsächlich
+      erreichbaren Belichtungszeiten unterscheiden sich stark zwischen Geräten.
+- [x] ~~Belichtungskorrektur~~ als Rückfallebene für Geräte ohne `MANUAL_SENSOR`.
 - [ ] **Rotlichtmodus** für die Bedienelemente (Dunkeladaption der Augen).
 - [ ] **Kompasskalibrierung im UI:** bei niedriger Genauigkeit die Achterbewegung erklären, nicht
       nur „unzuverlässig" anzeigen.
@@ -77,6 +69,8 @@ Der wichtigste inhaltliche Block – bei echter Dunkelheit zeigt die Standardvor
       `ZoomState.zoomRatio` in die Brennweitenberechnung einfließen, sonst stimmt die Projektion nicht.
 - [ ] **Bildschirm nur in der Kameraansicht wachhalten**, nicht in Liste und Detail
       (`FLAG_KEEP_SCREEN_ON` sitzt derzeit an der ganzen Activity).
+- [ ] **Bildstapelung**: mehrere Langzeitbelichtungen mitteln, damit auch schwächere Sterne
+      erscheinen. Deutlich aufwendiger als die Einzelbelichtung, aber der nächste echte Schritt.
 
 ---
 
@@ -98,9 +92,15 @@ Der wichtigste inhaltliche Block – bei echter Dunkelheit zeigt die Standardvor
 
 ## 5. Genauigkeit
 
-- [ ] **Kalibrierung an einem bekannten Stern:** Nutzer peilt einen benannten Stern an, die App
-      rechnet daraus Kompass-Offset *und* Bildfeld-Faktor aus. Deutlich besser als der jetzige
-      Regler nach Gefühl – und der Punkt, an dem sich die Genauigkeit sprunghaft verbessert.
+- [x] ~~Kalibrierung an bekannten Sternen~~ – und drei weitere Wege, von denen keiner Pflicht ist:
+      Sternmuster (Ausrichtung, ab zwei Sternen auch die Neigung), Peilung auf einen Punkt bekannter
+      Richtung, Schwenk über ein beliebiges Merkmal (Bildfeld, ohne Himmel und ohne Kompass) und
+      der manuelle Regler. **Auf dem Gerät gegenprüfen**, besonders die Schwenkmethode.
+- [ ] **Kalibrierung altert:** Der Kompassfehler ist ortsabhängig (Eisen, Fahrzeuge, Gebäude). Eine
+      an einem Ort gemessene Ausrichtungskorrektur sollte nach Ortswechsel oder nach einer gewissen
+      Zeit als fraglich markiert werden statt stillschweigend weiterzugelten.
+- [ ] **Kalibrierung pro Kamera** ablegen, sobald der Zoom oder ein Objektivwechsel dazukommt –
+      Haupt- und Ultraweitwinkelkamera haben völlig verschiedene Bildfelder.
 - [ ] **Präzession** von J2000 auf das Datum (~0,4° bis 2050). Liegt heute unter dem
       Kompassfehler, wird aber relevant, sobald die Sternkalibrierung darüber existiert.
 - [ ] **Kompassgüte in die gespeicherten Daten übernehmen** und in der Detailansicht als

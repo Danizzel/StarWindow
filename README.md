@@ -22,7 +22,7 @@ Anforderungen: Android Studio Ladybug oder neuer, JDK 17, Android SDK 35, minSdk
 
 ```
 ./gradlew :app:assembleDebug     # APK bauen
-./gradlew :app:testDebugUnitTest # 54 Unit-Tests
+./gradlew :app:testDebugUnitTest # 89 Unit-Tests
 ```
 
 ---
@@ -57,14 +57,36 @@ kleben** – sie werden jedes Bild neu aus Himmelskoordinaten projiziert, nicht 
 gespeichert. Das ist gleichzeitig die eingebaute Sichtprüfung: Wandert eine Markierung beim
 Schwenken schneller oder langsamer als das Kamerabild, stimmt das Bildfeld nicht.
 
-### Bildfeld kalibrieren
+### Nachtsicht-Sucher
 
-Manche Geräte melden ihre Optik ungenau. In den Einstellungen (Zahnrad) gibt es dafür einen
-Feinjustierungs-Faktor:
+Bei echter Dunkelheit zeigt die Kameraautomatik fast nichts – man würde das Fenster gegen ein
+schwarzes Rechteck zeichnen. Über das Mond-Symbol lässt sich der Sucher auf **Nacht** umschalten:
+Belichtungszeit und ISO werden von Hand gesetzt, der Fokus auf unendlich verriegelt (der Autofokus
+findet am dunklen Himmel nichts und sucht endlos). Die Regler wirken auf das laufende Bild.
 
-1. Einen hellen Stern oder eine markante Kante an den Bildrand bringen.
-2. Schwenken und beobachten, ob die eingeblendete Katalogmarkierung mitläuft.
-3. Läuft die Markierung schneller als das Bild → Faktor erhöhen, sonst verringern.
+Lange Belichtungszeiten machen die Vorschau träge; Gradnetz und Markierungen bleiben flüssig, weil
+sie getrennt gezeichnet werden. Geräte ohne `MANUAL_SENSOR` fallen auf die volle
+Belichtungskorrektur zurück – das hilft etwas, reicht für Sterne aber meist nicht.
+
+### Kalibrieren – vier Wege, keiner Pflicht
+
+Die App funktioniert unkalibriert. Jede Methode verkleinert nur eine der beiden Fehlerquellen, und
+**drei von vier brauchen keine Sicht auf Sterne** – wichtig, weil genau die Situationen, für die
+diese App gedacht ist, den halben Himmel verdecken.
+
+| Methode | korrigiert | freier Himmel nötig? |
+|---|---|---|
+| **Sternmuster** – nacheinander vorgeschlagene Sterne mit dem Fadenkreuz anpeilen | Ausrichtung; ab zwei weit auseinanderliegenden Sternen auch die Neigung | ja |
+| **Peilung** – einen Punkt bekannter Richtung anpeilen und die Peilung eintragen | Nordrichtung | nein |
+| **Schwenk** – ein beliebiges Merkmal antippen, schwenken, erneut antippen | Bildfeld | nein |
+| **Manuell** – Regler nach Augenmaß | Bildfeld | nein |
+
+Der Schwenk ist der Grund, warum es ohne Sterne geht: Er wertet nur die *relative* Drehung zwischen
+zwei Antippungen aus. Die misst das Gyroskop zuverlässig – ohne Magnetfeld, ohne Nordrichtung, bei
+jedem Wetter und auch am Tag im Zimmer.
+
+Die Ausrichtungsmethoden peilen mit dem **Fadenkreuz**, also in der Bildmitte, wo das Bildfeld
+rechnerisch keine Rolle spielt. Dadurch verrechnen sich die beiden Kalibrierungen nie gegenseitig.
 
 ---
 
@@ -142,7 +164,7 @@ Jede dieser Stellen ist eine einzelne Naht, die sich später austauschen lässt.
 
 ## Tests
 
-54 Unit-Tests in `app/src/test/`, alle grün. Sie prüfen nicht nur, dass Funktionen etwas
+89 Unit-Tests in `app/src/test/`, alle grün. Sie prüfen nicht nur, dass Funktionen etwas
 zurückgeben, sondern physikalische Invarianten:
 
 * GMST zur Epoche J2000 gegen die IAU-Konstante, siderischer Tag gegen Sonnentag,
@@ -153,6 +175,10 @@ zurückgeben, sondern physikalische Invarianten:
   entsprechende Pixelzahl,
 * Rechteckfenster über die 0°-Naht hinweg, konkave Polygone,
 * ein zirkumpolares Objekt kehrt nach genau einem siderischen Tag ins Fenster zurück,
+* der Ausgleich einer bekannten Sensorabweichung liefert genau deren Umkehrung zurück, auch bei
+  Rauschen und bei reinen Kippfehlern,
+* der Schwenk-Löser findet ein simuliertes Bildfeld auf ein Promille genau wieder – und lehnt zu
+  kurze Schwenke und unterschiedliche Merkmale ab, statt zu raten,
 * gespeicherte Fenster überstehen den JSON-Umlauf, der Basiskatalog wird gegen veröffentlichte
   J2000-Positionen geprüft.
 
@@ -166,8 +192,7 @@ daraus:
 * **Zuerst:** Projekt in Android Studio kompilieren – die UI-Schicht wurde ohne Zugriff auf Google
   Maven gebaut und ist noch von keinem Compiler gesehen worden. Danach Feldabgleich an einem
   bekannten Stern; das ist der eigentliche Abnahmetest.
-* Zwei bekannte Fehler: das Bildfeld stimmt nach Gerätedrehung nicht mehr, und die Kamera-ID für
-  die Optikdaten wird geraten statt von CameraX erfragt.
-* Nachtsichttauglicher Sucher (lange Belichtung) – ohne den zeichnet man bei echter Dunkelheit
-  gegen ein schwarzes Bild.
+* Nachtsicht und Kalibrierung sind gebaut, aber noch auf keiner echten Kamera gelaufen – die
+  erreichbaren Belichtungszeiten und die Schwenkmethode gehören als Erstes aufs Gerät.
+* Bildstapelung, damit auch schwächere Sterne im Sucher erscheinen.
 * Mond, Sonne und Planeten sowie die Anbindung der Online-Kataloge.

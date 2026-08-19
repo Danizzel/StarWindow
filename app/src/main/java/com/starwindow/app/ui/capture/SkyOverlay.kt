@@ -55,6 +55,9 @@ fun SkyOverlay(
     showGraticule: Boolean,
     showCatalog: Boolean,
     modifier: Modifier = Modifier,
+    /** Ringed and named, so the user knows which star the crosshair is meant to find. */
+    highlightDirection: Horizontal? = null,
+    highlightLabel: String = "",
 ) {
     val density = LocalDensity.current
     val paints = remember(density) { OverlayPaints(density) }
@@ -67,6 +70,7 @@ fun SkyOverlay(
         if (showGraticule) drawGraticule(projection, paints)
         if (showCatalog && observer != null) drawCatalog(projection, catalog, observer, paints)
         shape?.let { drawWindowShape(projection, it) }
+        highlightDirection?.let { drawHighlight(projection, it, highlightLabel, paints) }
         drawAnchors(projection, anchors, paints)
         drawCrosshair(projection, paints)
     }
@@ -179,6 +183,57 @@ private fun DrawScope.drawAnchors(
         drawCircle(StarWindowColors.Night, radius * 0.45f, offset)
         drawLabel("${index + 1}", point.x + radius * 1.8f, point.y - radius, paints.anchorPaint)
     }
+}
+
+/**
+ * Ring around the direction the user is being asked to aim at. When it sits off screen, an arrow at
+ * the edge points the way — otherwise finding a named star means sweeping the sky at random.
+ */
+private fun DrawScope.drawHighlight(
+    projection: SkyProjection,
+    direction: Horizontal,
+    label: String,
+    paints: OverlayPaints,
+) {
+    val point = projection.skyToScreen(direction)
+    val radius = 22.dp.toPx()
+
+    if (point != null &&
+        point.x >= 0f && point.x <= size.width &&
+        point.y >= 0f && point.y <= size.height
+    ) {
+        drawCircle(
+            color = StarWindowColors.AnchorPoint,
+            radius = radius,
+            center = Offset(point.x, point.y),
+            style = Stroke(width = 2.dp.toPx()),
+        )
+        drawLabel(label, point.x + radius + 6.dp.toPx(), point.y, paints.highlightPaint)
+        return
+    }
+
+    // Off screen: point at it from the middle of the view.
+    val centerX = size.width / 2f
+    val centerY = size.height / 2f
+    val display = projection.attitude.worldToDisplay(projection.attitude.toMagneticVector(direction))
+    val length = kotlin.math.sqrt(display.x * display.x + display.y * display.y)
+    if (length < 1e-6) return
+    val dirX = (display.x / length).toFloat()
+    val dirY = -(display.y / length).toFloat()
+    val arrow = minOf(size.width, size.height) * 0.3f
+
+    drawLine(
+        color = StarWindowColors.AnchorPoint,
+        start = Offset(centerX + dirX * arrow * 0.55f, centerY + dirY * arrow * 0.55f),
+        end = Offset(centerX + dirX * arrow, centerY + dirY * arrow),
+        strokeWidth = 3.dp.toPx(),
+    )
+    drawLabel(
+        label,
+        centerX + dirX * arrow + 8.dp.toPx(),
+        centerY + dirY * arrow,
+        paints.highlightPaint,
+    )
 }
 
 private fun DrawScope.drawCrosshair(projection: SkyProjection, paints: OverlayPaints) {
@@ -320,6 +375,7 @@ private class OverlayPaints(density: Density) {
     val anchorPaint = textPaint(StarWindowColors.AnchorPoint, 12f)
     val cardinalPaint = textPaint(StarWindowColors.Crosshair, 16f)
     val catalogPaint = textPaint(StarWindowColors.CatalogMarker, 11f)
+    val highlightPaint = textPaint(StarWindowColors.AnchorPoint, 14f)
 
     private fun textPaint(color: Color, sizeSp: Float) = Paint().apply {
         isAntiAlias = true

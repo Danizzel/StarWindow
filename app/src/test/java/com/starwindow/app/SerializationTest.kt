@@ -1,6 +1,12 @@
 package com.starwindow.app
 
 import com.starwindow.app.core.astro.Horizontal
+import com.starwindow.app.core.astro.Rotation3
+import com.starwindow.app.core.astro.Vec3
+import com.starwindow.app.core.calibration.Calibration
+import com.starwindow.app.core.calibration.CalibrationSource
+import com.starwindow.app.core.camera.ExposureMode
+import com.starwindow.app.core.camera.ExposureSettings
 import com.starwindow.app.core.astro.ObserverLocation
 import com.starwindow.app.core.geometry.AltAzBoxWindow
 import com.starwindow.app.core.geometry.CircleWindow
@@ -126,5 +132,63 @@ class SerializationTest {
 
     companion object {
         const val CATALOG_ASSET = "catalog/starwindow_core.json"
+    }
+}
+
+class CalibrationSerializationTest {
+
+    @Test
+    fun `a calibration round trips including its provenance`() {
+        val original = Calibration.NONE
+            .withAttitude(
+                rotation = Rotation3.fromRotationVector(
+                    Vec3(0.01, -0.02, 0.13)
+                ),
+                source = CalibrationSource.STAR_PATTERN,
+                residualDeg = 0.42,
+                sampleCount = 3,
+                atMillis = 1_700_000_000_000L,
+            )
+            .withFov(
+                scale = 1.062,
+                source = CalibrationSource.PAN_SWEEP,
+                residualDeg = 0.11,
+                sampleCount = 2,
+                atMillis = 1_700_000_100_000L,
+            )
+
+        val restored = json.decodeFromString<Calibration>(
+            json.encodeToString(original)
+        )
+        assertEquals(original, restored)
+        assertEquals(original.correction.angleDeg(), restored.correction.angleDeg(), 1e-9)
+        assertEquals(
+            CalibrationSource.PAN_SWEEP,
+            restored.fovSource,
+        )
+    }
+
+    @Test
+    fun `exposure settings round trip`() {
+        val original = ExposureSettings(
+            mode = ExposureMode.NIGHT,
+            exposureTimeNs = 500_000_000L,
+            iso = 3200,
+            focusAtInfinity = true,
+            exposureCompensationSteps = 4,
+        )
+        val restored = json.decodeFromString<ExposureSettings>(
+            json.encodeToString(original)
+        )
+        assertEquals(original, restored)
+        assertEquals("1/2 s", restored.formatExposureTime())
+    }
+
+    @Test
+    fun `an unknown future field does not break reading`() {
+        // The settings blob is written by whatever version last ran; a newer one must not brick it.
+        val text = """{"fovScale":1.1,"fovSource":"MANUAL","somethingNew":42}"""
+        val restored = json.decodeFromString<Calibration>(text)
+        assertEquals(1.1, restored.fovScale, 1e-9)
     }
 }

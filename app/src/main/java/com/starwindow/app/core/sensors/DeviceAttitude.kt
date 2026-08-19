@@ -1,7 +1,7 @@
 package com.starwindow.app.core.sensors
 
-import com.starwindow.app.core.astro.Angles
 import com.starwindow.app.core.astro.Horizontal
+import com.starwindow.app.core.astro.Rotation3
 import com.starwindow.app.core.astro.Vec3
 
 /**
@@ -10,15 +10,32 @@ import com.starwindow.app.core.astro.Vec3
  * The rear camera therefore looks along -z.
  *
  * [rotationMatrix] is row-major and maps display-frame vectors into the world frame
- * (x = east, y = **magnetic** north, z = up). Use [magneticDeclinationDeg] to get to true north —
- * the helpers below already do.
+ * (x = east, y = **magnetic** north, z = up). Getting from there to true north takes two steps,
+ * both of which the helpers below apply: the magnetic declination for the observer's position, and
+ * the calibration [correction] the user measured against stars or a known bearing.
  */
 data class DeviceAttitude(
     val rotationMatrix: FloatArray,
     val magneticDeclinationDeg: Double,
     val accuracy: Int,
     val timestampMs: Long,
+    /** Learned correction, applied in the world frame after the declination. */
+    val correction: Rotation3 = Rotation3.IDENTITY,
 ) {
+
+    /**
+     * Magnetic world frame → true, calibrated world frame. Built once per attitude because the
+     * overlay runs it over hundreds of directions per frame.
+     */
+    private val trueFromMagnetic: Rotation3 by lazy {
+        correction * Rotation3.aboutZenith(magneticDeclinationDeg)
+    }
+
+    /** The sensor's rotation as a double-precision matrix, for the calibration solvers. */
+    val worldFromDisplay: Rotation3 by lazy {
+        Rotation3(DoubleArray(9) { rotationMatrix[it].toDouble() })
+    }
+
     /** Where the rear camera points, in true-north horizontal coordinates. */
     val cameraDirection: Horizontal
         get() = toTrueNorth(displayToWorld(Vec3(0.0, 0.0, -1.0)))
@@ -50,21 +67,24 @@ data class DeviceAttitude(
         )
     }
 
-    /** Magnetic-frame vector → true-north horizontal coordinates. */
-    fun toTrueNorth(worldVector: Vec3): Horizontal {
-        val magnetic = Horizontal.fromVector(worldVector)
-        return Horizontal(
-            azimuthDeg = Angles.normalizeDeg(magnetic.azimuthDeg + magneticDeclinationDeg),
-            altitudeDeg = magnetic.altitudeDeg,
-        )
-    }
+    /** Magnetic-frame vector → true-north, calibrated horizontal coordinates. */
+    fun toTrueNorth(worldVector: Vec3): Horizontal =
+        Horizontal.fromVector(trueFromMagnetic.apply(worldVector))
 
-    /** True-north horizontal coordinates → magnetic-frame unit vector. */
+    /** True-north horizontal coordinates → magnetic-frame unit vector. Inverse of [toTrueNorth]. */
     fun toMagneticVector(horizontal: Horizontal): Vec3 =
-        Horizontal(
-            azimuthDeg = horizontal.azimuthDeg - magneticDeclinationDeg,
-            altitudeDeg = horizontal.altitudeDeg,
-        ).toVector()
+        trueFromMagnetic.inverseApply(horizontal.toVector())
+
+    /**
+     * Where the camera points with the calibration deliberately ignored. The calibration solvers
+     * need this: fitting a correction against directions that already carry one would just fit it
+     * against itself.
+     */
+    val uncalibratedCameraDirection: Horizontal
+        get() = Horizontal.fromVector(
+            Rotation3.aboutZenith(magneticDeclinationDeg)
+                .apply(displayToWorld(Vec3(0.0, 0.0, -1.0)))
+        )
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -72,7 +92,8 @@ data class DeviceAttitude(
         return rotationMatrix.contentEquals(other.rotationMatrix) &&
             magneticDeclinationDeg == other.magneticDeclinationDeg &&
             accuracy == other.accuracy &&
-            timestampMs == other.timestampMs
+            timestampMs == other.timestampMs &&
+            correction == other.correction
     }
 
     override fun hashCode(): Int {
@@ -80,6 +101,7 @@ data class DeviceAttitude(
         result = 31 * result + magneticDeclinationDeg.hashCode()
         result = 31 * result + accuracy
         result = 31 * result + timestampMs.hashCode()
+        result = 31 * result + correction.hashCode()
         return result
     }
 
