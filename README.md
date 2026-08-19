@@ -160,10 +160,14 @@ zurückgeben, sondern physikalische Invarianten:
 
 ## Was als Nächstes ansteht
 
-* **Online-Kataloge** mit Offline-Cache (`RemoteCatalogSource`).
-* **Planeten, Mond und Sonne** – brauchen Ephemeriden, nicht nur feste RA/Dec.
-* **Nachtsichttauglicher Sucher**: lange Belichtung über Camera2, damit bei echter Dunkelheit auch
-  Sterne im Bild zu sehen sind und nicht nur die Silhouette.
-* **Kompasskalibrierung im UI**: Hinweis auf die Achterbewegung, wenn die Genauigkeit niedrig ist.
-* **Export** der Fenster (JSON liegt schon bereit) und Import in Planungssoftware.
-* **Oberflächentexte** in `strings.xml` auslagern; aktuell stehen sie direkt im Compose-Code.
+Die vollständige, nach Dringlichkeit sortierte Liste steht in **[TODO.md](TODO.md)**. Das Wichtigste
+daraus:
+
+* **Zuerst:** Projekt in Android Studio kompilieren – die UI-Schicht wurde ohne Zugriff auf Google
+  Maven gebaut und ist noch von keinem Compiler gesehen worden. Danach Feldabgleich an einem
+  bekannten Stern; das ist der eigentliche Abnahmetest.
+* Zwei bekannte Fehler: das Bildfeld stimmt nach Gerätedrehung nicht mehr, und die Kamera-ID für
+  die Optikdaten wird geraten statt von CameraX erfragt.
+* Nachtsichttauglicher Sucher (lange Belichtung) – ohne den zeichnet man bei echter Dunkelheit
+  gegen ein schwarzes Bild.
+* Mond, Sonne und Planeten sowie die Anbindung der Online-Kataloge.
