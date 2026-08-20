@@ -52,10 +52,25 @@ flowchart LR
 4. **Himmelskoordinaten** – Mit Breite, Länge und mittlerer Ortssternzeit (GMST nach IAU 1982)
    wird Azimut/Höhe in Rektaszension/Deklination umgerechnet.
 
-Rückwärts läuft dieselbe Kette: Deshalb bleiben gesetzte Punkte beim Schwenken **auf ihrem Stern
-kleben** – sie werden jedes Bild neu aus Himmelskoordinaten projiziert, nicht als Bildschirmpunkte
-gespeichert. Das ist gleichzeitig die eingebaute Sichtprüfung: Wandert eine Markierung beim
-Schwenken schneller oder langsamer als das Kamerabild, stimmt das Bildfeld nicht.
+Rückwärts läuft dieselbe Kette: Gesetzte Punkte werden als Azimut/Höhe gespeichert und jedes Bild
+neu projiziert, nicht als Bildschirmpunkte. Deshalb **bleiben sie beim Schwenken an ihrer Stelle am
+Himmel stehen**, statt mit der Kamera mitzuwandern.
+
+### Das Fenster steht fest, der Himmel zieht hindurch
+
+Ein Fenster ist **horizontfest**: an Azimut und Höhe geheftet, wie eine Lücke zwischen zwei
+Dächern. Es folgt weder der Kamera noch den Sternen.
+
+* **Schwenkt man die Kamera**, bleibt das Fenster dort am Himmel, wo es gezeichnet wurde, und
+  wandert dabei über den Bildschirm – bis aus dem Bild heraus. (Einen Rückweg-Pfeil dorthin gibt es
+  noch nicht, siehe [TODO.md](TODO.md).)
+* **Wartet man**, dreht sich der Sternhimmel durch das stehende Fenster. Ein Stern, auf den ein
+  Punkt gesetzt wurde, ist zehn Minuten später gut zweieinhalb Grad weitergewandert – die
+  Markierung nicht. Genau diese Relativbewegung ist es, die die Durchgangsberechnung auswertet.
+
+Im Moment des Schwenkens sind beide nicht zu unterscheiden, und das ist die eingebaute
+Sichtprüfung: Wandert eine Markierung beim Schwenken schneller oder langsamer als das Kamerabild,
+stimmt das Bildfeld nicht.
 
 ### Nachtsicht-Sucher
 

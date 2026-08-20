@@ -81,9 +81,21 @@ Ein Fingertipp auf Pixel (x, y) wird so zu einer Himmelsrichtung:
 4. **`CoordinateTransforms.horizontalToEquatorial`** – über Breite, Länge und Ortssternzeit nach
    RA/Dec.
 
-Rückwärts genauso (`skyToScreen`). **Wichtig:** Gesetzte Punkte werden als *Himmelsrichtung*
-gespeichert und jedes Bild neu projiziert. Deshalb kleben sie beim Schwenken auf ihrem Stern – und
-deshalb ist eine driftende Markierung der sichtbare Beweis für einen Fehler im Bildfeld.
+Rückwärts genauso (`skyToScreen`). **Wichtig:** Gesetzte Punkte werden als *Azimut/Höhe*
+gespeichert und jedes Bild neu projiziert, nie als Bildschirmkoordinaten.
+
+Daraus folgen zwei Dinge, die nicht verwechselt werden dürfen:
+
+* **Gegenüber der Kamera** steht das Fenster still: schwenkt man, wandert es über den Bildschirm
+  und aus dem Bild heraus. Driftet eine Markierung dabei schneller oder langsamer als das
+  Kamerabild, ist das der sichtbare Beweis für einen Fehler im Bildfeld.
+* **Gegenüber dem Sternhimmel** steht es ebenfalls still – es folgt den Sternen *nicht*. Der
+  Himmel dreht sich mit gut 15° pro Stunde hindurch, und genau das wertet `TransitCalculator`
+  aus: `membershipTest()` wird einmal vor der Zeitschleife gebaut, innerhalb der Schleife ändert
+  sich ausschließlich die Position der Objekte über die Sternzeit.
+
+Wer das Fenster jemals an RA/Dec heften will (etwa zum Einrahmen eines Ziels), muss das als
+eigenen Modus bauen – die Durchgangsberechnung setzt die horizontfeste Bedeutung voraus.
 
 ### Wo `FIT_CENTER` herkommt
 

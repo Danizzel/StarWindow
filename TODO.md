@@ -87,6 +87,12 @@ Nachlesen des eigenen Codes als tatsächlich unfertig verifiziert habe (kein Rat
 - [ ] **Ausdehnung berücksichtigen:** aktuell zählt nur der Mittelpunkt eines Objekts. M31 ist über
       3° lang und ragt in ein Fenster hinein, lange bevor die Mitte drin ist.
 - [ ] **Suche und Filter** in der Ergebnisliste (nach Typ, Helligkeit, Dauer).
+- [ ] **Sternbilder als Ganzes.** Die Durchgangsliste nennt heute Einzelobjekte, das Sternbild nur
+      als Kürzel am Objekt (`constellation`). Für „welches Sternbild zieht durch das Fenster" fehlt
+      die Ebene darüber: Sternbildgrenzen (IAU) oder wenigstens die Verbindungslinien, dazu eine
+      Aussage wie „Orion tritt von 22:14 bis 23:40 durch, davon der Gürtel vollständig". Das ist
+      die naheliegende Ausbaustufe der bestehenden Durchgangsrechnung – die Geometrie kann es
+      bereits, es fehlen die Daten und die Zusammenfassung.
 
 ---
 

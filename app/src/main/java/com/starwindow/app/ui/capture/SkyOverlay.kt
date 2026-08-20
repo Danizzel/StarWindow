@@ -36,10 +36,15 @@ import kotlin.math.roundToInt
  * Everything drawn on top of the viewfinder.
  *
  * The overlay is rendered from sky coordinates, never from screen coordinates: a point the user
- * placed is stored as an azimuth/altitude and projected back every frame. That is what makes the
- * markers stay on their star while the phone moves — and it is also the visual proof that the
- * screen ⇄ sky mapping is correct. If a marker slides off its star while panning, the field of
- * view is off and the calibration slider needs adjusting.
+ * placed is stored as an azimuth/altitude and projected back every frame. The markers therefore
+ * stay where they were placed *relative to the horizon* while the phone moves, sliding across the
+ * screen and eventually out of it.
+ *
+ * They do not follow the stars. Over a pan, lasting seconds, the two are indistinguishable — which
+ * is what makes this the visual check that the screen ⇄ sky mapping is right: a marker that slides
+ * off the feature it was placed on means the field of view is wrong. Over minutes the difference
+ * shows: the sky turns roughly 15° per hour and drifts through the standing markers, and that
+ * relative motion is exactly what the transit search reports on.
  *
  * [attitudeState] is read inside the draw lambda on purpose: that keeps sensor updates in the draw
  * phase instead of triggering a recomposition fifty times a second.
