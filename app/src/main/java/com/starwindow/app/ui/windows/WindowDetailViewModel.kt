@@ -5,15 +5,17 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.starwindow.app.AppContainer
+import com.starwindow.app.core.astro.AstroTime
+import com.starwindow.app.core.astro.CoordinateTransforms
 import com.starwindow.app.core.astro.Horizontal
 import com.starwindow.app.core.geometry.SkyWindow
 import com.starwindow.app.data.catalog.CatalogRepository
 import com.starwindow.app.data.catalog.ConstellationRepository
-import com.starwindow.app.data.catalog.ObjectType
 import com.starwindow.app.data.windows.SkyWindowRepository
 import com.starwindow.app.domain.ConstellationTransit
 import com.starwindow.app.domain.ConstellationTransitCalculator
 import com.starwindow.app.domain.ObjectTransit
+import com.starwindow.app.domain.ResultFilter
 import com.starwindow.app.domain.SkyTrack
 import com.starwindow.app.domain.SkyTrackBuilder
 import com.starwindow.app.domain.TransitCalculator
@@ -23,30 +25,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
-/** Which kind of thing the result list shows. */
-enum class ResultFilter(val label: String) {
-    ALL("Alle"),
-    CONSTELLATIONS("Sternbilder"),
-    STARS("Sterne"),
-    NEBULAE("Nebel"),
-    GALAXIES("Galaxien"),
-    CLUSTERS("Haufen");
-
-    fun matches(type: ObjectType): Boolean = when (this) {
-        ALL -> true
-        CONSTELLATIONS -> false
-        STARS -> type == ObjectType.STAR || type == ObjectType.DOUBLE_STAR
-        NEBULAE -> type == ObjectType.NEBULA ||
-            type == ObjectType.PLANETARY_NEBULA ||
-            type == ObjectType.SUPERNOVA_REMNANT
-        GALAXIES -> type == ObjectType.GALAXY
-        CLUSTERS -> type == ObjectType.OPEN_CLUSTER || type == ObjectType.GLOBULAR_CLUSTER
-    }
-
-    val showsConstellations: Boolean get() = this == ALL || this == CONSTELLATIONS
-    val showsObjects: Boolean get() = this != CONSTELLATIONS
-}
 
 data class WindowDetailUiState(
     val window: SkyWindow? = null,
@@ -60,6 +38,8 @@ data class WindowDetailUiState(
     val tracks: List<SkyTrack> = emptyList(),
     val emphasisedTrackIndex: Int? = null,
     val figureSegments: List<Pair<Horizontal, Horizontal>> = emptyList(),
+    /** The object whose info sheet is open, or null. */
+    val info: ObjectInfo? = null,
     val isSearching: Boolean = false,
     val error: String? = null,
 ) {
@@ -67,7 +47,7 @@ data class WindowDetailUiState(
         get() = if (!filter.showsObjects) {
             emptyList()
         } else {
-            result?.transits.orEmpty().filter { filter.matches(it.obj.type) }
+            result?.transits.orEmpty().filter { filter.matches(it.obj) }
         }
 
     val visibleConstellations: List<ConstellationTransit>
@@ -121,6 +101,46 @@ class WindowDetailViewModel(
         _uiState.update { it.copy(selectedId = if (it.selectedId == id) null else id) }
         rebuildTracks()
     }
+
+    /**
+     * Gathers everything the info sheet shows: the whole-span altitude curve, the stretches inside
+     * the window, where the object stands right now, and how it would sit in the frame.
+     */
+    fun openInfo(objectId: String) {
+        val state = _uiState.value
+        val window = state.window ?: return
+        val transit = state.result?.transits?.firstOrNull { it.obj.id == objectId } ?: return
+
+        val now = System.currentTimeMillis()
+        val until = now + state.hoursAhead * 3_600_000L
+        val obj = transit.obj
+
+        _uiState.update {
+            it.copy(
+                info = ObjectInfo(
+                    obj = obj,
+                    track = SkyTrackBuilder.overSpan(
+                        label = obj.name.ifBlank { obj.id },
+                        equatorial = obj.equatorial,
+                        observer = window.observer,
+                        fromMillis = now,
+                        toMillis = until,
+                    ),
+                    passes = transit.intervals.map { interval ->
+                        WindowPass(interval.enterMillis, interval.exitMillis)
+                    },
+                    currentPosition = CoordinateTransforms.apparentHorizontalAtLst(
+                        obj.equatorial,
+                        window.observer.latitudeDeg,
+                        AstroTime.lstDeg(now, window.observer.longitudeDeg),
+                    ),
+                    fillFactor = obj.fillFactor(window.shape.angularRadiusDeg()),
+                )
+            )
+        }
+    }
+
+    fun closeInfo() = _uiState.update { it.copy(info = null) }
 
     fun search() {
         val window = _uiState.value.window ?: return

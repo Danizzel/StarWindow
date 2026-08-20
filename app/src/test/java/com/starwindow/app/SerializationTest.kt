@@ -10,6 +10,8 @@ import com.starwindow.app.core.geometry.SphericalGeometry
 import com.starwindow.app.core.geometry.WindowShape
 import com.starwindow.app.data.catalog.CatalogFile
 import com.starwindow.app.data.catalog.ObjectType
+import com.starwindow.app.data.images.SkyImageLoader
+import com.starwindow.app.data.images.SkyImageRequest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -83,12 +85,14 @@ class SerializationTest {
     }
 
     @Test
-    fun `the bundled catalogue parses and looks sane`() {
+    fun `the bundled star catalogue parses and looks sane`() {
         val text = catalogFile().readText()
         val catalog = Json { ignoreUnknownKeys = true }.decodeFromString<CatalogFile>(text)
 
         assertEquals("J2000", catalog.epoch)
-        assertTrue(catalog.objects.size > 100, "expected a usable catalogue, got ${catalog.objects.size}")
+        // Deep sky moved to its own asset; what remains here are the bright stars, which OpenNGC
+        // does not carry at all.
+        assertTrue(catalog.objects.size >= 50, "expected the bright stars, got ${catalog.objects.size}")
         assertEquals(catalog.objects.size, catalog.objects.map { it.id }.toSet().size, "duplicate ids")
 
         for (obj in catalog.objects) {
@@ -102,11 +106,6 @@ class SerializationTest {
         assertEquals(101.287, sirius.raDeg, 0.01)
         assertEquals(-16.716, sirius.decDeg, 0.01)
         assertEquals(ObjectType.STAR, sirius.type)
-
-        val andromeda = catalog.objects.single { it.id == "M31" }
-        assertEquals(10.685, andromeda.raDeg, 0.01)
-        assertEquals(41.269, andromeda.decDeg, 0.01)
-        assertEquals(ObjectType.GALAXY, andromeda.type)
 
         val polaris = catalog.objects.single { it.name == "Polaris" }
         assertTrue(polaris.decDeg > 89.0, "Polaris should sit next to the pole")
@@ -289,5 +288,131 @@ class ConstellationDataTest {
         val fromPegasus = byId.getValue("Peg").stars.single { it.name == "Alpheratz" }
         assertEquals(fromAndromeda.raDeg, fromPegasus.raDeg, 1e-6)
         assertEquals(fromAndromeda.decDeg, fromPegasus.decDeg, 1e-6)
+    }
+}
+
+class DeepSkyCatalogTest {
+
+    private fun load(): CatalogFile {
+        val file = listOf(
+            "src/main/assets/catalog/deepsky.json",
+            "app/src/main/assets/catalog/deepsky.json",
+        ).map { File(it) }.firstOrNull { it.exists() } ?: error("Deep-Sky-Datei nicht gefunden")
+        return Json { ignoreUnknownKeys = true }.decodeFromString<CatalogFile>(file.readText())
+    }
+
+    @Test
+    fun `the deep sky catalogue parses and every entry is usable`() {
+        val catalog = load()
+        assertEquals("J2000", catalog.epoch)
+        assertTrue(catalog.license.contains("OpenNGC"), "attribution is required by CC-BY-SA")
+        assertTrue(catalog.objects.size > 2500, "got ${catalog.objects.size}")
+
+        val ids = catalog.objects.map { it.id }
+        assertEquals(ids.size, ids.toSet().size, "duplicate ids")
+
+        for (obj in catalog.objects) {
+            assertTrue(obj.raDeg in 0.0..360.0, "${obj.id}: RA ${obj.raDeg}")
+            assertTrue(obj.decDeg in -90.0..90.0, "${obj.id}: Dec ${obj.decDeg}")
+            assertTrue(obj.id.isNotBlank())
+            assertTrue(!obj.type.isStar, "${obj.id} is a star in the deep sky catalogue")
+            obj.magnitude?.let { assertTrue(it > -30 && it < 25, "${obj.id}: mag $it") }
+            obj.sizeArcmin?.let { assertTrue(it > 0 && it < 1000, "${obj.id}: size $it") }
+        }
+    }
+
+    @Test
+    fun `the two bundled sources do not overlap`() {
+        val deep = load().objects.map { it.id }.toSet()
+        val starFile = listOf(
+            "src/main/assets/catalog/starwindow_core.json",
+            "app/src/main/assets/catalog/starwindow_core.json",
+        ).map { File(it) }.first { it.exists() }
+        val stars = Json { ignoreUnknownKeys = true }
+            .decodeFromString<CatalogFile>(starFile.readText()).objects
+
+        assertTrue(stars.all { it.type.isStar }, "the star catalogue must only hold stars")
+        assertTrue((deep intersect stars.map { it.id }.toSet()).isEmpty(), "sources overlap")
+    }
+
+    @Test
+    fun `the targets a photographer would name are present with their data`() {
+        val byId = load().objects.associateBy { it.id }
+
+        val andromeda = byId.getValue("M31")
+        assertEquals("Andromedagalaxie", andromeda.name, "German names must survive the import")
+        assertTrue((andromeda.sizeArcmin ?: 0.0) > 100, "M31 is about three degrees long")
+        assertTrue(andromeda.surfaceBrightness != null)
+
+        // Large and faint: exactly the objects a visual-only list would drop and a photographer wants.
+        val northAmerica = byId.getValue("NGC 7000")
+        assertEquals(ObjectType.EMISSION_NEBULA, northAmerica.type)
+        assertTrue((northAmerica.sizeArcmin ?: 0.0) >= 100)
+        assertTrue(northAmerica.type.respondsToNarrowband)
+
+        assertTrue(byId.containsKey("IC 434"), "Horsehead region missing")
+        assertTrue(byId.containsKey("M42"))
+        assertTrue(byId.containsKey("M51"))
+
+        val named = load().objects.count { it.name.isNotBlank() }
+        assertTrue(named > 100, "only $named named objects")
+    }
+
+    @Test
+    fun `alternative designations are searchable`() {
+        val andromeda = load().objects.first { it.id == "M31" }
+        assertTrue(andromeda.allIdentifiers.any { it.startsWith("NGC") }, "M31 is also NGC 224")
+        assertTrue(andromeda.matches("andromeda"))
+        assertTrue(andromeda.matches("M31"))
+        assertTrue(!andromeda.matches("Orion"))
+    }
+
+    @Test
+    fun `fill factor says whether an object fits the window`() {
+        val andromeda = load().objects.first { it.id == "M31" }
+        // Three degrees of galaxy in a window two degrees across cannot fit.
+        assertTrue(requireNotNull(andromeda.fillFactor(1.0)) > 1.0)
+        // The same galaxy in a twenty degree window is a small patch.
+        assertTrue(requireNotNull(andromeda.fillFactor(20.0)) < 0.2)
+    }
+}
+
+class SkyImageRequestTest {
+
+    private val loader = SkyImageLoader(File("/tmp/starwindow-test-cache"))
+
+    @Test
+    fun `the request url carries the coordinates and the frame`() {
+        val url = loader.urlFor(SkyImageRequest(83.822, -5.391, 1.5, 512))
+        assertTrue(url.contains("ra=83.82200"), url)
+        assertTrue(url.contains("dec=-5.39100"), url)
+        assertTrue(url.contains("fov=1.50000"), url)
+        assertTrue(url.contains("width=512") && url.contains("height=512"), url)
+        assertTrue(url.contains("format=jpg"), url)
+        // The survey name contains slashes and must be encoded, or the service 404s.
+        assertTrue(url.contains("CDS%2FP%2FDSS2%2Fcolor"), url)
+    }
+
+    @Test
+    fun `cache keys separate different frames and survive the file system`() {
+        val a = SkyImageRequest(83.822, -5.391, 1.5).cacheKey
+        val b = SkyImageRequest(83.822, -5.391, 3.0).cacheKey
+        val c = SkyImageRequest(10.685, 41.269, 1.5).cacheKey
+        assertTrue(a != b && a != c)
+        listOf(a, b, c).forEach { key ->
+            assertTrue(key.none { it in "/\\ .:" }, "unsafe cache key: $key")
+        }
+    }
+
+    @Test
+    fun `the frame grows with the object but stays within sensible limits`() {
+        val small = SkyImageLoader.frameForObject(1.0)
+        val medium = SkyImageLoader.frameForObject(30.0)
+        val huge = SkyImageLoader.frameForObject(600.0)
+        assertTrue(small < medium && medium < huge)
+        assertTrue(small >= 0.15, "a tiny object must not be rendered as a blur")
+        assertTrue(huge <= 5.0, "the frame must stay bounded")
+        // Unknown size still yields something usable rather than zero.
+        assertTrue(SkyImageLoader.frameForObject(null) > 0.0)
     }
 }

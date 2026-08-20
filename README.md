@@ -22,7 +22,7 @@ Anforderungen: Android Studio Ladybug oder neuer, JDK 17, Android SDK 35, minSdk
 
 ```
 ./gradlew :app:assembleDebug     # APK bauen
-./gradlew :app:testDebugUnitTest # 104 Unit-Tests
+./gradlew :app:testDebugUnitTest # 122 Unit-Tests
 ```
 
 ---
@@ -136,6 +136,20 @@ Die Detailansicht eines Fensters beantwortet drei Fragen auf einmal:
   Punkte markieren volle Stunden, ein Pfeil zeigt die Richtung. Eine Zeile antippen hebt ihre Bahn
   hervor.
 
+### Das Info-Symbol an jedem Objekt
+
+Öffnet ein Blatt mit allem, was zu dem Objekt bekannt ist:
+
+* **Ein Bild des Ausschnitts**, gerendert aus dem DSS2-Himmelsdurchmusterung über hips2fits (CDS
+  Straßburg) – auf die Koordinaten des Objekts gerahmt, also genau der Ausschnitt, den auch das
+  Fenster zeigt. Ohne Verbindung bleibt das Feld leer; alles andere im Blatt funktioniert weiter.
+* **Höhenverlauf über die Zeit**: wann das Objekt wie hoch steht, mit den Uhrzeiten unten am
+  Graphen, dem Horizont als Schwelle, grün hinterlegten Zeiten im Fenster und einer Marke für
+  „jetzt“.
+* **Zahlen für die Aufnahme**: Flächenhelligkeit (sagt mehr als die Gesamthelligkeit – ein großes
+  Objekt verteilt sein Licht), Ausdehnung, Positionswinkel, Morphologie, Katalogbezeichnungen, und
+  ob das Objekt überhaupt ins Fenster passt.
+
 Die Darstellung nutzt die Tangentialebene der Fenstermitte. Ein einfaches Azimut/Höhe-Diagramm
 würde sowohl die Form des Fensters als auch die Krümmung der Bahnen verzerren – weit oben am Himmel
 sehr deutlich.
@@ -166,9 +180,27 @@ Polygon sein darf – dafür gibt es keine geschlossene Lösung.
 
 ## Kataloge
 
-Mitgeliefert ist `app/src/main/assets/catalog/starwindow_core.json` mit 115 Objekten (helle Sterne,
-Messier-Auswahl, einige NGC/IC-Objekte, J2000). Das reicht, um die ganze Kette zu benutzen und zu
-prüfen, ohne Netz.
+Alles liegt lokal, zusammen **184 KB gepackt**:
+
+| Datei | Inhalt | gepackt |
+|---|---|---:|
+| `starwindow_core.json` | 57 helle Sterne, deutsche Namen | 2 KB |
+| `deepsky.json` | 3.241 Deep-Sky-Objekte aus OpenNGC | 179 KB |
+| `constellations.json` | 29 Sternbildfiguren, 203 Figursterne | 4 KB |
+
+Die Deep-Sky-Auswahl zielt auf **Astrofotografie**, nicht auf Vollständigkeit: aufgenommen wird,
+was einen Eigennamen trägt, im Messier-Katalog steht, heller als 13 mag oder größer als 5′ ist.
+Groß und lichtschwach ist dabei ausdrücklich erwünscht – Kalifornien-, Rosetten- oder Herznebel
+stehen in keiner visuellen Liste, sind aber Standardziele. Die übrigen rund 9.000 namenlosen
+15-mag-Galaxien bleiben draußen; sie würden jede Ergebnisliste unbrauchbar machen, ohne je ein
+Ziel zu sein.
+
+Zu jedem Objekt kommen die Angaben, die beim Fotografieren zählen: Flächenhelligkeit, große und
+kleine Achse, Positionswinkel, Morphologie und sämtliche Katalogbezeichnungen.
+
+Erzeugt wird `deepsky.json` reproduzierbar mit `scripts/import_openngc.py`; die deutschen Namen
+liegen daneben in `scripts/german_names.json`, damit sie einen Neuimport überstehen.
+Quelle: [OpenNGC](https://github.com/mattiaverga/OpenNGC) von Mattia Verga, CC-BY-SA-4.0.
 
 Der Ausbau geht **lokal**, nicht online: der vollständige NGC/IC-Katalog (13.970 Objekte) wiegt auf
 die benötigten Felder reduziert 228 KB gepackt, das ganze Sternenfeld des bloßen Auges rund 140 KB.
@@ -210,7 +242,7 @@ Jede dieser Stellen ist eine einzelne Naht, die sich später austauschen lässt.
 
 ## Tests
 
-104 Unit-Tests in `app/src/test/`, alle grün. Sie prüfen nicht nur, dass Funktionen etwas
+122 Unit-Tests in `app/src/test/`, alle grün. Sie prüfen nicht nur, dass Funktionen etwas
 zurückgeben, sondern physikalische Invarianten:
 
 * GMST zur Epoche J2000 gegen die IAU-Konstante, siderischer Tag gegen Sonnentag,

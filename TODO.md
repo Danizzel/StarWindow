@@ -1,8 +1,8 @@
 # StarWindow – was noch fehlt
 
-Stand: Grundgerüst, Nachtsicht-Sucher, Kalibrierung, Sternbilder und Laufbahnen gepusht. Die
-Rechenkette Bildschirm → Himmel steht und ist durch 104 Unit-Tests abgesichert; die
-Android-/Compose-Schicht ist noch von keinem Compiler gesehen worden.
+Stand: Grundgerüst, Nachtsicht-Sucher, Kalibrierung, Sternbilder, Laufbahnen und der
+Deep-Sky-Katalog gepusht. Die Rechenkette Bildschirm → Himmel steht und ist durch 122 Unit-Tests
+abgesichert; die Android-/Compose-Schicht ist noch von keinem Compiler gesehen worden.
 
 Reihenfolge ist bewusst: Abschnitt 1 blockiert alles andere, Abschnitt 2 sind Stellen, die ich beim
 Nachlesen des eigenen Codes als tatsächlich unfertig verifiziert habe (kein Raten).
@@ -14,7 +14,7 @@ Nachlesen des eigenen Codes als tatsächlich unfertig verifiziert habe (kein Rat
 - [ ] **Projekt in Android Studio synchronisieren und kompilieren.** Google Maven war in der
       Bauumgebung nicht erreichbar, deswegen konnte die UI-Schicht (Compose, CameraX, Sensoren)
       nicht übersetzt werden. Erwartbar sind Import- und Signaturkorrekturen, kein Umbau.
-- [ ] **`./gradlew :app:testDebugUnitTest`** laufen lassen – muss grün sein (104 Tests).
+- [ ] **`./gradlew :app:testDebugUnitTest`** laufen lassen – muss grün sein (122 Tests).
 - [ ] **Auf echtem Gerät starten.** Emulatoren haben weder brauchbaren Kompass noch Kamera.
 - [ ] **Feldabgleich am Himmel:** auf einen bekannten hellen Stern zielen und prüfen, ob dessen
       Katalogmarkierung darauf sitzt. Sitzt sie daneben → Kompass kalibrieren (Achterbewegung).
@@ -83,17 +83,21 @@ Nachlesen des eigenen Codes als tatsächlich unfertig verifiziert habe (kein Rat
       nichts. Setzt die Sonnen-Ephemeride aus dem Punkt darüber voraus.
 - [ ] **Satelliten (ISS, Starlink)** über TLE + SGP4 – passt konzeptionell perfekt zum Fenster,
       ist aber ein eigenes Teilprojekt.
-- [ ] **OpenNGC lokal mitliefern** statt online abzufragen. Gemessen: alle 13.970 NGC/IC-Objekte,
-      auf die Felder reduziert, die diese App braucht, sind 1,5 MB JSON bzw. **228 KB gepackt** –
-      und nur bis 13 mag (3.074 Objekte, alles was ein Amateurteleskop zeigt) sogar **58 KB**.
-      Lizenz CC-BY-SA-4.0, Nennung nötig. Damit ist der Deep-Sky-Teil erledigt, ohne Netz.
+- [x] ~~OpenNGC lokal mitliefern.~~ 3.241 fotografisch interessante Objekte, 179 KB gepackt,
+      reproduzierbar über `scripts/import_openngc.py`.
 - [ ] **Sternkatalog bis ~7 mag** lokal: 9.110 Sterne reichen bis zur Grenze des bloßen Auges
-      (Yale Bright Star Catalogue), das sind rund 140 KB gepackt.
+      (Yale Bright Star Catalogue), das sind rund 140 KB gepackt. Bisher sind nur 57 helle Sterne
+      dabei.
 - [ ] **Kein Gaia für Deep Sky.** Siehe Entscheidungstabelle in [DEV_PLAN.md](DEV_PLAN.md):
       Gaia ist ein Punktquellenkatalog ohne Ausdehnung und ohne gängige Namen, und ausgerechnet
       oberhalb 3 mag – bei den Sternen, auf die man das Handy richtet – lückenhaft.
-- [ ] **Ausdehnung berücksichtigen:** aktuell zählt nur der Mittelpunkt eines Objekts. M31 ist über
-      3° lang und ragt in ein Fenster hinein, lange bevor die Mitte drin ist.
+- [ ] **Ausdehnung in der Durchgangsrechnung berücksichtigen:** die Größe steht jetzt im Katalog
+      und wird im Info-Blatt gezeigt, aber der Durchgang prüft weiterhin nur den Mittelpunkt. M31
+      ragt über 3° und damit lange vor seiner Mitte ins Fenster.
+- [ ] **Bilddienst auf dem Gerät prüfen.** Der Abruf über hips2fits ist gebaut, konnte hier aber
+      nicht getestet werden – aus der Bauumgebung war kein Bilddienst erreichbar. URL-Aufbau und
+      Zwischenspeicher sind getestet, die Antwort des Dienstes nicht.
+- [ ] **Suche im Katalog**: `SkyObject.matches()` ist da und getestet, es fehlt das Suchfeld.
 - [ ] **Suche und Filter** in der Ergebnisliste (nach Typ, Helligkeit, Dauer).
 - [x] ~~Sternbilder als Ganzes.~~ 29 Figuren mit 203 Figursternen mitgeliefert, eigene
       Durchgangsrechnung, Angabe wie viel der Figur gleichzeitig im Fenster steht.

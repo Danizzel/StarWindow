@@ -51,7 +51,8 @@ app/src/main/java/com/starwindow/app/
 │   ├── calibration/  Ausgleichsrechnung für Lage und Bildfeld
 │   └── sensors/      Lage- und Standortverfolgung
 ├── data/
-│   ├── catalog/      Katalogquellen und -modell
+│   ├── catalog/      Katalogquellen, Objekte, Sternbilder
+│   ├── images/       Himmelsausschnitte über hips2fits
 │   └── windows/      Persistenz (JSON) und Einstellungen
 ├── domain/           Durchgangsberechnung, Sternbilder, Laufbahnen
 └── ui/               Compose-Oberfläche
@@ -169,7 +170,9 @@ Damit nicht rückgebaut wird, was aus einem Grund so ist:
 | Gnomonische Projektion für Punkt-in-Polygon | Großkreise werden Geraden, der ebene Test wird damit exakt; Grenze ist eine Halbkugel |
 | Lage als Quaternion geglättet | der rohe Sensor zittert um ein bis zwei Grad, was bei angehefteten Markierungen sofort auffällt |
 | Kalibrierung optional und mehrgleisig | bei eingeschränkter Himmelssicht muss es auch ohne Sterne gehen |
-| Kataloge lokal, online nur ergänzend | die App wird nachts im Feld benutzt; der ganze sinnvolle Katalog passt gepackt in unter ein Megabyte (siehe unten) |
+| Kataloge lokal, online nur ergänzend | die App wird nachts im Feld benutzt; alle drei Kataloge zusammen sind 184 KB gepackt |
+| Deep-Sky-Auswahl statt Vollständigkeit | 9.000 namenlose 15-mag-Galaxien machen jede Ergebnisliste unbrauchbar, ohne je ein Ziel zu sein |
+| Bildlader von Hand statt Bibliothek | ein Bild zur Zeit, mit dem Blatt abgebrochen – das ist innerhalb dessen, was hundert Zeilen richtig können, und hält den Build abhängigkeitsfrei |
 | Kein Gaia | falscher Katalogtyp für diese Aufgabe (siehe unten) |
 
 ---

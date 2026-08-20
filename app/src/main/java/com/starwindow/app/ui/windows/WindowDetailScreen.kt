@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -33,14 +34,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.starwindow.app.appContainer
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.starwindow.app.core.astro.Angles
 import com.starwindow.app.core.astro.AstroTime
 import com.starwindow.app.core.astro.CoordinateTransforms
 import com.starwindow.app.core.geometry.SkyWindow
 import com.starwindow.app.domain.ConstellationTransit
+import com.starwindow.app.data.images.SkyImageLoader
 import com.starwindow.app.domain.ObjectTransit
+import com.starwindow.app.domain.ResultFilter
 import com.starwindow.app.ui.theme.StarWindowColors
 
 /** Colours cycled through the paths so each one stays tellable apart from the others. */
@@ -60,6 +65,15 @@ fun WindowDetailScreen(
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val imageLoader: SkyImageLoader = LocalContext.current.appContainer.skyImageLoader
+
+    state.info?.let { info ->
+        ObjectInfoSheet(
+            info = info,
+            imageLoader = imageLoader,
+            onDismiss = viewModel::closeInfo,
+        )
+    }
 
     Column(modifier = modifier.fillMaxSize().safeDrawingPadding()) {
         Row(
@@ -211,6 +225,7 @@ fun WindowDetailScreen(
                                 transit = transit,
                                 selected = state.selectedId == transit.obj.id,
                                 onClick = { viewModel.select(transit.obj.id) },
+                                onInfo = { viewModel.openInfo(transit.obj.id) },
                             )
                         }
                     }
@@ -331,7 +346,12 @@ private fun ConstellationCard(
 }
 
 @Composable
-private fun TransitCard(transit: ObjectTransit, selected: Boolean, onClick: () -> Unit) {
+private fun TransitCard(
+    transit: ObjectTransit,
+    selected: Boolean,
+    onClick: () -> Unit,
+    onInfo: () -> Unit,
+) {
     SelectableCard(selected = selected, onClick = onClick) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
@@ -342,11 +362,19 @@ private fun TransitCard(transit: ObjectTransit, selected: Boolean, onClick: () -
             transit.obj.magnitude?.let {
                 Text("%.1f mag".format(it), style = MaterialTheme.typography.labelMedium)
             }
+            IconButton(onClick = onInfo, modifier = Modifier.size(32.dp)) {
+                Icon(
+                    Icons.Outlined.Info,
+                    contentDescription = "Informationen zu ${transit.obj.displayName}",
+                    tint = StarWindowColors.CatalogMarker,
+                )
+            }
         }
         Text(
             text = buildString {
                 append(transit.obj.type.label)
                 transit.obj.constellation?.let { append(" · $it") }
+                transit.obj.sizeArcmin?.let { append(" · %.0f'".format(it)) }
                 append(" · gesamt ${formatDuration(transit.totalDurationMillis)}")
             },
             style = MaterialTheme.typography.labelSmall,

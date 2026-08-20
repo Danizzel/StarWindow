@@ -7,6 +7,7 @@ import com.starwindow.app.core.sensors.OrientationTracker
 import com.starwindow.app.data.catalog.AssetCatalogSource
 import com.starwindow.app.data.catalog.CatalogRepository
 import com.starwindow.app.data.catalog.ConstellationRepository
+import com.starwindow.app.data.images.SkyImageLoader
 import com.starwindow.app.data.windows.SettingsStore
 import com.starwindow.app.data.windows.SkyWindowRepository
 import com.starwindow.app.domain.ConstellationTransitCalculator
@@ -20,9 +21,15 @@ class AppContainer(context: Context) {
     val orientationTracker = OrientationTracker(context)
     val locationTracker = LocationTracker(context)
     val windowRepository = SkyWindowRepository(context)
-    val catalogRepository = CatalogRepository(listOf(AssetCatalogSource(context)))
+    val catalogRepository = CatalogRepository(
+        listOf(
+            AssetCatalogSource(context, AssetCatalogSource.STARS_ASSET),
+            AssetCatalogSource(context, AssetCatalogSource.DEEP_SKY_ASSET),
+        )
+    )
     val constellationRepository = ConstellationRepository(context)
     val settingsStore = SettingsStore(context)
+    val skyImageLoader = SkyImageLoader(context.cacheDir)
     val transitCalculator = TransitCalculator()
     val constellationTransitCalculator = ConstellationTransitCalculator()
 }

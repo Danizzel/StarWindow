@@ -46,6 +46,37 @@ data class SkyTrack(
 
 object SkyTrackBuilder {
 
+    /**
+     * Samples an object's altitude evenly across a whole span, for the altitude-over-time curve.
+     * Unlike [forInterval] this does not centre on a window pass — it shows the whole night.
+     */
+    fun overSpan(
+        label: String,
+        equatorial: Equatorial,
+        observer: ObserverLocation,
+        fromMillis: Long,
+        toMillis: Long,
+        samples: Int = 240,
+    ): SkyTrack {
+        val count = samples.coerceAtLeast(2)
+        val step = ((toMillis - fromMillis).toDouble() / (count - 1)).toLong().coerceAtLeast(1L)
+        val points = ArrayList<TrackPoint>(count)
+        var millis = fromMillis
+        while (millis <= toMillis) {
+            points += TrackPoint(
+                millis = millis,
+                position = CoordinateTransforms.apparentHorizontalAtLst(
+                    equatorial,
+                    observer.latitudeDeg,
+                    AstroTime.lstDeg(millis, observer.longitudeDeg),
+                ),
+            )
+            millis += step
+        }
+        return SkyTrack(label, points, fromMillis, toMillis)
+    }
+
+
     /** How far beyond the window the path is drawn, as a fraction of the time spent inside. */
     private const val LEAD_FRACTION = 0.45
 
