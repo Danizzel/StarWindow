@@ -83,7 +83,15 @@ Nachlesen des eigenen Codes als tatsächlich unfertig verifiziert habe (kein Rat
       nichts. Setzt die Sonnen-Ephemeride aus dem Punkt darüber voraus.
 - [ ] **Satelliten (ISS, Starlink)** über TLE + SGP4 – passt konzeptionell perfekt zum Fenster,
       ist aber ein eigenes Teilprojekt.
-- [ ] **Größerer Basiskatalog:** vollständige Messier- und Caldwell-Liste, Sterne bis 6 mag.
+- [ ] **OpenNGC lokal mitliefern** statt online abzufragen. Gemessen: alle 13.970 NGC/IC-Objekte,
+      auf die Felder reduziert, die diese App braucht, sind 1,5 MB JSON bzw. **228 KB gepackt** –
+      und nur bis 13 mag (3.074 Objekte, alles was ein Amateurteleskop zeigt) sogar **58 KB**.
+      Lizenz CC-BY-SA-4.0, Nennung nötig. Damit ist der Deep-Sky-Teil erledigt, ohne Netz.
+- [ ] **Sternkatalog bis ~7 mag** lokal: 9.110 Sterne reichen bis zur Grenze des bloßen Auges
+      (Yale Bright Star Catalogue), das sind rund 140 KB gepackt.
+- [ ] **Kein Gaia für Deep Sky.** Siehe Entscheidungstabelle in [DEV_PLAN.md](DEV_PLAN.md):
+      Gaia ist ein Punktquellenkatalog ohne Ausdehnung und ohne gängige Namen, und ausgerechnet
+      oberhalb 3 mag – bei den Sternen, auf die man das Handy richtet – lückenhaft.
 - [ ] **Ausdehnung berücksichtigen:** aktuell zählt nur der Mittelpunkt eines Objekts. M31 ist über
       3° lang und ragt in ein Fenster hinein, lange bevor die Mitte drin ist.
 - [ ] **Suche und Filter** in der Ergebnisliste (nach Typ, Helligkeit, Dauer).

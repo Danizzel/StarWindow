@@ -169,6 +169,8 @@ Damit nicht rückgebaut wird, was aus einem Grund so ist:
 | Gnomonische Projektion für Punkt-in-Polygon | Großkreise werden Geraden, der ebene Test wird damit exakt; Grenze ist eine Halbkugel |
 | Lage als Quaternion geglättet | der rohe Sensor zittert um ein bis zwei Grad, was bei angehefteten Markierungen sofort auffällt |
 | Kalibrierung optional und mehrgleisig | bei eingeschränkter Himmelssicht muss es auch ohne Sterne gehen |
+| Kataloge lokal, online nur ergänzend | die App wird nachts im Feld benutzt; der ganze sinnvolle Katalog passt gepackt in unter ein Megabyte (siehe unten) |
+| Kein Gaia | falscher Katalogtyp für diese Aufgabe (siehe unten) |
 
 ---
 
@@ -196,7 +198,41 @@ Magnetfeld und ohne Nordrichtung.
 
 ---
 
-## 9. Durchgänge und Laufbahnen
+## 9. Warum die Kataloge lokal liegen – und warum nicht Gaia
+
+Gemessen, nicht geschätzt (Stand August 2026):
+
+| Datensatz | Objekte | JSON | gepackt |
+|---|---:|---:|---:|
+| Basiskatalog heute | 115 | 20 KB | – |
+| OpenNGC vollständig, auf die benötigten Felder reduziert | 13.970 | 1,5 MB | **228 KB** |
+| OpenNGC bis 13 mag (Amateurteleskop-Grenze) | 3.074 | 361 KB | **58 KB** |
+| Sterne bis 6,5 mag (bloßes Auge, Yale BSC) | 9.110 | 625 KB | 139 KB |
+| Sterne bis ~8 mag (Fernglas) | 42.000 | 2,9 MB | 639 KB |
+
+**Speicherplatz ist damit nicht der Engpass.** Alles, was diese App je zeigen will, liegt gepackt
+unter einem Megabyte – ein Bruchteil einer gewöhnlichen APK. Ein Online-Katalog spart hier nichts,
+kostet aber Verfügbarkeit genau dann, wenn man draußen im Dunkeln steht.
+
+**Gaia ist der falsche Katalog**, unabhängig von der Größe:
+
+* Es ist ein *astrometrischer Punktquellenkatalog*. Die 4,84 Mio. „galaxy candidates" in DR3 sind
+  schwache, punktförmige Detektionen – nicht M31 oder der Orionnebel. Ausdehnung, Typ und gängige
+  Namen fehlen, also genau das, was eine Durchgangsliste braucht.
+* Nach oben ist Gaia bei G ≈ 3 gesättigt, und **20 % der Sterne heller als 3 mag haben gar keinen
+  Eintrag**. Ausgerechnet die Sterne, auf die man das Handy richtet, fehlen – für die
+  Sternkalibrierung wäre Gaia unbrauchbar.
+* Die G-Helligkeit ist nicht die visuelle Helligkeit V; für „was sehe ich" ist V die relevante Größe.
+* Vollständig sind es 1,81 Mrd. Quellen. Selbst bei 20 Byte je Quelle wären das rund 36 GB.
+
+Sinnvoll wäre Gaia allenfalls für sehr genaue Positionen einzelner Objekte – eine Frage, die diese
+App nicht stellt.
+
+Der richtige Ausbau ist deshalb: **OpenNGC** (CC-BY-SA-4.0) und ein Sternkatalog lokal mitliefern,
+und Online-Abfragen (VizieR/SIMBAD TAP) nur als Ergänzung für ungewöhnlich tiefe Suchen – auf das
+Deklinationsband des Fensters beschränkt und mit Plattencache.
+
+## 10. Durchgänge und Laufbahnen
 
 `IntervalScanner` ist die gemeinsame Grundlage: Er tastet einen Zeitraum ab und schachtelt jeden
 Wechsel per Bisektion ein. `TransitCalculator` (Einzelobjekte) und `ConstellationTransitCalculator`
@@ -213,7 +249,7 @@ viele Figursterne gleichzeitig drin waren.
 die wirksame Kontrolle über 203 von Hand eingetragene Koordinaten, weil ein Zahlendreher einen
 Stern weit wegwirft und der zugehörige Abschnitt dadurch absurd lang wird.
 
-## 10. Woran als Nächstes
+## 11. Woran als Nächstes
 
 Siehe [TODO.md](TODO.md). Reihenfolge dort ist bewusst gewählt; Abschnitt 1 (kompilieren,
 Feldabgleich) blockiert alles andere.

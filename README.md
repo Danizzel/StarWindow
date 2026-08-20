@@ -170,9 +170,15 @@ Mitgeliefert ist `app/src/main/assets/catalog/starwindow_core.json` mit 115 Obje
 Messier-Auswahl, einige NGC/IC-Objekte, J2000). Das reicht, um die ganze Kette zu benutzen und zu
 prüfen, ohne Netz.
 
-Für Online-Kataloge steht das Interface `CatalogSource` bereit; `RemoteCatalogSource` ist ein
-bewusst leerer Platzhalter mit der geplanten VizieR/SIMBAD-TAP-Abfrage im Kommentar. Der sinnvolle
-nächste Schritt ist, ihn zusammen mit einem Offline-Cache zu bauen – im Feld gibt es kein Netz.
+Der Ausbau geht **lokal**, nicht online: der vollständige NGC/IC-Katalog (13.970 Objekte) wiegt auf
+die benötigten Felder reduziert 228 KB gepackt, das ganze Sternenfeld des bloßen Auges rund 140 KB.
+Speicherplatz ist also kein Argument für einen Online-Katalog, Verfügbarkeit im Dunkeln aber ein
+starkes dagegen. Warum insbesondere Gaia dafür der falsche Katalog ist, steht in
+[DEV_PLAN.md](DEV_PLAN.md).
+
+Für Online-Kataloge steht das Interface `CatalogSource` trotzdem bereit; `RemoteCatalogSource` ist
+ein bewusst leerer Platzhalter mit der geplanten VizieR/SIMBAD-TAP-Abfrage im Kommentar – gedacht
+als Ergänzung für ungewöhnlich tiefe Suchen, nicht als Ersatz.
 
 ---
 
