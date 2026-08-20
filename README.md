@@ -22,7 +22,7 @@ Anforderungen: Android Studio Ladybug oder neuer, JDK 17, Android SDK 35, minSdk
 
 ```
 ./gradlew :app:assembleDebug     # APK bauen
-./gradlew :app:testDebugUnitTest # 89 Unit-Tests
+./gradlew :app:testDebugUnitTest # 104 Unit-Tests
 ```
 
 ---
@@ -124,6 +124,31 @@ Sternhimmel steht (RA/Dec), zusammen mit Ort, Missweisung und Kompassgüte.
 
 ---
 
+## Nachschauen, was durchzieht
+
+Die Detailansicht eines Fensters beantwortet drei Fragen auf einmal:
+
+* **Was** zieht durch – gefiltert nach Sternbildern, Sternen, Nebeln, Galaxien oder Sternhaufen.
+* **Wann** – Eintritt, Austritt, Dauer und der Zeitpunkt der größten Höhe, jeweils auf die Sekunde
+  eingeschachtelt.
+* **Wie die Laufbahn verläuft** – die Fensteransicht oben zeichnet das stehende Fenster und die
+  Bahnen, die hindurchziehen. Durchgezogen ist die Zeit im Fenster, gepunktet der An- und Abflug,
+  Punkte markieren volle Stunden, ein Pfeil zeigt die Richtung. Eine Zeile antippen hebt ihre Bahn
+  hervor.
+
+Die Darstellung nutzt die Tangentialebene der Fenstermitte. Ein einfaches Azimut/Höhe-Diagramm
+würde sowohl die Form des Fensters als auch die Krümmung der Bahnen verzerren – weit oben am Himmel
+sehr deutlich.
+
+### Sternbilder
+
+Mitgeliefert sind 29 Sternbildfiguren mit 203 Figursternen. Bewusst die **Figuren**, nicht die
+amtlichen IAU-Flächen: Ein Fenster von wenigen Grad enthält so gut wie nie eine ganze
+Sternbildfläche, wohl aber Orions Gürtel. Deshalb gilt ein Sternbild als durchziehend, solange
+mindestens ein Figurstern im Fenster steht, und zu jedem Durchgang steht dabei, wie viel der Figur
+gleichzeitig zu sehen war („höchstens 5 von 7 Figursternen"). Bei ausgewähltem Sternbild zeichnet
+die Fensteransicht die Figur zum günstigsten Zeitpunkt mit ein.
+
 ## Durchgangsberechnung
 
 `TransitCalculator` tastet den gewünschten Zeitraum in 60-Sekunden-Schritten ab, prüft für jedes
@@ -179,7 +204,7 @@ Jede dieser Stellen ist eine einzelne Naht, die sich später austauschen lässt.
 
 ## Tests
 
-89 Unit-Tests in `app/src/test/`, alle grün. Sie prüfen nicht nur, dass Funktionen etwas
+104 Unit-Tests in `app/src/test/`, alle grün. Sie prüfen nicht nur, dass Funktionen etwas
 zurückgeben, sondern physikalische Invarianten:
 
 * GMST zur Epoche J2000 gegen die IAU-Konstante, siderischer Tag gegen Sonnentag,
@@ -194,8 +219,9 @@ zurückgeben, sondern physikalische Invarianten:
   Rauschen und bei reinen Kippfehlern,
 * der Schwenk-Löser findet ein simuliertes Bildfeld auf ein Promille genau wieder – und lehnt zu
   kurze Schwenke und unterschiedliche Merkmale ab, statt zu raten,
-* gespeicherte Fenster überstehen den JSON-Umlauf, der Basiskatalog wird gegen veröffentlichte
-  J2000-Positionen geprüft.
+* gespeicherte Fenster überstehen den JSON-Umlauf, Basiskatalog und Sternbildfiguren werden gegen
+  veröffentlichte J2000-Positionen geprüft – und kein Figurabschnitt darf unplausibel lang sein,
+  was einen Tippfehler in einer der 203 Koordinaten sofort auffliegen lässt.
 
 ---
 

@@ -116,89 +116,22 @@ class TransitCalculator(
         longitudeDeg: Double,
         fromMillis: Long,
         toMillis: Long,
-    ): List<TransitInterval> {
-        val stepMillis = stepSeconds * 1000L
-        val intervals = mutableListOf<TransitInterval>()
-
-        var previousTime = fromMillis
-        var previousInside = inside(positionAt(obj, latitudeDeg, longitudeDeg, previousTime))
-
-        var entryTime = if (previousInside) fromMillis else 0L
-        var clippedAtStart = previousInside
-        var bestAltitude = if (previousInside) {
-            positionAt(obj, latitudeDeg, longitudeDeg, fromMillis).altitudeDeg
-        } else {
-            -90.0
-        }
-        var bestTime = fromMillis
-
-        var time = fromMillis + stepMillis
-        while (time <= toMillis) {
-            val position = positionAt(obj, latitudeDeg, longitudeDeg, time)
-            val nowInside = inside(position)
-
-            if (nowInside && !previousInside) {
-                entryTime = refineCrossing(obj, inside, latitudeDeg, longitudeDeg, previousTime, time)
-                clippedAtStart = false
-                bestAltitude = position.altitudeDeg
-                bestTime = time
-            } else if (!nowInside && previousInside) {
-                val exitTime = refineCrossing(obj, inside, latitudeDeg, longitudeDeg, previousTime, time)
-                intervals += TransitInterval(
-                    enterMillis = entryTime,
-                    exitMillis = exitTime,
-                    clippedAtStart = clippedAtStart,
-                    clippedAtEnd = false,
-                    bestAltitudeDeg = bestAltitude,
-                    bestMillis = bestTime,
-                )
-                bestAltitude = -90.0
-            } else if (nowInside && position.altitudeDeg > bestAltitude) {
-                bestAltitude = position.altitudeDeg
-                bestTime = time
-            }
-
-            previousInside = nowInside
-            previousTime = time
-            time += stepMillis
-        }
-
-        if (previousInside) {
-            intervals += TransitInterval(
-                enterMillis = entryTime,
-                exitMillis = toMillis,
-                clippedAtStart = clippedAtStart,
-                clippedAtEnd = true,
-                bestAltitudeDeg = bestAltitude,
-                bestMillis = bestTime,
-            )
-        }
-
-        return intervals
-    }
-
-    /** Bisects the bracket [outside, inside] (in either order) down to the crossing time. */
-    private fun refineCrossing(
-        obj: SkyObject,
-        inside: (Horizontal) -> Boolean,
-        latitudeDeg: Double,
-        longitudeDeg: Double,
-        lowMillis: Long,
-        highMillis: Long,
-    ): Long {
-        var low = lowMillis
-        var high = highMillis
-        val insideAtLow = inside(positionAt(obj, latitudeDeg, longitudeDeg, low))
-        repeat(refineIterations) {
-            val mid = low + (high - low) / 2
-            if (mid == low || mid == high) return mid
-            if (inside(positionAt(obj, latitudeDeg, longitudeDeg, mid)) == insideAtLow) {
-                low = mid
-            } else {
-                high = mid
-            }
-        }
-        return low + (high - low) / 2
+    ): List<TransitInterval> = IntervalScanner.scan(
+        fromMillis = fromMillis,
+        toMillis = toMillis,
+        stepMillis = stepSeconds * 1000L,
+        refineIterations = refineIterations,
+        isInside = { millis -> inside(positionAt(obj, latitudeDeg, longitudeDeg, millis)) },
+        score = { millis -> positionAt(obj, latitudeDeg, longitudeDeg, millis).altitudeDeg },
+    ).map { interval ->
+        TransitInterval(
+            enterMillis = interval.enterMillis,
+            exitMillis = interval.exitMillis,
+            clippedAtStart = interval.clippedAtStart,
+            clippedAtEnd = interval.clippedAtEnd,
+            bestAltitudeDeg = interval.bestScore,
+            bestMillis = interval.bestMillis,
+        )
     }
 
     private fun positionAt(
@@ -211,14 +144,6 @@ class TransitCalculator(
         latitudeDeg,
         AstroTime.lstDeg(millis, longitudeDeg),
     )
-}
-
-/** Altitude band the window covers, padded a little so grazing passes are not missed. */
-private fun SkyWindow.altitudeBounds(): ClosedFloatingPointRange<Double> {
-    val outline = shape.outline()
-    val min = outline.minOf { it.altitudeDeg }
-    val max = outline.maxOf { it.altitudeDeg }
-    return (min - 0.5)..(max + 0.5)
 }
 
 /**

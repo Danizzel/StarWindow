@@ -5,9 +5,17 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.starwindow.app.AppContainer
+import com.starwindow.app.core.astro.Horizontal
 import com.starwindow.app.core.geometry.SkyWindow
 import com.starwindow.app.data.catalog.CatalogRepository
+import com.starwindow.app.data.catalog.ConstellationRepository
+import com.starwindow.app.data.catalog.ObjectType
 import com.starwindow.app.data.windows.SkyWindowRepository
+import com.starwindow.app.domain.ConstellationTransit
+import com.starwindow.app.domain.ConstellationTransitCalculator
+import com.starwindow.app.domain.ObjectTransit
+import com.starwindow.app.domain.SkyTrack
+import com.starwindow.app.domain.SkyTrackBuilder
 import com.starwindow.app.domain.TransitCalculator
 import com.starwindow.app.domain.TransitSearchResult
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,20 +24,65 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+/** Which kind of thing the result list shows. */
+enum class ResultFilter(val label: String) {
+    ALL("Alle"),
+    CONSTELLATIONS("Sternbilder"),
+    STARS("Sterne"),
+    NEBULAE("Nebel"),
+    GALAXIES("Galaxien"),
+    CLUSTERS("Haufen");
+
+    fun matches(type: ObjectType): Boolean = when (this) {
+        ALL -> true
+        CONSTELLATIONS -> false
+        STARS -> type == ObjectType.STAR || type == ObjectType.DOUBLE_STAR
+        NEBULAE -> type == ObjectType.NEBULA ||
+            type == ObjectType.PLANETARY_NEBULA ||
+            type == ObjectType.SUPERNOVA_REMNANT
+        GALAXIES -> type == ObjectType.GALAXY
+        CLUSTERS -> type == ObjectType.OPEN_CLUSTER || type == ObjectType.GLOBULAR_CLUSTER
+    }
+
+    val showsConstellations: Boolean get() = this == ALL || this == CONSTELLATIONS
+    val showsObjects: Boolean get() = this != CONSTELLATIONS
+}
+
 data class WindowDetailUiState(
     val window: SkyWindow? = null,
     val result: TransitSearchResult? = null,
+    val constellations: List<ConstellationTransit> = emptyList(),
     val hoursAhead: Int = 24,
     val magnitudeLimit: Double = 8.0,
+    val filter: ResultFilter = ResultFilter.ALL,
+    /** Catalogue id or constellation id of the entry whose path is highlighted. */
+    val selectedId: String? = null,
+    val tracks: List<SkyTrack> = emptyList(),
+    val emphasisedTrackIndex: Int? = null,
+    val figureSegments: List<Pair<Horizontal, Horizontal>> = emptyList(),
     val isSearching: Boolean = false,
     val error: String? = null,
-)
+) {
+    val visibleObjects: List<ObjectTransit>
+        get() = if (!filter.showsObjects) {
+            emptyList()
+        } else {
+            result?.transits.orEmpty().filter { filter.matches(it.obj.type) }
+        }
+
+    val visibleConstellations: List<ConstellationTransit>
+        get() = if (filter.showsConstellations) constellations else emptyList()
+
+    val isEmpty: Boolean get() = visibleObjects.isEmpty() && visibleConstellations.isEmpty()
+}
 
 class WindowDetailViewModel(
     private val windowId: String,
     private val windowRepository: SkyWindowRepository,
     private val catalogRepository: CatalogRepository,
+    private val constellationRepository: ConstellationRepository,
     private val transitCalculator: TransitCalculator,
+    private val constellationTransitCalculator: ConstellationTransitCalculator,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(WindowDetailUiState())
@@ -58,42 +111,128 @@ class WindowDetailViewModel(
         search()
     }
 
+    fun setFilter(filter: ResultFilter) {
+        _uiState.update { it.copy(filter = filter) }
+        rebuildTracks()
+    }
+
+    /** Highlights one entry's path, or clears the highlight when it is tapped again. */
+    fun select(id: String?) {
+        _uiState.update { it.copy(selectedId = if (it.selectedId == id) null else id) }
+        rebuildTracks()
+    }
+
     fun search() {
         val window = _uiState.value.window ?: return
         viewModelScope.launch {
             _uiState.update { it.copy(isSearching = true, error = null) }
             val state = _uiState.value
-            val objects = catalogRepository.objectsVisibleFrom(
-                latitudeDeg = window.observer.latitudeDeg,
-                magnitudeLimit = state.magnitudeLimit,
-            )
             val now = System.currentTimeMillis()
-            val result = runCatching {
-                transitCalculator.search(
-                    window = window,
-                    objects = objects,
-                    fromMillis = now,
-                    toMillis = now + state.hoursAhead * 3_600_000L,
+            val until = now + state.hoursAhead * 3_600_000L
+
+            val outcome = runCatching {
+                val objects = catalogRepository.objectsVisibleFrom(
+                    latitudeDeg = window.observer.latitudeDeg,
+                    magnitudeLimit = state.magnitudeLimit,
+                )
+                val transits = transitCalculator.search(window, objects, now, until)
+                val figures = constellationTransitCalculator.search(
+                    window,
+                    constellationRepository.constellations(),
+                    now,
+                    until,
+                )
+                transits to figures
+            }
+
+            outcome
+                .onSuccess { (transits, figures) ->
+                    _uiState.update {
+                        it.copy(isSearching = false, result = transits, constellations = figures)
+                    }
+                    rebuildTracks()
+                }
+                .onFailure { throwable ->
+                    _uiState.update {
+                        it.copy(isSearching = false, error = throwable.message ?: "Berechnung fehlgeschlagen")
+                    }
+                }
+        }
+    }
+
+    /**
+     * Rebuilds the paths shown in the chart.
+     *
+     * Only a handful are drawn at once: a chart with forty overlapping paths says nothing. The
+     * selected entry is always among them, so tapping a row always shows its path.
+     */
+    private fun rebuildTracks() {
+        val state = _uiState.value
+        val window = state.window ?: return
+
+        val objectTransits = state.visibleObjects
+        val selected = state.selectedId
+
+        val chosen = buildList {
+            objectTransits.firstOrNull { it.obj.id == selected }?.let { add(it) }
+            addAll(objectTransits.filter { it.obj.id != selected }.take(MAX_TRACKS - size))
+        }
+
+        val tracks = chosen.map { transit ->
+            val interval = transit.intervals.first()
+            SkyTrackBuilder.forInterval(
+                label = transit.obj.name.ifBlank { transit.obj.id },
+                equatorial = transit.obj.equatorial,
+                observer = window.observer,
+                enterMillis = interval.enterMillis,
+                exitMillis = interval.exitMillis,
+            )
+        }.toMutableList()
+
+        var emphasised = chosen.indexOfFirst { it.obj.id == selected }.takeIf { it >= 0 }
+        var figure: List<Pair<Horizontal, Horizontal>> = emptyList()
+
+        val selectedConstellation = state.constellations.firstOrNull { it.constellation.id == selected }
+        if (selectedConstellation != null) {
+            val interval = selectedConstellation.intervals.maxByOrNull { it.peakStarsInside }
+                ?: selectedConstellation.intervals.first()
+            figure = constellationTransitCalculator.figureAt(
+                selectedConstellation.constellation,
+                window,
+                interval.peakMillis,
+            )
+            // The figure's brightest stars carry the path; the whole outline would be a thicket.
+            val stars = selectedConstellation.constellation.stars.take(MAX_FIGURE_TRACKS)
+            emphasised = tracks.size
+            stars.forEach { star ->
+                tracks += SkyTrackBuilder.forInterval(
+                    label = star.name,
+                    equatorial = star.equatorial,
+                    observer = window.observer,
+                    enterMillis = interval.enterMillis,
+                    exitMillis = interval.exitMillis,
                 )
             }
-            _uiState.update {
-                it.copy(
-                    isSearching = false,
-                    result = result.getOrNull(),
-                    error = result.exceptionOrNull()?.message,
-                )
-            }
+        }
+
+        _uiState.update {
+            it.copy(tracks = tracks, emphasisedTrackIndex = emphasised, figureSegments = figure)
         }
     }
 
     companion object {
+        private const val MAX_TRACKS = 6
+        private const val MAX_FIGURE_TRACKS = 3
+
         fun factory(container: AppContainer, windowId: String) = viewModelFactory {
             initializer {
                 WindowDetailViewModel(
                     windowId = windowId,
                     windowRepository = container.windowRepository,
                     catalogRepository = container.catalogRepository,
+                    constellationRepository = container.constellationRepository,
                     transitCalculator = container.transitCalculator,
+                    constellationTransitCalculator = container.constellationTransitCalculator,
                 )
             }
         }

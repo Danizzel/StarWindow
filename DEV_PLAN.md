@@ -53,7 +53,7 @@ app/src/main/java/com/starwindow/app/
 ├── data/
 │   ├── catalog/      Katalogquellen und -modell
 │   └── windows/      Persistenz (JSON) und Einstellungen
-├── domain/           Durchgangsberechnung
+├── domain/           Durchgangsberechnung, Sternbilder, Laufbahnen
 └── ui/               Compose-Oberfläche
 ```
 
@@ -196,7 +196,24 @@ Magnetfeld und ohne Nordrichtung.
 
 ---
 
-## 9. Woran als Nächstes
+## 9. Durchgänge und Laufbahnen
+
+`IntervalScanner` ist die gemeinsame Grundlage: Er tastet einen Zeitraum ab und schachtelt jeden
+Wechsel per Bisektion ein. `TransitCalculator` (Einzelobjekte) und `ConstellationTransitCalculator`
+(Figuren) setzen beide darauf auf – die Bisektion, der Teil den man leicht subtil falsch macht,
+existiert genau einmal.
+
+Sternbilder werden als **Figuren** geführt, nicht als IAU-Flächen: Ein Fenster von wenigen Grad
+enthält nie eine ganze Fläche, wohl aber einen erkennbaren Teil der Figur. Ein Sternbild gilt als
+durchziehend, solange mindestens ein Figurstern im Fenster steht; die Kennzahl daneben ist, wie
+viele Figursterne gleichzeitig drin waren.
+
+`SkyTrackTest` und `ConstellationTransitTest` sichern beides ab. Der Datentest für
+`constellations.json` prüft unter anderem, dass kein Figurabschnitt unplausibel lang ist – das ist
+die wirksame Kontrolle über 203 von Hand eingetragene Koordinaten, weil ein Zahlendreher einen
+Stern weit wegwirft und der zugehörige Abschnitt dadurch absurd lang wird.
+
+## 10. Woran als Nächstes
 
 Siehe [TODO.md](TODO.md). Reihenfolge dort ist bewusst gewählt; Abschnitt 1 (kompilieren,
 Feldabgleich) blockiert alles andere.
