@@ -1,9 +1,9 @@
 package com.starwindow.app.ui.components
 
 import android.content.Context
-import android.os.Build
+import android.hardware.display.DisplayManager
+import android.view.Display
 import android.view.Surface
-import android.view.WindowManager
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalConfiguration
@@ -23,13 +23,11 @@ fun rememberDisplayRotationDegrees(): Int {
     return remember(configuration) { context.displayRotationDegrees() }
 }
 
-@Suppress("DEPRECATION")
+// Goes through the display manager rather than `Context.display`, which throws whenever the
+// receiver is a non-visual context such as the application context.
 fun Context.displayRotationDegrees(): Int {
-    val rotation = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-        display?.rotation ?: Surface.ROTATION_0
-    } else {
-        (getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay.rotation
-    }
+    val displayManager = getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
+    val rotation = displayManager.getDisplay(Display.DEFAULT_DISPLAY)?.rotation ?: Surface.ROTATION_0
     return when (rotation) {
         Surface.ROTATION_90 -> 90
         Surface.ROTATION_180 -> 180

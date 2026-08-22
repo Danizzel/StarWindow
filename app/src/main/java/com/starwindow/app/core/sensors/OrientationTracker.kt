@@ -6,9 +6,9 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
-import android.os.Build
+import android.hardware.display.DisplayManager
+import android.view.Display
 import android.view.Surface
-import android.view.WindowManager
 import com.starwindow.app.core.astro.ObserverLocation
 import com.starwindow.app.core.astro.Rotation3
 import com.starwindow.app.core.calibration.Calibration
@@ -36,6 +36,7 @@ class OrientationTracker(context: Context) {
 
     private val appContext = context.applicationContext
     private val sensorManager = appContext.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+    private val displayManager = appContext.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
     private val location = AtomicReference<ObserverLocation?>(null)
     private val calibration = AtomicReference(Calibration.NONE)
 
@@ -132,14 +133,10 @@ class OrientationTracker(context: Context) {
             System.currentTimeMillis(),
         ).declination.toDouble()
 
-    @Suppress("DEPRECATION")
+    // The application context is not a visual context, so asking it for its display throws on
+    // API 30+. The display manager answers from any context and needs no version split.
     private fun displayRotation(): Int =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            appContext.display?.rotation ?: Surface.ROTATION_0
-        } else {
-            val wm = appContext.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-            wm.defaultDisplay.rotation
-        }
+        displayManager.getDisplay(Display.DEFAULT_DISPLAY)?.rotation ?: Surface.ROTATION_0
 
     companion object {
         /**
