@@ -2,6 +2,8 @@ package com.starwindow.app.domain
 
 import com.starwindow.app.core.astro.AstroTime
 import com.starwindow.app.core.astro.CoordinateTransforms
+import com.starwindow.app.core.astro.Equatorial
+import com.starwindow.app.core.astro.Precession
 import com.starwindow.app.core.astro.Horizontal
 import com.starwindow.app.core.geometry.SkyWindow
 import com.starwindow.app.data.catalog.SkyObject
@@ -76,8 +78,14 @@ class TransitCalculator(
 
         val candidates = objects.filter { it.canReach(bounds, latitude) }
 
+        // Precession is computed once for the whole search and each object is brought to date once,
+        // rather than inside the scan: it shifts by 0.0001 arcseconds over a night, so recomputing
+        // it per sample would cost thousands of trigonometric calls for no change in the answer.
+        val precession = Precession.forEpoch(fromMillis)
+
         val transits = candidates.mapNotNull { obj ->
-            val intervals = intervalsFor(obj, inside, latitude, longitude, fromMillis, toMillis)
+            val position = obj.positionAt(precession)
+            val intervals = intervalsFor(position, inside, latitude, longitude, fromMillis, toMillis)
             if (intervals.isEmpty()) null else ObjectTransit(obj, intervals)
         }.sortedBy { it.firstEntryMillis }
 
@@ -99,9 +107,10 @@ class TransitCalculator(
     ): List<Pair<SkyObject, Horizontal>> {
         val inside = window.shape.membershipTest()
         val lst = AstroTime.lstDeg(atMillis, window.observer.longitudeDeg)
+        val precession = Precession.forEpoch(atMillis)
         return objects.mapNotNull { obj ->
             val position = CoordinateTransforms.apparentHorizontalAtLst(
-                obj.equatorial,
+                obj.positionAt(precession),
                 window.observer.latitudeDeg,
                 lst,
             )
@@ -110,7 +119,7 @@ class TransitCalculator(
     }
 
     private fun intervalsFor(
-        obj: SkyObject,
+        equatorialOfDate: Equatorial,
         inside: (Horizontal) -> Boolean,
         latitudeDeg: Double,
         longitudeDeg: Double,
@@ -121,8 +130,8 @@ class TransitCalculator(
         toMillis = toMillis,
         stepMillis = stepSeconds * 1000L,
         refineIterations = refineIterations,
-        isInside = { millis -> inside(positionAt(obj, latitudeDeg, longitudeDeg, millis)) },
-        score = { millis -> positionAt(obj, latitudeDeg, longitudeDeg, millis).altitudeDeg },
+        isInside = { millis -> inside(positionAt(equatorialOfDate, latitudeDeg, longitudeDeg, millis)) },
+        score = { millis -> positionAt(equatorialOfDate, latitudeDeg, longitudeDeg, millis).altitudeDeg },
     ).map { interval ->
         TransitInterval(
             enterMillis = interval.enterMillis,
@@ -135,12 +144,12 @@ class TransitCalculator(
     }
 
     private fun positionAt(
-        obj: SkyObject,
+        equatorialOfDate: Equatorial,
         latitudeDeg: Double,
         longitudeDeg: Double,
         millis: Long,
     ): Horizontal = CoordinateTransforms.apparentHorizontalAtLst(
-        obj.equatorial,
+        equatorialOfDate,
         latitudeDeg,
         AstroTime.lstDeg(millis, longitudeDeg),
     )

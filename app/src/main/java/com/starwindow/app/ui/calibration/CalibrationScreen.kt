@@ -48,6 +48,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.starwindow.app.core.calibration.CalibrationSource
+import com.starwindow.app.core.sensors.DeviceAttitude
+import com.starwindow.app.core.sensors.compassAccuracyLabel
 import com.starwindow.app.data.windows.Settings
 import com.starwindow.app.ui.capture.CameraPreview
 import com.starwindow.app.ui.capture.PreviewStreamInfo
@@ -73,6 +75,7 @@ fun CalibrationScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val attitudeState = viewModel.attitude.collectAsStateWithLifecycle()
+    val hudAttitude by viewModel.hudAttitude.collectAsStateWithLifecycle()
     var viewSize by remember { mutableStateOf(IntSize.Zero) }
     var streamInfo by remember { mutableStateOf<PreviewStreamInfo?>(null) }
 
@@ -121,7 +124,7 @@ fun CalibrationScreen(
         }
 
         Column(modifier = Modifier.fillMaxSize().safeDrawingPadding()) {
-            CalibrationHeader(state, onBack)
+            CalibrationHeader(state, hudAttitude, onBack)
             Spacer(Modifier.weight(1f))
             CalibrationPanel(
                 state = state,
@@ -133,7 +136,11 @@ fun CalibrationScreen(
 }
 
 @Composable
-private fun CalibrationHeader(state: CalibrationUiState, onBack: () -> Unit) {
+private fun CalibrationHeader(
+    state: CalibrationUiState,
+    attitude: DeviceAttitude?,
+    onBack: () -> Unit,
+) {
     Surface(color = Color.Black.copy(alpha = 0.6f)) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -188,7 +195,53 @@ private fun CalibrationHeader(state: CalibrationUiState, onBack: () -> Unit) {
                 },
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
             )
+
+            SensorHealthLine(attitude)
         }
+    }
+}
+
+/**
+ * What the sensors are currently doing, on the screen where it decides whether calibrating is even
+ * worth starting.
+ *
+ * Measuring a compass correction while a radiator is bending the field does not produce a
+ * correction — it produces a number that describes the radiator, and it then gets applied to the
+ * whole night sky. Saying so here costs one line and saves the user a calibration they would have
+ * had to undo.
+ */
+@Composable
+private fun SensorHealthLine(attitude: DeviceAttitude?) {
+    if (attitude == null) return
+
+    Text(
+        text = buildString {
+            append("Sensor: ").append(attitude.source.label)
+            append(" · Kompassgüte ").append(compassAccuracyLabel(attitude.accuracy))
+            attitude.fieldMicroTesla?.let { append(" · Feld %.0f µT".format(it)) }
+            attitude.expectedFieldMicroTesla?.let { append(" (erwartet %.0f)".format(it)) }
+        },
+        style = MaterialTheme.typography.labelSmall,
+        color = StarWindowColors.Muted,
+        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+    )
+
+    if (attitude.isMagneticallyDisturbed) {
+        Text(
+            text = "Magnetstörung – das Feld passt nicht zum Erdmagnetfeld. Nordrichtung wird " +
+                "vom Kreisel gehalten; jetzt zu kalibrieren würde die Störung mit einmessen.",
+            style = MaterialTheme.typography.labelSmall,
+            color = StarWindowColors.Crosshair,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+        )
+    } else if (attitude.accuracy < android.hardware.SensorManager.SENSOR_STATUS_ACCURACY_MEDIUM) {
+        Text(
+            text = "Kompassgüte niedrig – das Handy einmal in einer Acht bewegen, dann meldet " +
+                "Android den Magnetsensor neu kalibriert.",
+            style = MaterialTheme.typography.labelSmall,
+            color = StarWindowColors.AnchorPoint,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+        )
     }
 }
 

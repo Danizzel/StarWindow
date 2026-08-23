@@ -8,6 +8,7 @@ import com.starwindow.app.AppContainer
 import com.starwindow.app.core.astro.AstroTime
 import com.starwindow.app.core.astro.CoordinateTransforms
 import com.starwindow.app.core.astro.Horizontal
+import com.starwindow.app.core.astro.Precession
 import com.starwindow.app.core.geometry.SkyWindow
 import com.starwindow.app.data.catalog.CatalogRepository
 import com.starwindow.app.data.catalog.ConstellationRepository
@@ -114,6 +115,7 @@ class WindowDetailViewModel(
         val now = System.currentTimeMillis()
         val until = now + state.hoursAhead * 3_600_000L
         val obj = transit.obj
+        val precession = Precession.forEpoch(now)
 
         _uiState.update {
             it.copy(
@@ -121,7 +123,7 @@ class WindowDetailViewModel(
                     obj = obj,
                     track = SkyTrackBuilder.overSpan(
                         label = obj.name.ifBlank { obj.id },
-                        equatorial = obj.equatorial,
+                        equatorial = obj.positionAt(precession),
                         observer = window.observer,
                         fromMillis = now,
                         toMillis = until,
@@ -130,7 +132,7 @@ class WindowDetailViewModel(
                         WindowPass(interval.enterMillis, interval.exitMillis)
                     },
                     currentPosition = CoordinateTransforms.apparentHorizontalAtLst(
-                        obj.equatorial,
+                        obj.positionAt(precession),
                         window.observer.latitudeDeg,
                         AstroTime.lstDeg(now, window.observer.longitudeDeg),
                     ),
@@ -189,6 +191,7 @@ class WindowDetailViewModel(
     private fun rebuildTracks() {
         val state = _uiState.value
         val window = state.window ?: return
+        val precession = Precession.forEpoch(System.currentTimeMillis())
 
         val objectTransits = state.visibleObjects
         val selected = state.selectedId
@@ -202,7 +205,7 @@ class WindowDetailViewModel(
             val interval = transit.intervals.first()
             SkyTrackBuilder.forInterval(
                 label = transit.obj.name.ifBlank { transit.obj.id },
-                equatorial = transit.obj.equatorial,
+                equatorial = transit.obj.positionAt(precession),
                 observer = window.observer,
                 enterMillis = interval.enterMillis,
                 exitMillis = interval.exitMillis,
@@ -227,7 +230,7 @@ class WindowDetailViewModel(
             stars.forEach { star ->
                 tracks += SkyTrackBuilder.forInterval(
                     label = star.name,
-                    equatorial = star.equatorial,
+                    equatorial = star.positionAt(precession),
                     observer = window.observer,
                     enterMillis = interval.enterMillis,
                     exitMillis = interval.exitMillis,

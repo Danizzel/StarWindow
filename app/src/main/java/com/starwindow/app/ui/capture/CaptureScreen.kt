@@ -5,7 +5,9 @@ import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,14 +18,22 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Undo
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CropFree
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Explore
+import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.NightlightRound
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material.icons.filled.ViewList
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.automirrored.filled.ViewList
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -40,33 +50,47 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.starwindow.app.core.astro.Horizontal
+import com.starwindow.app.core.camera.EdgeInsets
 import com.starwindow.app.core.camera.ExposureMode
 import com.starwindow.app.core.camera.SkyProjection
+import com.starwindow.app.core.sensors.DeviceAttitude
 import com.starwindow.app.core.sensors.compassAccuracyLabel
+import com.starwindow.app.data.catalog.SkyObject
+import com.starwindow.app.ui.components.ObjectSymbol
 import com.starwindow.app.ui.components.rememberSkyViewport
 import com.starwindow.app.ui.theme.StarWindowColors
 
 /**
  * The capture screen: viewfinder, sky overlay, and the controls to place points and save a window.
+ *
+ * The chrome is kept to two bands, one at each edge, because everything between them is the sky.
+ * The top band answers "can the app trust what it is showing" and offers the search; the bottom
+ * band is what the hands do. Nothing floats in the middle.
  */
 @Composable
 fun CaptureScreen(
     viewModel: CaptureViewModel,
     onOpenWindows: () -> Unit,
     onOpenCalibration: () -> Unit,
+    onOpenSearch: () -> Unit,
+    onOpenTrackedObject: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val hudAttitude by viewModel.hudAttitude.collectAsStateWithLifecycle()
+    val trackedPosition by viewModel.trackedPosition.collectAsStateWithLifecycle()
 
     // Deliberately NOT read during composition — the overlay reads it in the draw phase and the
     // tap handler in a callback, so sensor updates never trigger a recomposition.
@@ -79,6 +103,12 @@ fun CaptureScreen(
     var showSettings by remember { mutableStateOf(false) }
     var showNightVision by remember { mutableStateOf(false) }
     var viewSize by remember { mutableStateOf(IntSize.Zero) }
+
+    // The two control bands are measured rather than guessed, so the arrow pointing at the tracked
+    // object is never parked behind them — their height changes with the safe-area insets, with
+    // the tracking bar appearing, and with the text the status pills happen to carry.
+    var hudHeightPx by remember { mutableStateOf(0) }
+    var controlsHeightPx by remember { mutableStateOf(0) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -148,6 +178,11 @@ fun CaptureScreen(
                     observer = state.observer,
                     showGraticule = state.settings.showGraticule,
                     showCatalog = state.settings.showCatalogOverlay,
+                    trackedTarget = state.tracked,
+                    chromeInsets = EdgeInsets(
+                        top = hudHeightPx.toFloat(),
+                        bottom = controlsHeightPx.toFloat(),
+                    ),
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -166,28 +201,40 @@ fun CaptureScreen(
         }
 
         Column(modifier = Modifier.fillMaxSize().safeDrawingPadding()) {
-            CaptureHud(
-                state = state,
-                compassAccuracy = hudAttitude?.accuracy,
-                declinationDeg = hudAttitude?.magneticDeclinationDeg,
-                visibleFovDeg = viewport.visibleFovDeg,
-                hasOrientationSensor = viewModel.hasOrientationSensor,
-                nightMode = state.settings.exposure.mode == ExposureMode.NIGHT,
-                onOpenWindows = onOpenWindows,
-                onOpenSettings = { showSettings = true },
-                onOpenNightVision = { showNightVision = true },
-                onOpenCalibration = onOpenCalibration,
-            )
+            Box(modifier = Modifier.onSizeChanged { hudHeightPx = it.height }) {
+                CaptureHud(
+                    state = state,
+                    attitude = hudAttitude,
+                    visibleFovDeg = viewport.visibleFovDeg,
+                    hasOrientationSensor = viewModel.hasOrientationSensor,
+                    nightMode = state.settings.exposure.mode == ExposureMode.NIGHT,
+                    onOpenSearch = onOpenSearch,
+                    onOpenWindows = onOpenWindows,
+                    onOpenSettings = { showSettings = true },
+                    onOpenNightVision = { showNightVision = true },
+                )
+            }
 
             Spacer(Modifier.weight(1f))
 
-            CaptureControls(
-                state = state,
-                onModeChange = viewModel::setMode,
-                onUndo = viewModel::undoAnchor,
-                onClear = viewModel::clearAnchors,
-                onSave = { showSaveDialog = true },
-            )
+            Column(modifier = Modifier.onSizeChanged { controlsHeightPx = it.height }) {
+                state.tracked?.let { target ->
+                    TrackedTargetBar(
+                        target = target,
+                        position = trackedPosition,
+                        onOpenInfo = { onOpenTrackedObject(target.id) },
+                        onStop = viewModel::stopTracking,
+                    )
+                }
+
+                CaptureControls(
+                    state = state,
+                    onModeChange = viewModel::setMode,
+                    onUndo = viewModel::undoAnchor,
+                    onClear = viewModel::clearAnchors,
+                    onSave = { showSaveDialog = true },
+                )
+            }
         }
     }
 
@@ -249,73 +296,245 @@ fun CaptureScreen(
     }
 }
 
-/** Status line: what the app knows about where it is, where it points and how much it can trust it. */
+/**
+ * The top band: the way in to the search, and what the app knows about where it is and where it
+ * points.
+ *
+ * The status used to be two lines of prose. It is now a row of pills, one fact each, coloured by
+ * whether that fact is good enough to rely on — red position, amber compass, green field of view
+ * can all be read at a glance in the dark, which two sentences of grey text never could.
+ */
 @Composable
 private fun CaptureHud(
     state: CaptureUiState,
-    compassAccuracy: Int?,
-    declinationDeg: Double?,
+    attitude: DeviceAttitude?,
     visibleFovDeg: Double?,
     hasOrientationSensor: Boolean,
     nightMode: Boolean,
+    onOpenSearch: () -> Unit,
     onOpenWindows: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenNightVision: () -> Unit,
-    onOpenCalibration: () -> Unit,
 ) {
     Surface(color = Color.Black.copy(alpha = 0.55f)) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                SearchPill(onClick = onOpenSearch, modifier = Modifier.weight(1f))
+                IconButton(onClick = onOpenNightVision) {
+                    Icon(
+                        Icons.Filled.NightlightRound,
+                        contentDescription = "Sucher / Nachtsicht",
+                        tint = if (nightMode) StarWindowColors.WindowStroke else StarWindowColors.Starlight,
+                    )
+                }
+                IconButton(onClick = onOpenSettings) {
+                    Icon(
+                        Icons.Filled.Settings,
+                        contentDescription = "Einstellungen und Kalibrierung",
+                        tint = StarWindowColors.Starlight,
+                    )
+                }
+                IconButton(onClick = onOpenWindows) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ViewList,
+                        contentDescription = "Gespeicherte Fenster",
+                        tint = StarWindowColors.Starlight,
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(6.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
                 val observer = state.observer
-                Text(
+                StatusPill(
+                    icon = Icons.Filled.MyLocation,
                     text = if (observer == null) {
-                        "Position unbekannt – ohne sie gibt es keine Himmelskoordinaten"
+                        "keine Position"
                     } else {
-                        "%.4f°, %.4f°%s".format(
+                        "%.3f°, %.3f°%s".format(
                             observer.latitudeDeg,
                             observer.longitudeDeg,
                             if (observer.manual) " (manuell)" else "",
                         )
                     },
-                    style = MaterialTheme.typography.labelLarge,
-                    color = if (state.observer == null) StarWindowColors.Crosshair else StarWindowColors.Starlight,
+                    tint = if (observer == null) StarWindowColors.Crosshair else StarWindowColors.Starlight,
                 )
-                Text(
-                    text = buildString {
-                        append("Kompass: ")
-                        append(if (hasOrientationSensor) compassAccuracyLabel(compassAccuracy ?: -1) else "kein Sensor")
-                        declinationDeg?.let { append("  ·  Deklination %.1f°".format(it)) }
-                        visibleFovDeg?.let { append("  ·  Bildfeld %.1f°".format(it)) }
+                StatusPill(
+                    icon = Icons.Filled.Explore,
+                    text = if (hasOrientationSensor) {
+                        buildString {
+                            append(attitude?.source?.label ?: "Lage")
+                            append("  ")
+                            append(compassAccuracyLabel(attitude?.accuracy ?: -1))
+                        }
+                    } else {
+                        "kein Sensor"
                     },
-                    style = MaterialTheme.typography.labelSmall,
-                    color = StarWindowColors.Muted,
+                    tint = when {
+                        !hasOrientationSensor -> StarWindowColors.Crosshair
+                        (attitude?.accuracy ?: -1) < 2 -> StarWindowColors.AnchorPoint
+                        else -> StarWindowColors.Starlight
+                    },
                 )
-                state.cameraError?.let {
-                    Text(
-                        text = it,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = StarWindowColors.Crosshair,
+
+                // Only shown while something is actually wrong: a warning that is always there is
+                // one nobody reads when it finally matters.
+                if (attitude?.isMagneticallyDisturbed == true || attitude?.headingHeld == true) {
+                    StatusPill(
+                        icon = Icons.Filled.Warning,
+                        text = if (attitude.isMagneticallyDisturbed) {
+                            val deviation = attitude.fieldDeviationMicroTesla
+                            if (deviation != null) {
+                                "Magnetstörung %+.0f µT – Nord gehalten".format(deviation)
+                            } else {
+                                "Magnetstörung – Nord gehalten"
+                            }
+                        } else {
+                            "Nord gehalten"
+                        },
+                        tint = StarWindowColors.Crosshair,
+                    )
+                }
+
+                visibleFovDeg?.let {
+                    StatusPill(
+                        icon = Icons.Filled.CropFree,
+                        text = "Bildfeld %.1f°".format(it),
+                        tint = StarWindowColors.Starlight,
+                    )
+                }
+                attitude?.magneticDeclinationDeg?.let {
+                    StatusPill(
+                        icon = Icons.Filled.Explore,
+                        text = "Missweisung %+.1f°".format(it),
+                        tint = StarWindowColors.Muted,
                     )
                 }
             }
-            IconButton(onClick = onOpenNightVision) {
-                Icon(
-                    Icons.Filled.NightlightRound,
-                    contentDescription = "Sucher / Nachtsicht",
-                    tint = if (nightMode) StarWindowColors.WindowStroke else StarWindowColors.Starlight,
+
+            state.cameraError?.let {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = StarWindowColors.Crosshair,
                 )
             }
-            IconButton(onClick = onOpenCalibration) {
-                Icon(Icons.Filled.Tune, contentDescription = "Kalibrierung", tint = StarWindowColors.Starlight)
+        }
+    }
+}
+
+/** Looks like a search field, is a button: the real field lives on the search screen. */
+@Composable
+private fun SearchPill(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Surface(
+        color = StarWindowColors.NightSurface.copy(alpha = 0.92f),
+        shape = RoundedCornerShape(22.dp),
+        modifier = modifier.clickable(onClick = onClick),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                Icons.Filled.Search,
+                contentDescription = null,
+                tint = StarWindowColors.Muted,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(Modifier.size(8.dp))
+            Text(
+                text = "Nebel, Stern oder Galaxie suchen",
+                style = MaterialTheme.typography.bodySmall,
+                color = StarWindowColors.Muted,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+@Composable
+private fun StatusPill(icon: ImageVector, text: String, tint: Color) {
+    Surface(color = Color.Black.copy(alpha = 0.35f), shape = RoundedCornerShape(10.dp)) {
+        Row(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(13.dp))
+            Spacer(Modifier.size(5.dp))
+            Text(text, style = MaterialTheme.typography.labelSmall, color = tint, maxLines = 1)
+        }
+    }
+}
+
+/**
+ * The bar for the object being tracked.
+ *
+ * It repeats what the arrow already shows, in numbers: the arrow says *which way*, this says *how
+ * far* and whether the thing is even above the horizon — which the arrow cannot, and which is the
+ * difference between "keep turning" and "come back in four hours".
+ */
+@Composable
+private fun TrackedTargetBar(
+    target: SkyObject,
+    position: Horizontal?,
+    onOpenInfo: () -> Unit,
+    onStop: () -> Unit,
+) {
+    Surface(color = Color.Black.copy(alpha = 0.62f)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(start = 14.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            ObjectSymbol(target.type, size = 20.dp, color = StarWindowColors.TrackTarget)
+            Spacer(Modifier.size(10.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = target.name.ifBlank { target.id },
+                    style = MaterialTheme.typography.titleSmall,
+                    color = StarWindowColors.TrackTarget,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = when {
+                        position == null -> "Ohne Position lässt sich die Richtung nicht berechnen"
+                        position.altitudeDeg < 0.0 ->
+                            "steht %.0f° unter dem Horizont – jetzt nicht zu sehen"
+                                .format(-position.altitudeDeg)
+                        else -> "Az %.0f°  ·  Höhe %.0f°  ·  dem Pfeil folgen".format(
+                            position.azimuthDeg,
+                            position.altitudeDeg,
+                        )
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (position != null && position.altitudeDeg < 0.0) {
+                        StarWindowColors.AnchorPoint
+                    } else {
+                        StarWindowColors.Muted
+                    },
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
-            IconButton(onClick = onOpenSettings) {
-                Icon(Icons.Filled.Settings, contentDescription = "Einstellungen", tint = StarWindowColors.Starlight)
+            IconButton(onClick = onOpenInfo) {
+                Icon(
+                    Icons.Outlined.Info,
+                    contentDescription = "Infos zu ${target.name.ifBlank { target.id }}",
+                    tint = StarWindowColors.CatalogMarker,
+                )
             }
-            IconButton(onClick = onOpenWindows) {
-                Icon(Icons.Filled.ViewList, contentDescription = "Gespeicherte Fenster", tint = StarWindowColors.Starlight)
+            IconButton(onClick = onStop) {
+                Icon(
+                    Icons.Filled.Close,
+                    contentDescription = "Verfolgung beenden",
+                    tint = StarWindowColors.Muted,
+                )
             }
         }
     }

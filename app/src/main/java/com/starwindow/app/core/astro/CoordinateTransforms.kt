@@ -16,7 +16,14 @@ import kotlin.math.tan
  */
 object CoordinateTransforms {
 
-    /** Local sky direction → celestial coordinates for the given moment and place. */
+    /**
+     * Local sky direction → celestial coordinates for the given moment and place.
+     *
+     * The result is referred to the **equator and equinox of that moment** — that is what the
+     * geometry gives, and it is not the frame a catalogue is written in. Use
+     * [horizontalToEquatorialJ2000] for a value that can be compared with, or typed into, anything
+     * that speaks J2000.
+     */
     fun horizontalToEquatorial(
         horizontal: Horizontal,
         location: ObserverLocation,
@@ -40,7 +47,26 @@ object CoordinateTransforms {
         )
     }
 
-    /** Celestial coordinates → local sky direction for the given moment and place. */
+    /**
+     * The same, expressed in the catalogue's J2000 frame.
+     *
+     * This is the form worth storing and showing: a window's right ascension written down in
+     * coordinates of date silently ages, and pointing a mount or a star atlas at it a year later
+     * misses by the precession in between.
+     */
+    fun horizontalToEquatorialJ2000(
+        horizontal: Horizontal,
+        location: ObserverLocation,
+        epochMillis: Long,
+    ): Equatorial = Precession.forEpoch(epochMillis)
+        .toJ2000(horizontalToEquatorial(horizontal, location, epochMillis))
+
+    /**
+     * Celestial coordinates → local sky direction for the given moment and place.
+     *
+     * [equatorial] must already be referred to the equator of [epochMillis]; a catalogue position
+     * goes through [Precession.toDate] first.
+     */
     fun equatorialToHorizontal(
         equatorial: Equatorial,
         location: ObserverLocation,

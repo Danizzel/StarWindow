@@ -30,9 +30,15 @@ class ConstellationTransitTest {
         id = "w", name = "w", shape = shape, observer = berlin, capturedAtMillis = START,
     )
 
-    /** Turns a sky direction into the equatorial position that stands there at [START]. */
+    /**
+     * Turns a sky direction into the **J2000** position of a star standing there at [START].
+     *
+     * J2000 and not of-date, because that is the frame a [FigureStar] is in: feeding it a coordinate
+     * of date would put the whole figure a third of a degree off once precession is applied to it
+     * again on the way back out.
+     */
     private fun equatorialAt(direction: Horizontal): Equatorial =
-        CoordinateTransforms.horizontalToEquatorial(direction, berlin, START)
+        CoordinateTransforms.horizontalToEquatorialJ2000(direction, berlin, START)
 
     private fun figure(vararg directions: Horizontal): Constellation {
         val stars = directions.mapIndexed { index, direction ->

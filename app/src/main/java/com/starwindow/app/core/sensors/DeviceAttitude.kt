@@ -4,6 +4,21 @@ import com.starwindow.app.core.astro.Horizontal
 import com.starwindow.app.core.astro.Rotation3
 import com.starwindow.app.core.astro.Vec3
 
+/** Which sensors an attitude came from. */
+enum class AttitudeSource(val label: String) {
+    /**
+     * Gyroscope for the motion, compass only for north — the steady one. The overlay stops
+     * twitching, and a magnetic disturbance can no longer swing the sky.
+     */
+    GYRO_WITH_COMPASS_HEADING("Kreisel + Kompass"),
+
+    /** The platform's fused rotation vector on its own; used when there is no game rotation vector. */
+    FUSED_COMPASS("Kompass"),
+
+    /** Accelerometer and magnetometer only, no gyroscope. Noticeably shakier. */
+    GEOMAGNETIC("Kompass ohne Kreisel"),
+}
+
 /**
  * The phone's orientation, already remapped to the *display* frame:
  * x = screen right, y = screen up, z = out of the screen towards the user.
@@ -21,7 +36,34 @@ data class DeviceAttitude(
     val timestampMs: Long,
     /** Learned correction, applied in the world frame after the declination. */
     val correction: Rotation3 = Rotation3.IDENTITY,
+    /** Which sensors produced this attitude — the two differ a lot in how steady they are. */
+    val source: AttitudeSource = AttitudeSource.FUSED_COMPASS,
+    /** Field strength the magnetometer measures, in µT. Null when there is no magnetometer. */
+    val fieldMicroTesla: Float? = null,
+    /** What the geomagnetic model says the field should be here, in µT. */
+    val expectedFieldMicroTesla: Float? = null,
+    /**
+     * True while north is being carried by the gyroscope alone because the compass is not currently
+     * worth believing. The direction stays usable; it just slowly ages instead of jumping about.
+     */
+    val headingHeld: Boolean = false,
 ) {
+
+    /** How far the measured field is from the model, in µT, or null without a magnetometer. */
+    val fieldDeviationMicroTesla: Float?
+        get() {
+            val measured = fieldMicroTesla ?: return null
+            val expected = expectedFieldMicroTesla ?: return null
+            return measured - expected
+        }
+
+    /** True when something ferrous or magnetic nearby is bending the compass. */
+    val isMagneticallyDisturbed: Boolean
+        get() {
+            val measured = fieldMicroTesla ?: return false
+            val expected = expectedFieldMicroTesla ?: return false
+            return !AttitudeFusion.isFieldPlausible(measured, expected)
+        }
 
     /**
      * Magnetic world frame → true, calibrated world frame. Built once per attitude because the
@@ -93,7 +135,11 @@ data class DeviceAttitude(
             magneticDeclinationDeg == other.magneticDeclinationDeg &&
             accuracy == other.accuracy &&
             timestampMs == other.timestampMs &&
-            correction == other.correction
+            correction == other.correction &&
+            source == other.source &&
+            fieldMicroTesla == other.fieldMicroTesla &&
+            expectedFieldMicroTesla == other.expectedFieldMicroTesla &&
+            headingHeld == other.headingHeld
     }
 
     override fun hashCode(): Int {
@@ -102,6 +148,10 @@ data class DeviceAttitude(
         result = 31 * result + accuracy
         result = 31 * result + timestampMs.hashCode()
         result = 31 * result + correction.hashCode()
+        result = 31 * result + source.hashCode()
+        result = 31 * result + (fieldMicroTesla?.hashCode() ?: 0)
+        result = 31 * result + (expectedFieldMicroTesla?.hashCode() ?: 0)
+        result = 31 * result + headingHeld.hashCode()
         return result
     }
 

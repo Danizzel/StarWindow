@@ -7,6 +7,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.starwindow.app.AppContainer
 import com.starwindow.app.core.astro.AstroTime
 import com.starwindow.app.core.astro.CoordinateTransforms
+import com.starwindow.app.core.astro.Precession
 import com.starwindow.app.core.astro.Horizontal
 import com.starwindow.app.core.astro.ObserverLocation
 import com.starwindow.app.core.calibration.AttitudeFit
@@ -172,10 +173,18 @@ class CalibrationViewModel(
     fun refreshCandidates() {
         val observer = _uiState.value.observer ?: return
         viewModelScope.launch {
-            val lst = AstroTime.lstDeg(System.currentTimeMillis(), observer.longitudeDeg)
+            val now = System.currentTimeMillis()
+            val lst = AstroTime.lstDeg(now, observer.longitudeDeg)
+            val precession = Precession.forEpoch(now)
             val stars = catalogRepository.objects()
                 .filter { (it.magnitude ?: 99.0) <= 2.5 }
-                .map { it to CoordinateTransforms.apparentHorizontalAtLst(it.equatorial, observer.latitudeDeg, lst) }
+                .map {
+                    it to CoordinateTransforms.apparentHorizontalAtLst(
+                        it.positionAt(precession),
+                        observer.latitudeDeg,
+                        lst,
+                    )
+                }
                 // Below about fifteen degrees refraction and haze make a star a poor reference.
                 .filter { (_, position) -> position.altitudeDeg > 15.0 }
                 .sortedBy { (star, _) -> star.magnitude ?: 99.0 }
@@ -193,8 +202,12 @@ class CalibrationViewModel(
     /** Where a catalogue object stands right now, for aiming aids. */
     fun currentPositionOf(star: SkyObject): Horizontal? {
         val observer = _uiState.value.observer ?: return null
-        val lst = AstroTime.lstDeg(System.currentTimeMillis(), observer.longitudeDeg)
-        return CoordinateTransforms.apparentHorizontalAtLst(star.equatorial, observer.latitudeDeg, lst)
+        val now = System.currentTimeMillis()
+        return CoordinateTransforms.apparentHorizontalAtLst(
+            star.positionAt(Precession.forEpoch(now)),
+            observer.latitudeDeg,
+            AstroTime.lstDeg(now, observer.longitudeDeg),
+        )
     }
 
     // --- Stars --------------------------------------------------------------------------------
@@ -215,11 +228,14 @@ class CalibrationViewModel(
         if (observer == null) return failWith("Ohne Standort lässt sich kein Stern zuordnen")
         if (currentAttitude == null) return failWith("Noch keine Lagedaten vom Sensor")
 
-        val lst = AstroTime.lstDeg(System.currentTimeMillis(), observer.longitudeDeg)
+        // The reference has to be where the star *is*, not where the J2000 catalogue puts it.
+        // Otherwise a third of a degree of precession is measured as a compass error and then
+        // applied to every direction the app reports afterwards.
+        val now = System.currentTimeMillis()
         val reference = CoordinateTransforms.apparentHorizontalAtLst(
-            star.equatorial,
+            star.positionAt(Precession.forEpoch(now)),
             observer.latitudeDeg,
-            lst,
+            AstroTime.lstDeg(now, observer.longitudeDeg),
         )
         val sample = StarSample(
             objectId = star.id,

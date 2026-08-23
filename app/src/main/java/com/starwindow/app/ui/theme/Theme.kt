@@ -31,6 +31,13 @@ object StarWindowColors {
     val Crosshair = Color(0xFFFF6B6B)
     val Graticule = Color(0x55B0BEC5)
     val CatalogMarker = Color(0xFF9FD8FF)
+
+    /**
+     * The tracked object and the arrow pointing at it. Magenta because it is the one colour left
+     * that none of the others can be mistaken for — the arrow has to be found instantly in a view
+     * that already carries a grid, a window outline and a sky full of markers.
+     */
+    val TrackTarget = Color(0xFFE879F9)
 }
 
 private val DarkScheme = darkColorScheme(

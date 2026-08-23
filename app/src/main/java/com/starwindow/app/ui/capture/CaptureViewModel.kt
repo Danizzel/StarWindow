@@ -5,8 +5,11 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.starwindow.app.AppContainer
+import com.starwindow.app.core.astro.AstroTime
+import com.starwindow.app.core.astro.CoordinateTransforms
 import com.starwindow.app.core.astro.Horizontal
 import com.starwindow.app.core.astro.ObserverLocation
+import com.starwindow.app.core.astro.Precession
 import com.starwindow.app.core.camera.ExposureMode
 import com.starwindow.app.core.camera.ExposureSettings
 import com.starwindow.app.core.geometry.AltAzBoxWindow
@@ -19,16 +22,22 @@ import com.starwindow.app.core.sensors.LocationTracker
 import com.starwindow.app.core.sensors.OrientationTracker
 import com.starwindow.app.data.catalog.CatalogRepository
 import com.starwindow.app.data.catalog.SkyObject
+import com.starwindow.app.data.tracking.TrackingStore
 import com.starwindow.app.data.windows.Settings
 import com.starwindow.app.data.windows.SettingsStore
 import com.starwindow.app.data.windows.SkyWindowRepository
 import java.util.UUID
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -50,6 +59,8 @@ data class CaptureUiState(
     val streamInfo: PreviewStreamInfo? = null,
     val cameraError: String? = null,
     val message: String? = null,
+    /** The object the overlay points at, picked in the search. */
+    val tracked: SkyObject? = null,
 ) {
     /** The window the current anchors describe, or null while there are not enough of them. */
     val shape: WindowShape? get() = buildShape(mode, anchors)
@@ -80,10 +91,40 @@ class CaptureViewModel(
     private val windowRepository: SkyWindowRepository,
     private val catalogRepository: CatalogRepository,
     private val settingsStore: SettingsStore,
+    private val trackingStore: TrackingStore,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CaptureUiState())
     val uiState: StateFlow<CaptureUiState> = _uiState.asStateFlow()
+
+    /**
+     * Where the tracked object stands, refreshed once a second.
+     *
+     * The overlay works this out again for itself in the draw phase — it has to, at sensor rate —
+     * but the text readout at the bottom of the screen must not recompose fifty times a second for
+     * a number that changes by a fifteenth of a degree per minute.
+     */
+    val trackedPosition: StateFlow<Horizontal?> =
+        combine(
+            trackingStore.target,
+            _uiState.map { it.observer }.distinctUntilChanged(),
+            flow {
+                while (true) {
+                    emit(System.currentTimeMillis())
+                    delay(1_000)
+                }
+            },
+        ) { target, observer, now ->
+            if (target == null || observer == null) {
+                null
+            } else {
+                CoordinateTransforms.apparentHorizontalAtLst(
+                    target.positionAt(Precession.forEpoch(now)),
+                    observer.latitudeDeg,
+                    AstroTime.lstDeg(now, observer.longitudeDeg),
+                )
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     /**
      * Kept separate from [uiState] on purpose: this updates ~50 times a second and only the
@@ -120,9 +161,17 @@ class CaptureViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(catalog = catalogRepository.objects()) }
         }
+        viewModelScope.launch {
+            trackingStore.target.collect { target ->
+                _uiState.update { it.copy(tracked = target) }
+            }
+        }
         viewModelScope.launch { windowRepository.load() }
         startLocationUpdates()
     }
+
+    /** Stops pointing at the tracked object. */
+    fun stopTracking() = trackingStore.clear()
 
     /**
      * (Re)starts the location stream. Call it again once the location permission is granted —
@@ -252,6 +301,7 @@ class CaptureViewModel(
                     windowRepository = container.windowRepository,
                     catalogRepository = container.catalogRepository,
                     settingsStore = container.settingsStore,
+                    trackingStore = container.trackingStore,
                 )
             }
         }

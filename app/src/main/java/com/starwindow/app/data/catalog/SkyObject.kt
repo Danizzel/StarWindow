@@ -1,6 +1,7 @@
 package com.starwindow.app.data.catalog
 
 import com.starwindow.app.core.astro.Equatorial
+import com.starwindow.app.core.astro.Precession
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -55,8 +56,11 @@ enum class ObjectType {
 }
 
 /**
- * One catalogue entry. Coordinates are J2000; proper motion is ignored because it is orders of
- * magnitude below the pointing accuracy this app can achieve.
+ * One catalogue entry.
+ *
+ * Coordinates are J2000 and are turned into today's sky by [positionAt]; proper motion is ignored
+ * because at under an arcsecond a year it stays two orders of magnitude below what a phone can
+ * point to, unlike precession, which does not.
  */
 @Serializable
 data class SkyObject(
@@ -92,7 +96,18 @@ data class SkyObject(
     /** Which catalogue this came from, so mixed local/online results stay traceable. */
     val source: String = "local",
 ) {
-    val equatorial: Equatorial get() = Equatorial(raDeg, decDeg)
+    /**
+     * The position as the catalogue records it, epoch J2000.
+     *
+     * Named for its epoch rather than just `equatorial`, because the difference matters: the sky
+     * has turned about 0.37° away from the J2000 grid since, and a name that hides which frame a
+     * coordinate is in is how that error gets used by accident. Anything that has to point at the
+     * real sky goes through [positionAt].
+     */
+    val equatorialJ2000: Equatorial get() = Equatorial(raDeg, decDeg)
+
+    /** Where the object actually stands at a given moment, precession since J2000 included. */
+    fun positionAt(precession: Precession): Equatorial = precession.toDate(equatorialJ2000)
 
     val displayName: String get() = if (name.isBlank() || name == id) id else "$id · $name"
 

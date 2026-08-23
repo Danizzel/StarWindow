@@ -2,6 +2,7 @@ package com.starwindow.app.domain
 
 import com.starwindow.app.core.astro.AstroTime
 import com.starwindow.app.core.astro.CoordinateTransforms
+import com.starwindow.app.core.astro.Precession
 import com.starwindow.app.core.astro.Horizontal
 import com.starwindow.app.core.geometry.SkyWindow
 import com.starwindow.app.data.catalog.Constellation
@@ -62,6 +63,8 @@ class ConstellationTransitCalculator(
         val bounds = window.altitudeBounds()
         val latitude = window.observer.latitudeDeg
         val longitude = window.observer.longitudeDeg
+        // Once for the whole search: over a night precession does not move a star measurably.
+        val precession = Precession.forEpoch(fromMillis)
 
         constellations.mapNotNull { constellation ->
             // Only the figure stars that can ever reach the window's altitude band matter; for a
@@ -69,10 +72,12 @@ class ConstellationTransitCalculator(
             val reachable = constellation.stars.filter { it.canReach(bounds, latitude) }
             if (reachable.isEmpty()) return@mapNotNull null
 
+            val positions = reachable.map { it.positionAt(precession) }
+
             fun countInside(millis: Long): Int {
                 val lst = AstroTime.lstDeg(millis, longitude)
-                return reachable.count { star ->
-                    inside(CoordinateTransforms.apparentHorizontalAtLst(star.equatorial, latitude, lst))
+                return positions.count { position ->
+                    inside(CoordinateTransforms.apparentHorizontalAtLst(position, latitude, lst))
                 }
             }
 
@@ -106,9 +111,10 @@ class ConstellationTransitCalculator(
     ): List<Pair<Horizontal, Horizontal>> {
         val lst = AstroTime.lstDeg(atMillis, window.observer.longitudeDeg)
         val latitude = window.observer.latitudeDeg
+        val precession = Precession.forEpoch(atMillis)
         return constellation.segments.map { (a, b) ->
-            CoordinateTransforms.apparentHorizontalAtLst(a.equatorial, latitude, lst) to
-                CoordinateTransforms.apparentHorizontalAtLst(b.equatorial, latitude, lst)
+            CoordinateTransforms.apparentHorizontalAtLst(a.positionAt(precession), latitude, lst) to
+                CoordinateTransforms.apparentHorizontalAtLst(b.positionAt(precession), latitude, lst)
         }
     }
 }

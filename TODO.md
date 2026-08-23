@@ -97,8 +97,12 @@ Nachlesen des eigenen Codes als tatsächlich unfertig verifiziert habe (kein Rat
 - [ ] **Bilddienst auf dem Gerät prüfen.** Der Abruf über hips2fits ist gebaut, konnte hier aber
       nicht getestet werden – aus der Bauumgebung war kein Bilddienst erreichbar. URL-Aufbau und
       Zwischenspeicher sind getestet, die Antwort des Dienstes nicht.
-- [ ] **Suche im Katalog**: `SkyObject.matches()` ist da und getestet, es fehlt das Suchfeld.
-- [ ] **Suche und Filter** in der Ergebnisliste (nach Typ, Helligkeit, Dauer).
+- [x] ~~**Suche im Katalog**~~ Eigener Suchbildschirm über das Feld oben in der Kameraansicht:
+      bewertete Treffer (`ObjectSearch`) statt bloßem Filtern, Katalognummer wie Name, Filter nach
+      Art und Sortierung nach Treffer/Helligkeit/Höhe/Größe/Name. Ohne Eingabe steht dort, was
+      gerade hoch am Himmel steht.
+- [ ] **Suche in der Ergebnisliste eines Fensters** – die Liste hat Filter nach Art, aber kein
+      Suchfeld und keine Sortierung nach Dauer. `ObjectSearch` ließe sich dort wiederverwenden.
 - [x] ~~Sternbilder als Ganzes.~~ 29 Figuren mit 203 Figursternen mitgeliefert, eigene
       Durchgangsrechnung, Angabe wie viel der Figur gleichzeitig im Fenster steht.
 - [ ] **Mehr Sternbilder** – bisher die 29 auffälligsten. Die übrigen 59 ergänzen.
@@ -118,8 +122,22 @@ Nachlesen des eigenen Codes als tatsächlich unfertig verifiziert habe (kein Rat
       Zeit als fraglich markiert werden statt stillschweigend weiterzugelten.
 - [ ] **Kalibrierung pro Kamera** ablegen, sobald der Zoom oder ein Objektivwechsel dazukommt –
       Haupt- und Ultraweitwinkelkamera haben völlig verschiedene Bildfelder.
-- [ ] **Präzession** von J2000 auf das Datum (~0,4° bis 2050). Liegt heute unter dem
-      Kompassfehler, wird aber relevant, sobald die Sternkalibrierung darüber existiert.
+- [x] ~~**Präzession** von J2000 auf das Datum.~~ IAU-2006-Reihe (P03) in `Precession`, als
+      umkehrbare Drehung von Richtungsvektoren; jede Stelle, die eine Katalogposition an den Himmel
+      hängt, geht über `positionAt()`. Rund 0,37° Mitte der 2020er. Die Einschätzung „liegt unter
+      dem Kompassfehler" galt nur unkalibriert – die Sternkalibrierung hätte die Präzession sonst
+      als Kompassfehler eingemessen und auf alles angewendet.
+- [ ] **Nutation und jährliche Aberration** – bewusst weggelassen: zusammen unter 0,01°, zwei
+      Größenordnungen unter dem, was der Sensor auflöst. Erst interessant, wenn die App je an einer
+      Montierung hängt.
+- [x] ~~**Sensorfusion statt roher Rotationsvektor.**~~ `TYPE_GAME_ROTATION_VECTOR` (Kreisel,
+      ohne Magnetsensor) trägt die Lage, der Kompass steuert nur die Nordrichtung bei, über einen
+      Filter mit 10 s Zeitkonstante und drei Gütetoren. Glättung mit adaptiver Zeitkonstante statt
+      festem Gewicht, damit sie unabhängig von der Abtastrate des Geräts ist. **Auf dem Gerät
+      gegenprüfen** – die Fusionsmathematik ist getestet, die Sensorverdrahtung nicht.
+- [x] ~~**Magnetstörung erkennen.**~~ Gemessene Feldstärke gegen `GeomagneticField` geprüft; passt
+      sie nicht, wird die Nordrichtung vom Kreisel gehalten statt vom gestörten Kompass gezogen.
+      Sucher und Kalibrierbildschirm sagen es an.
 - [ ] **Kompassgüte in die gespeicherten Daten übernehmen** und in der Detailansicht als
       Fehlerbalken zeigen – ein bei „unzuverlässig" aufgenommenes Fenster kann mehrere Grad
       danebenliegen, das sollte man später noch sehen.
@@ -140,7 +158,11 @@ Nachlesen des eigenen Codes als tatsächlich unfertig verifiziert habe (kein Rat
       Nacht – beantwortet „wann lohnt sich das Rausgehen" schneller als die Bahnen.
 - [ ] **Bahn über mehrere Durchgänge**: gezeichnet wird bisher der erste Durchgang eines Objekts;
       bei zirkumpolaren Objekten gibt es weitere.
-- [ ] **Fenster wiederfinden:** Pfeil im Sucher, der zum gespeicherten Fenster zurückführt.
+- [x] ~~**Objekt wiederfinden:**~~ „Track" auf dem Objektblatt führt zurück in den Sucher, wo ein
+      Pfeil am Bildschirmrand die Richtung zeigt (`TargetIndicator`) – auch wenn das Objekt hinter
+      dem Rücken steht, wo die Projektion selbst keine Antwort mehr gibt.
+- [ ] **Fenster wiederfinden:** derselbe Pfeil für ein gespeichertes Fenster. `TargetIndicator`
+      arbeitet auf einer beliebigen Richtung, es fehlt nur der Weg von der Fensterliste dorthin.
 - [ ] **Benachrichtigung** „M31 ist in 10 Minuten in deinem Fenster".
 - [ ] **Horizontprofil** statt Einzelfenster: die ganze Skyline einmal umlaufend aufnehmen und
       daraus jede Sichtbarkeit ableiten. Die konsequente Fortsetzung der Grundidee.

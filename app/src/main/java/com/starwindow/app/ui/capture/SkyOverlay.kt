@@ -23,11 +23,18 @@ import com.starwindow.app.core.astro.AstroTime
 import com.starwindow.app.core.astro.CoordinateTransforms
 import com.starwindow.app.core.astro.Horizontal
 import com.starwindow.app.core.astro.ObserverLocation
+import com.starwindow.app.core.astro.Precession
+import com.starwindow.app.core.camera.EdgeInsets
 import com.starwindow.app.core.camera.ScreenPoint
 import com.starwindow.app.core.camera.SkyProjection
+import com.starwindow.app.core.camera.TargetIndicator
+import com.starwindow.app.core.camera.TargetMarker
 import com.starwindow.app.core.geometry.WindowShape
 import com.starwindow.app.core.sensors.DeviceAttitude
+import com.starwindow.app.data.catalog.ObjectType
 import com.starwindow.app.data.catalog.SkyObject
+import com.starwindow.app.ui.components.drawObjectSymbol
+import com.starwindow.app.ui.theme.ObjectPalette
 import com.starwindow.app.ui.theme.StarWindowColors
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -63,6 +70,13 @@ fun SkyOverlay(
     /** Ringed and named, so the user knows which star the crosshair is meant to find. */
     highlightDirection: Horizontal? = null,
     highlightLabel: String = "",
+    /** The object picked in the search; the overlay leads the user to it. */
+    trackedTarget: SkyObject? = null,
+    /**
+     * How much of each edge the screen's own controls cover, in view pixels. The edge arrow is kept
+     * out of those bands — an arrow drawn behind the control panel points at nothing.
+     */
+    chromeInsets: EdgeInsets = EdgeInsets.NONE,
 ) {
     val density = LocalDensity.current
     val paints = remember(density) { OverlayPaints(density) }
@@ -75,7 +89,35 @@ fun SkyOverlay(
         if (showGraticule) drawGraticule(projection, paints)
         if (showCatalog && observer != null) drawCatalog(projection, catalog, observer, paints)
         shape?.let { drawWindowShape(projection, it) }
-        highlightDirection?.let { drawHighlight(projection, it, highlightLabel, paints) }
+        highlightDirection?.let {
+            drawTargetMarker(
+                projection = projection,
+                direction = it,
+                label = highlightLabel,
+                color = StarWindowColors.AnchorPoint,
+                paints = paints,
+                chromeInsets = chromeInsets,
+            )
+        }
+        if (trackedTarget != null && observer != null) {
+            val now = System.currentTimeMillis()
+            val lst = AstroTime.lstDeg(now, observer.longitudeDeg)
+            val position = CoordinateTransforms.apparentHorizontalAtLst(
+                trackedTarget.positionAt(Precession.forEpoch(now)),
+                observer.latitudeDeg,
+                lst,
+            )
+            drawTargetMarker(
+                projection = projection,
+                direction = position,
+                label = trackedTarget.name.ifBlank { trackedTarget.id },
+                color = StarWindowColors.TrackTarget,
+                paints = paints,
+                chromeInsets = chromeInsets,
+                type = trackedTarget.type,
+                belowHorizon = position.altitudeDeg < 0.0,
+            )
+        }
         drawAnchors(projection, anchors, paints)
         drawCrosshair(projection, paints)
     }
@@ -191,54 +233,108 @@ private fun DrawScope.drawAnchors(
 }
 
 /**
- * Ring around the direction the user is being asked to aim at. When it sits off screen, an arrow at
- * the edge points the way — otherwise finding a named star means sweeping the sky at random.
+ * Leads the user to one direction in the sky.
+ *
+ * Two states, and the second is the one that matters. While the target is in the picture it gets a
+ * ring and its name, which is a nicety. While it is *not*, an arrow sits on the edge of the screen
+ * pointing the way, together with how far the phone still has to swing — and that is the difference
+ * between finding a faint galaxy and sweeping the sky at random until the battery dies.
+ *
+ * The arrow keeps working when the target is behind the observer, where the projection has no
+ * answer at all: [TargetIndicator] takes the direction from the target's vector in the display
+ * frame rather than from a projected point.
  */
-private fun DrawScope.drawHighlight(
+private fun DrawScope.drawTargetMarker(
     projection: SkyProjection,
     direction: Horizontal,
     label: String,
+    color: Color,
     paints: OverlayPaints,
+    chromeInsets: EdgeInsets = EdgeInsets.NONE,
+    type: ObjectType? = null,
+    belowHorizon: Boolean = false,
 ) {
-    val point = projection.skyToScreen(direction)
-    val radius = 22.dp.toPx()
+    // The controls the screen reports, plus enough room for the arrow and its caption not to be cut
+    // in half by the edge of the display.
+    val insets = chromeInsets + EdgeInsets.uniform(34.dp.toPx())
+    val marker = TargetIndicator.locate(projection, direction, insets) ?: return
+    val caption = "$label  ·  ${formatSeparation(marker.separationDeg)}"
 
-    if (point != null &&
-        point.x >= 0f && point.x <= size.width &&
-        point.y >= 0f && point.y <= size.height
-    ) {
-        drawCircle(
-            color = StarWindowColors.AnchorPoint,
-            radius = radius,
-            center = Offset(point.x, point.y),
-            style = Stroke(width = 2.dp.toPx()),
-        )
-        drawLabel(label, point.x + radius + 6.dp.toPx(), point.y, paints.highlightPaint)
+    if (marker.onScreen) {
+        val radius = 24.dp.toPx()
+        val center = Offset(marker.x, marker.y)
+        drawCircle(color, radius, center, style = Stroke(width = 2.dp.toPx()))
+
+        // Four ticks pointing inwards: the eye lands on the gap between them, which is where the
+        // object is, instead of on the ring itself.
+        val from = radius * 1.05f
+        val to = radius * 1.5f
+        val tick = 1.5.dp.toPx()
+        drawLine(color, center - Offset(to, 0f), center - Offset(from, 0f), tick)
+        drawLine(color, center + Offset(from, 0f), center + Offset(to, 0f), tick)
+        drawLine(color, center - Offset(0f, to), center - Offset(0f, from), tick)
+        drawLine(color, center + Offset(0f, from), center + Offset(0f, to), tick)
+
+        // The same chart symbol as in the search list, so the row and the marker match.
+        type?.let { drawObjectSymbol(it, color, center, radius * 0.9f) }
+
+        drawLabel(caption, marker.x, marker.y + radius * 1.5f + 14.dp.toPx(), paints.centeredPaint(color))
+        if (belowHorizon) {
+            drawLabel(
+                "unter dem Horizont",
+                marker.x,
+                marker.y + radius * 1.5f + 30.dp.toPx(),
+                paints.centeredSmallPaint(StarWindowColors.Muted),
+            )
+        }
         return
     }
 
-    // Off screen: point at it from the middle of the view.
-    val centerX = size.width / 2f
-    val centerY = size.height / 2f
-    val display = projection.attitude.worldToDisplay(projection.attitude.toMagneticVector(direction))
-    val length = kotlin.math.sqrt(display.x * display.x + display.y * display.y)
-    if (length < 1e-6) return
-    val dirX = (display.x / length).toFloat()
-    val dirY = -(display.y / length).toFloat()
-    val arrow = minOf(size.width, size.height) * 0.3f
+    drawEdgeArrow(marker, color)
 
-    drawLine(
-        color = StarWindowColors.AnchorPoint,
-        start = Offset(centerX + dirX * arrow * 0.55f, centerY + dirY * arrow * 0.55f),
-        end = Offset(centerX + dirX * arrow, centerY + dirY * arrow),
-        strokeWidth = 3.dp.toPx(),
-    )
+    // The caption is pulled back inside the view along the arrow's own direction, so it never ends
+    // up half off the screen or under the controls however the phone is held. Centred text needs
+    // half its own width of clearance on each side, hence the wider horizontal margin.
+    val pullIn = 30.dp.toPx()
+    val captionHalfWidth = 80.dp.toPx()
     drawLabel(
-        label,
-        centerX + dirX * arrow + 8.dp.toPx(),
-        centerY + dirY * arrow,
-        paints.highlightPaint,
+        caption,
+        clamp(marker.x - marker.dirX * pullIn, captionHalfWidth, size.width - captionHalfWidth),
+        clamp(marker.y - marker.dirY * pullIn, insets.top, size.height - insets.bottom),
+        paints.centeredPaint(color),
     )
+}
+
+/** Keeps a value inside a range that may itself have collapsed on a small screen. */
+private fun clamp(value: Float, min: Float, max: Float): Float =
+    value.coerceIn(min, max.coerceAtLeast(min))
+
+/** A filled triangle sitting on the edge of the screen, nose pointing at the target. */
+private fun DrawScope.drawEdgeArrow(marker: TargetMarker, color: Color) {
+    val length = 20.dp.toPx()
+    val halfWidth = 11.dp.toPx()
+    val tip = Offset(marker.x, marker.y)
+    // Perpendicular to the direction, for the two base corners.
+    val sideX = -marker.dirY
+    val sideY = marker.dirX
+    val baseX = marker.x - marker.dirX * length
+    val baseY = marker.y - marker.dirY * length
+
+    val path = Path().apply {
+        moveTo(tip.x, tip.y)
+        lineTo(baseX + sideX * halfWidth, baseY + sideY * halfWidth)
+        lineTo(baseX - sideX * halfWidth, baseY - sideY * halfWidth)
+        close()
+    }
+    // A dark outline underneath keeps it visible over a bright horizon or a street lamp.
+    drawPath(path, StarWindowColors.Night.copy(alpha = 0.7f), style = Stroke(width = 5.dp.toPx()))
+    drawPath(path, color)
+}
+
+/** Degrees to swing, written the way it is worth reading: coarse when far, fine when close. */
+private fun formatSeparation(separationDeg: Double): String = when {
+    separationDeg >= 10.0 -> "%.0f°".format(separationDeg)
+    else -> "%.1f°".format(separationDeg)
 }
 
 private fun DrawScope.drawCrosshair(projection: SkyProjection, paints: OverlayPaints) {
@@ -274,13 +370,16 @@ private fun DrawScope.drawCatalog(
     observer: ObserverLocation,
     paints: OverlayPaints,
 ) {
-    val lst = AstroTime.lstDeg(System.currentTimeMillis(), observer.longitudeDeg)
+    val now = System.currentTimeMillis()
+    val lst = AstroTime.lstDeg(now, observer.longitudeDeg)
+    // One precession for the whole frame — it is the same rotation for every object in it.
+    val precession = Precession.forEpoch(now)
     val margin = 24.dp.toPx()
     val unit = 1.dp.toPx()
 
     for (obj in catalog) {
         val position = CoordinateTransforms.apparentHorizontalAtLst(
-            obj.equatorial,
+            obj.positionAt(precession),
             observer.latitudeDeg,
             lst,
         )
@@ -291,8 +390,11 @@ private fun DrawScope.drawCatalog(
 
         val magnitude = obj.magnitude ?: 6.0
         val radius = (7.0 - magnitude).coerceIn(1.5, 7.0).toFloat() * unit * 0.6f
+        // Coloured by type, the same colours the search list uses: a marker and the row that
+        // describes it can then be matched without reading either.
+        val color = ObjectPalette.colorFor(obj.type)
         drawCircle(
-            color = StarWindowColors.CatalogMarker,
+            color = color,
             radius = radius,
             center = Offset(point.x, point.y),
             style = Stroke(width = 1.5f * unit),
@@ -380,7 +482,22 @@ private class OverlayPaints(density: Density) {
     val anchorPaint = textPaint(StarWindowColors.AnchorPoint, 12f)
     val cardinalPaint = textPaint(StarWindowColors.Crosshair, 16f)
     val catalogPaint = textPaint(StarWindowColors.CatalogMarker, 11f)
-    val highlightPaint = textPaint(StarWindowColors.AnchorPoint, 14f)
+
+    /**
+     * The target caption. Recoloured rather than reallocated: this is called on every frame, and a
+     * `Paint` per frame is exactly the kind of allocation that turns a smooth overlay into a
+     * stuttering one.
+     */
+    private val centered = textPaint(StarWindowColors.Starlight, 14f).apply {
+        textAlign = Paint.Align.CENTER
+    }
+    private val centeredSmall = textPaint(StarWindowColors.Muted, 11f).apply {
+        textAlign = Paint.Align.CENTER
+    }
+
+    fun centeredPaint(color: Color): Paint = centered.apply { this.color = color.toArgb() }
+
+    fun centeredSmallPaint(color: Color): Paint = centeredSmall.apply { this.color = color.toArgb() }
 
     private fun textPaint(color: Color, sizeSp: Float) = Paint().apply {
         isAntiAlias = true

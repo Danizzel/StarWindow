@@ -229,9 +229,13 @@ data class SkyWindow(
 ) {
     val centerHorizontal: Horizontal get() = shape.center()
 
-    /** Where the centre of the window pointed on the celestial sphere at capture time. */
+    /**
+     * Where the centre of the window pointed on the celestial sphere at capture time, in J2000 —
+     * the frame every catalogue and every star atlas is written in, so the number stays usable
+     * years after the window was drawn.
+     */
     fun centerEquatorialAtCapture(): Equatorial =
-        CoordinateTransforms.horizontalToEquatorial(
+        CoordinateTransforms.horizontalToEquatorialJ2000(
             centerHorizontal,
             observer,
             capturedAtMillis,

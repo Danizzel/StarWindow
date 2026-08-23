@@ -59,6 +59,31 @@ data class Equatorial(
         raDeg = Angles.normalizeDeg(raDeg),
         decDeg = decDeg.coerceIn(-90.0, 90.0),
     )
+
+    /**
+     * Unit vector in the equatorial frame: x towards the vernal equinox, y 90° east of it in the
+     * equatorial plane, z towards the north celestial pole.
+     *
+     * Precession is a rotation of that frame, and a rotation is far easier to get right — and to
+     * invert — on vectors than on a pair of angles with a wrap at 360°.
+     */
+    fun toVector(): Vec3 {
+        val ra = Math.toRadians(raDeg)
+        val dec = Math.toRadians(decDeg)
+        val cosDec = cos(dec)
+        return Vec3(cosDec * cos(ra), cosDec * sin(ra), sin(dec))
+    }
+
+    companion object {
+        /** Inverse of [toVector]; the vector does not need to be normalized. */
+        fun fromVector(v: Vec3): Equatorial {
+            val n = v.normalized()
+            return Equatorial(
+                raDeg = Angles.normalizeDeg(Math.toDegrees(kotlin.math.atan2(n.y, n.x))),
+                decDeg = Math.toDegrees(kotlin.math.asin(n.z.coerceIn(-1.0, 1.0))),
+            )
+        }
+    }
 }
 
 /** Where the observer stands. Height is only used for a small refraction/horizon-dip correction. */

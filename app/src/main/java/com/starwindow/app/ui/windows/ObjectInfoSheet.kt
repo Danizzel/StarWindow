@@ -42,14 +42,19 @@ import com.starwindow.app.data.images.SkyImageRequest
 import com.starwindow.app.domain.SkyTrack
 import com.starwindow.app.ui.theme.StarWindowColors
 
-/** Everything the info sheet needs, gathered by the view model so the sheet stays presentational. */
+/**
+ * Everything the info sheet needs, gathered by the view model so the sheet stays presentational.
+ *
+ * [passes] and [fillFactor] are only known when the object is being looked at *through a window*;
+ * from the search screen there is no window, and those parts of the sheet simply do not appear.
+ */
 data class ObjectInfo(
     val obj: SkyObject,
     val track: SkyTrack,
-    val passes: List<WindowPass>,
-    val currentPosition: Horizontal?,
+    val passes: List<WindowPass> = emptyList(),
+    val currentPosition: Horizontal? = null,
     /** Fraction of the window's width the object covers; above 1 it does not fit. */
-    val fillFactor: Double?,
+    val fillFactor: Double? = null,
 )
 
 @Composable
@@ -58,88 +63,117 @@ fun ObjectInfoSheet(
     imageLoader: SkyImageLoader?,
     onDismiss: () -> Unit,
 ) {
-    val obj = info.obj
-
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = {
-            Column {
-                Text(obj.name.ifBlank { obj.id }, style = MaterialTheme.typography.titleMedium)
-                Text(
-                    buildString {
-                        append(obj.id)
-                        append(" · ").append(obj.type.label)
-                        obj.constellation?.let { append(" · ").append(it) }
-                    },
-                    style = MaterialTheme.typography.labelMedium,
-                    color = StarWindowColors.Muted,
-                )
-            }
-        },
+        title = { ObjectInfoTitle(info.obj) },
         text = {
-            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                SkyImageView(obj, imageLoader)
-
-                Spacer(Modifier.height(12.dp))
-                Text("Höhe über dem Horizont", style = MaterialTheme.typography.titleSmall)
-                AltitudeCurveChart(track = info.track, passes = info.passes)
-                Text(
-                    "Grün hinterlegt: die Zeit, in der das Objekt im Fenster steht.",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = StarWindowColors.Muted,
-                )
-
-                Spacer(Modifier.height(12.dp))
-                HorizontalDivider()
-                Spacer(Modifier.height(8.dp))
-
-                InfoRow("Helligkeit", obj.magnitude?.let { "%.1f mag".format(it) })
-                InfoRow(
-                    "Flächenhelligkeit",
-                    obj.surfaceBrightness?.let { "%.1f mag/□'".format(it) },
-                    hint = "Sagt für die Fotografie mehr als die Gesamthelligkeit: ein großes " +
-                        "Objekt verteilt sein Licht.",
-                )
-                InfoRow("Ausdehnung", formatSize(obj))
-                InfoRow("Positionswinkel", obj.positionAngleDeg?.let { "%.0f°".format(it) })
-                InfoRow("Morphologie", obj.morphology)
-                InfoRow(
-                    "Rektaszension",
-                    Angles.formatRa(obj.raDeg) + "  ·  " + Angles.formatDec(obj.decDeg),
-                )
-                info.currentPosition?.let {
-                    InfoRow(
-                        "Jetzt",
-                        "Az %.1f°  Höhe %.1f°".format(it.azimuthDeg, it.altitudeDeg),
-                    )
-                }
-                info.fillFactor?.let {
-                    InfoRow(
-                        "Im Fenster",
-                        when {
-                            it > 1.0 -> "größer als das Fenster (%.0f %%)".format(it * 100)
-                            it > 0.3 -> "füllt %.0f %% der Fensterbreite".format(it * 100)
-                            else -> "klein im Fenster (%.0f %%)".format(it * 100)
-                        },
-                    )
-                }
-                if (obj.type.respondsToNarrowband) {
-                    InfoRow(
-                        "Fotografie",
-                        "Emissionsobjekt – Schmalbandfilter helfen auch bei Lichtverschmutzung.",
-                    )
-                }
-                if (obj.catalogIds.isNotEmpty()) {
-                    InfoRow("Auch bekannt als", obj.catalogIds.take(8).joinToString(", "))
-                }
-                if (obj.alternativeNames.isNotEmpty()) {
-                    InfoRow("Weitere Namen", obj.alternativeNames.joinToString(", "))
-                }
-                InfoRow("Quelle", obj.source)
-            }
+            ObjectInfoContent(
+                info = info,
+                imageLoader = imageLoader,
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+            )
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text("Schließen") } },
     )
+}
+
+/** Name over designation, type and constellation — the same heading in the sheet and the screen. */
+@Composable
+fun ObjectInfoTitle(obj: SkyObject) {
+    Column {
+        Text(obj.name.ifBlank { obj.id }, style = MaterialTheme.typography.titleMedium)
+        Text(
+            buildString {
+                append(obj.id)
+                append(" · ").append(obj.type.label)
+                obj.constellation?.let { append(" · ").append(it) }
+            },
+            style = MaterialTheme.typography.labelMedium,
+            color = StarWindowColors.Muted,
+        )
+    }
+}
+
+/**
+ * Everything known about one object, without deciding where it is shown.
+ *
+ * Split out of the dialog so the search screen can show exactly the same facts full screen: two
+ * places describing the same object differently would be two places to keep in step, and the user
+ * would have to learn the layout twice.
+ */
+@Composable
+fun ObjectInfoContent(
+    info: ObjectInfo,
+    imageLoader: SkyImageLoader?,
+    modifier: Modifier = Modifier,
+) {
+    val obj = info.obj
+
+    Column(modifier = modifier) {
+        SkyImageView(obj, imageLoader)
+
+        Spacer(Modifier.height(12.dp))
+        Text("Höhe über dem Horizont", style = MaterialTheme.typography.titleSmall)
+        AltitudeCurveChart(track = info.track, passes = info.passes)
+        Text(
+            if (info.passes.isEmpty()) {
+                "Die Kurve zeigt die nächsten Stunden; die Linie bei 0° ist der Horizont."
+            } else {
+                "Grün hinterlegt: die Zeit, in der das Objekt im Fenster steht."
+            },
+            style = MaterialTheme.typography.labelSmall,
+            color = StarWindowColors.Muted,
+        )
+
+        Spacer(Modifier.height(12.dp))
+        HorizontalDivider()
+        Spacer(Modifier.height(8.dp))
+
+        InfoRow("Helligkeit", obj.magnitude?.let { "%.1f mag".format(it) })
+        InfoRow(
+            "Flächenhelligkeit",
+            obj.surfaceBrightness?.let { "%.1f mag/□'".format(it) },
+            hint = "Sagt für die Fotografie mehr als die Gesamthelligkeit: ein großes " +
+                "Objekt verteilt sein Licht.",
+        )
+        InfoRow("Ausdehnung", formatSize(obj))
+        InfoRow("Positionswinkel", obj.positionAngleDeg?.let { "%.0f°".format(it) })
+        InfoRow("Morphologie", obj.morphology)
+        InfoRow(
+            "Rektaszension",
+            Angles.formatRa(obj.raDeg) + "  ·  " + Angles.formatDec(obj.decDeg),
+        )
+        info.currentPosition?.let {
+            InfoRow(
+                "Jetzt",
+                "Az %.1f°  Höhe %.1f°".format(it.azimuthDeg, it.altitudeDeg) +
+                    if (it.altitudeDeg <= 0.0) "  (unter dem Horizont)" else "",
+            )
+        }
+        info.fillFactor?.let {
+            InfoRow(
+                "Im Fenster",
+                when {
+                    it > 1.0 -> "größer als das Fenster (%.0f %%)".format(it * 100)
+                    it > 0.3 -> "füllt %.0f %% der Fensterbreite".format(it * 100)
+                    else -> "klein im Fenster (%.0f %%)".format(it * 100)
+                },
+            )
+        }
+        if (obj.type.respondsToNarrowband) {
+            InfoRow(
+                "Fotografie",
+                "Emissionsobjekt – Schmalbandfilter helfen auch bei Lichtverschmutzung.",
+            )
+        }
+        if (obj.catalogIds.isNotEmpty()) {
+            InfoRow("Auch bekannt als", obj.catalogIds.take(8).joinToString(", "))
+        }
+        if (obj.alternativeNames.isNotEmpty()) {
+            InfoRow("Weitere Namen", obj.alternativeNames.joinToString(", "))
+        }
+        InfoRow("Quelle", obj.source)
+    }
 }
 
 /**

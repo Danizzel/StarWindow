@@ -2,6 +2,7 @@ package com.starwindow.app.data.catalog
 
 import android.content.Context
 import com.starwindow.app.core.astro.Equatorial
+import com.starwindow.app.core.astro.Precession
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
@@ -14,7 +15,11 @@ data class FigureStar(
     val raDeg: Double,
     val decDeg: Double,
 ) {
-    val equatorial: Equatorial get() = Equatorial(raDeg, decDeg)
+    /** Catalogue position, epoch J2000. Use [positionAt] for where it actually stands tonight. */
+    val equatorialJ2000: Equatorial get() = Equatorial(raDeg, decDeg)
+
+    /** Where the star stands at a given moment, precession since J2000 included. */
+    fun positionAt(precession: Precession): Equatorial = precession.toDate(equatorialJ2000)
 }
 
 /**

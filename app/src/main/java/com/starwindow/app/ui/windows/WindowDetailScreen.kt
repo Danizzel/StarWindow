@@ -35,6 +35,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.starwindow.app.appContainer
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -46,6 +48,9 @@ import com.starwindow.app.domain.ConstellationTransit
 import com.starwindow.app.data.images.SkyImageLoader
 import com.starwindow.app.domain.ObjectTransit
 import com.starwindow.app.domain.ResultFilter
+import com.starwindow.app.ui.components.ObjectSymbol
+import com.starwindow.app.ui.components.objectSubtitle
+import com.starwindow.app.ui.theme.ObjectPalette
 import com.starwindow.app.ui.theme.StarWindowColors
 
 /** Colours cycled through the paths so each one stays tellable apart from the others. */
@@ -196,10 +201,10 @@ fun WindowDetailScreen(
 
                     if (constellations.isNotEmpty()) {
                         item {
-                            Text(
-                                "${constellations.size} Sternbilder ziehen durch",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = StarWindowColors.WindowStroke,
+                            SectionHeader(
+                                title = "Sternbilder",
+                                count = constellations.size,
+                                note = "ziehen durch das Fenster",
                             )
                         }
                         items(constellations, key = { "con-${it.constellation.id}" }) { transit ->
@@ -213,11 +218,11 @@ fun WindowDetailScreen(
 
                     if (objects.isNotEmpty()) {
                         item {
-                            Text(
-                                "${objects.size} Objekte ziehen durch" +
-                                    (state.result?.let { " (${it.computeMillis} ms)" } ?: ""),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = StarWindowColors.WindowStroke,
+                            SectionHeader(
+                                title = "Objekte",
+                                count = objects.size,
+                                note = "in zeitlicher Reihenfolge" +
+                                    (state.result?.let { " · ${it.computeMillis} ms" } ?: ""),
                             )
                         }
                         items(objects, key = { "obj-${it.obj.id}" }) { transit ->
@@ -232,6 +237,42 @@ fun WindowDetailScreen(
                 }
             }
         }
+    }
+}
+
+/**
+ * Divides the result list into its sections.
+ *
+ * The count sits in the heading rather than inside a sentence, because "how many" is the first
+ * thing anyone wants from a list of results and a number is found faster at the start of a line
+ * than in the middle of one.
+ */
+@Composable
+private fun SectionHeader(title: String, count: Int, note: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 2.dp),
+        verticalAlignment = Alignment.Bottom,
+    ) {
+        Text(
+            text = "$count",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = StarWindowColors.WindowStroke,
+        )
+        Spacer(Modifier.size(6.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            color = StarWindowColors.Starlight,
+        )
+        Spacer(Modifier.size(8.dp))
+        Text(
+            text = note,
+            style = MaterialTheme.typography.labelSmall,
+            color = StarWindowColors.Muted,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 
@@ -345,6 +386,17 @@ private fun ConstellationCard(
     }
 }
 
+/**
+ * One object that crosses the window.
+ *
+ * Laid out in fixed columns rather than as sentences, so a list of forty can be skimmed: symbol,
+ * then identity, then the one number that ranks them against each other — how long the object
+ * spends inside the window — set apart on the right in its own colour. A window is a narrow slot,
+ * and "how long do I have" is the question that decides what gets photographed tonight.
+ *
+ * Only the first pass is spelled out. Further passes are counted rather than listed; the ones after
+ * the first are hours away and belong in the info sheet, not in a row that has to stay skimmable.
+ */
 @Composable
 private fun TransitCard(
     transit: ObjectTransit,
@@ -354,13 +406,44 @@ private fun TransitCard(
 ) {
     SelectableCard(selected = selected, onClick = onClick) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = transit.obj.displayName,
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.weight(1f),
-            )
-            transit.obj.magnitude?.let {
-                Text("%.1f mag".format(it), style = MaterialTheme.typography.labelMedium)
+            ObjectSymbol(transit.obj.type, size = 18.dp, modifier = Modifier.padding(end = 8.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        text = transit.obj.id,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = ObjectPalette.colorFor(transit.obj.type),
+                        maxLines = 1,
+                    )
+                    if (transit.obj.name.isNotBlank() && transit.obj.name != transit.obj.id) {
+                        Text(
+                            text = "  ${transit.obj.name}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+                Text(
+                    text = objectSubtitle(transit.obj),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = StarWindowColors.Muted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Column(horizontalAlignment = Alignment.End, modifier = Modifier.padding(start = 6.dp)) {
+                Text(
+                    text = formatDuration(transit.totalDurationMillis),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = StarWindowColors.WindowStroke,
+                )
+                Text(
+                    text = "im Fenster",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = StarWindowColors.Muted,
+                )
             }
             IconButton(onClick = onInfo, modifier = Modifier.size(32.dp)) {
                 Icon(
@@ -370,18 +453,10 @@ private fun TransitCard(
                 )
             }
         }
-        Text(
-            text = buildString {
-                append(transit.obj.type.label)
-                transit.obj.constellation?.let { append(" · $it") }
-                transit.obj.sizeArcmin?.let { append(" · %.0f'".format(it)) }
-                append(" · gesamt ${formatDuration(transit.totalDurationMillis)}")
-            },
-            style = MaterialTheme.typography.labelSmall,
-            color = StarWindowColors.Muted,
-        )
+
         Spacer(Modifier.height(6.dp))
-        transit.intervals.forEach { interval ->
+
+        transit.intervals.firstOrNull()?.let { interval ->
             Text(
                 text = buildString {
                     append(if (interval.clippedAtStart) "bereits drin" else formatClock(interval.enterMillis))
@@ -392,6 +467,13 @@ private fun TransitCard(
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = StarWindowColors.Starlight,
+            )
+        }
+        if (transit.intervals.size > 1) {
+            Text(
+                text = "+ ${transit.intervals.size - 1} weitere Durchgänge",
+                style = MaterialTheme.typography.labelSmall,
+                color = StarWindowColors.Muted,
             )
         }
     }

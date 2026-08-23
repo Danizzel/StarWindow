@@ -8,6 +8,7 @@ import com.starwindow.app.data.catalog.AssetCatalogSource
 import com.starwindow.app.data.catalog.CatalogRepository
 import com.starwindow.app.data.catalog.ConstellationRepository
 import com.starwindow.app.data.images.SkyImageLoader
+import com.starwindow.app.data.tracking.TrackingStore
 import com.starwindow.app.data.windows.SettingsStore
 import com.starwindow.app.data.windows.SkyWindowRepository
 import com.starwindow.app.domain.ConstellationTransitCalculator
@@ -29,6 +30,7 @@ class AppContainer(context: Context) {
     )
     val constellationRepository = ConstellationRepository(context)
     val settingsStore = SettingsStore(context)
+    val trackingStore = TrackingStore(context)
     val skyImageLoader = SkyImageLoader(context.cacheDir)
     val transitCalculator = TransitCalculator()
     val constellationTransitCalculator = ConstellationTransitCalculator()
