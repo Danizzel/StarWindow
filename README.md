@@ -7,7 +7,9 @@ Objekte im Lauf der Nacht hindurchziehen und wie lange** sie darin sichtbar sind
 
 Der Stand ist bewusst ein tragfähiger Anfang: Kamera, Kompass, Fenstergeometrie und die
 Koordinaten-Zuordnung sind fertig und getestet, der Katalogteil läuft mit einem mitgelieferten
-Basiskatalog und ist für Online-Kataloge vorbereitet.
+Basiskatalog und ist für Online-Kataloge vorbereitet. Dazu kommt die zweite Frage jeder
+Astrofotografie – **[wird die Nacht überhaupt etwas?](#wetter-für-die-nacht)** – als eigene Ansicht
+mit sechs wählbaren Wettermodellen, Dämmerung, Mondphase und Bortle-Stufe.
 
 ---
 
@@ -22,7 +24,7 @@ Anforderungen: Android Studio Ladybug oder neuer, JDK 17, Android SDK 35, minSdk
 
 ```
 ./gradlew :app:assembleDebug     # APK bauen
-./gradlew :app:testDebugUnitTest # 222 Unit-Tests
+./gradlew :app:testDebugUnitTest # 282 Unit-Tests
 ```
 
 ---
@@ -366,6 +368,187 @@ Polygon sein darf – dafür gibt es keine geschlossene Lösung.
 
 ---
 
+## Wetter für die Nacht
+
+Über das Wolkensymbol oben im Sucher öffnet sich die Wetteransicht – die einzige Stelle der App,
+die zwingend Netz braucht, und die einzige, die eine Frage beantwortet, welche die Geometrie nicht
+beantworten kann: **lohnt sich der Aufbau heute überhaupt?**
+
+Die Ansicht ist nach dieser Frage gebaut, in dieser Reihenfolge:
+
+1. **Ort und Modell** – oben, weil beides mitbestimmt, was die Zahlen darunter überhaupt bedeuten.
+2. **Heute Abend** – Urteil in einem Satz, darunter die Kurve durch die Nacht.
+3. **Die Zahlen** – Dämmerungszeiten, Mond, Bewölkung nach Schichten, Taupunkt, Wind, Höhenwind,
+   Bortle-Stufe des Ortes.
+4. **Die nächsten Nächte** – bis zu 15 Zeilen mit Wochentag, Datum und Haken. Antippen klappt
+   dieselbe Kurve und dieselben Zahlen für diese Nacht auf.
+
+Den Ort gibt man oben ein (Ortssuche über Open-Meteo Geocoding) oder übernimmt ihn per Knopf vom
+GPS. Er wird gespeichert, samt Zeitzone – **„heute Abend" ist der Abend am Zielort**, nicht der am
+Gerät. Wer aus Zürich das Wetter für La Palma abruft, bekommt dessen Dämmerung.
+
+### Sechs Modelle zur Wahl
+
+Es gibt für die Bewölkung nicht *ein* bestes Modell, sondern eine Abwägung, und die trifft man je
+nach Frage anders. **Feines Gitter heißt kurze Reichweite.** Ein 25-km-Gitter kennt weder das Tal
+noch den Bergrücken daneben – und genau daran entscheidet sich in Mitteleuropa, ob eine Nacht klar
+wird. Ein 2-km-Gitter weiß das, reicht dafür aber nur zwei Tage und beantwortet die Frage „welche
+Nacht der nächsten zwei Wochen" gar nicht.
+
+Deswegen steht die Auswahl **oben in der Ansicht** und nicht in den Einstellungen: Das Modell ist
+hier keine Voreinstellung, sondern Teil der Antwort.
+
+| Modell | Betreiber | Gitter | Gebiet | wofür |
+|---|---|---:|---|---|
+| **ICON-CH1** | MeteoSchweiz | 1 km | Alpenraum | Löst einzelne Täler auf – dort, wo Nebel und Föhnlücken auf wenigen Kilometern entschieden werden |
+| **AROME HD** | Météo-France | 1,5 km | Frankreich, Benelux, Südwestdeutschland | Sehr fein, stark bei konvektiver Bewölkung |
+| **HARMONIE** | KNMI | 2 km | Nordwesteuropa, Nordsee | Rechnet **stündlich** neu und ist damit das aktuellste der Liste |
+| **ICON-D2** | DWD | 2,2 km | Deutschland, Alpen, Nachbarländer | Für heute Abend und morgen die genaueste freie Aussage über Wolkenlücken |
+| **ICON-EU** | DWD | 7 km | Europa | Der Kompromiss: deutlich feiner als global und reicht übers Wochenende |
+| **ECMWF IFS** | ECMWF | 25 km | global | Als einziges 15 Tage weit – **Voreinstellung**, weil die Nächteliste sonst leer bliebe |
+
+Dass die Wahl etwas ändert, sieht man sofort: Für dieselbe Nacht über Zürich fällten ICON-D2,
+ICON-EU und ECMWF beim Testabruf drei verschiedene Urteile. Genau deshalb steht daneben, welches
+gerade spricht.
+
+Modelle, deren Gebiet den gewählten Ort nicht enthält, sind ausgegraut – die Gebietsgrenzen kommen
+aus der Modellbeschreibung des Dienstes, nicht aus einer gepflegten Liste im Code.
+
+### Wann das Modell zuletzt gerechnet hat
+
+Unter der Chipreihe steht eine Zeile, und im Auswahldialog steht sie für jedes Modell:
+
+```
+DWD ICON-D2 · Deutschland, Alpen, Nachbarländer
+Lauf 18:00 UTC · aktualisiert vor 1 h 25 min · alle 3 h neu · Vorhersage bis Do 27.08., 18
+```
+
+Die Angaben stammen aus `meta.json` des Dienstes und werden **nicht geschätzt**: Wer „aktualisiert
+vor 20 Minuten" liest, verlässt sich darauf, und ein aus dem Laufplan gerechneter Zeitpunkt wäre
+schlimmer als gar keiner. Läufe heißen nach ihrer UTC-Stunde („der 18z-Lauf"), deshalb stehen sie
+in UTC; alles andere in der Ortszeit. Ist ein Lauf mehr als zwei Intervalle alt, färbt sich die
+Zeile bernsteinfarben – dann hängt beim Anbieter etwas.
+
+Zwei Zeitangaben, die leicht zu verwechseln sind, tragen deshalb verschiedene Namen:
+
+* **„Vorhersage bis"** – wie weit die geladenen Daten reichen.
+* **„dieser Lauf bis"** – wie weit der *jüngste* Lauf allein reicht.
+
+Der Unterschied ist real: Der DWD schiebt zwischen die langen ICON-EU-Läufe (00, 06, 12, 18 UTC,
+120 Stunden) kurze auf 30 Stunden. Der 15-UTC-Lauf endet also nach anderthalb Tagen, während die
+Schnittstelle mehrere Läufe zusammensetzt und über fünf Tage liefert.
+
+### Was abgefragt wird
+
+Gesamtbewölkung und die drei Schichten, Temperatur, Taupunkt, Luftfeuchte, Niederschlag, Wind,
+Böen, Luftdruck und der Wind auf 250 hPa – für jedes Modell dasselbe, über `models=` am selben
+Endpunkt. Zeitstempel kommen als UTC-Epoche, die Zeitzone des Ortes getrennt daneben, so wird
+nirgendwo ein Offset zweimal addiert.
+
+Drei Eigenheiten des Dienstes sind eingebaut, jede von ihnen an echten Antworten geprüft:
+
+* **Führt ein Modell eine Größe nicht**, kommt eine Spalte aus Nullwerten statt eines Fehlers.
+  AROME HD etwa hat keine Gesamtbewölkung – dann tritt die dichteste der drei Schichten an ihre
+  Stelle, und ICON-CH1 ohne 250-hPa-Wind lässt einfach die Seeing-Zeile weg.
+* **Wird eine Variable ganz abgelehnt** (HTTP 400), greift eine zweite Anfrage mit dem Kernsatz an
+  Größen.
+* **Wird über die Reichweite hinaus gefragt**, füllt der Dienst den Rest ebenfalls mit Nullwerten.
+  Die werden am Ende abgeschnitten – blieben sie stehen, läse die Nachtbewertung sie als „keine
+  Bewölkung gemeldet" und erfände ein Dutzend traumhafter Nächte. ICON-D2 liefert so ehrlich zwei
+  Nächte statt fünfzehn erfundener.
+### Wie die Eignung gerechnet wird
+
+Die Prozentzahl auf der Kurve ist ein **Produkt aus vier Faktoren** – Dunkelheit, Bewölkung, Mond,
+Bedingungen am Boden – und ausdrücklich keine gewichtete Summe. Der Grund: Die Größen können
+einander nicht ersetzen. Eine völlig klare Nacht bei Vollmond in der Dämmerung ist nicht „zu zwei
+Dritteln gut", sie ist schlecht. Jeder Faktor darf für sich allein alles kippen, und genau das tut
+ein Produkt.
+
+| Faktor | Verlauf | Begründung |
+|---|---|---|
+| Dunkelheit | 1,0 unter −18°, 0,55 bei −12°, 0,15 bei −6° | Voll zählt nur astronomische Dunkelheit; in der nautischen Dämmerung stehen helle Ziele schon, der Hintergrund aber noch messbar über dem natürlichen Niveau |
+| Bewölkung | `(1 − Bedeckung)^1,5` | 50 % Bedeckung heißt nicht 50 % brauchbare Bilder: Das Ziel steht die halbe Zeit hinter Wolken, die Ränder tragen Schleier, die Nachführung verliert den Leitstern |
+| Mond | `1 − 0,85 · k^1,5 · √sin h` | Es zählt Phase **und** Höhe – dieselbe Sichel dicht über dem Horizont stört halb so viel wie im Zenit |
+| Boden | Niederschlag = 0; Taupunktdifferenz < 2 K, Böen, Luftfeuchte als Abschläge | Regen beendet die Nacht, Tau beschlägt die Frontlinse, Böen verwackeln die Nachführung lange vor dem Punkt, an dem etwas umfällt |
+
+Neben der Zahl steht immer der **begrenzende Faktor** im Klartext („Bewölkung", „Mondlicht",
+„Taubeschlag"), und die Bewölkung erscheint zusätzlich als Rohwert. Wer anderer Meinung ist als die
+Formel, soll das an den Zahlen sehen können.
+
+Der Wind auf 250 hPa geht nicht in die Bewertung ein, sondern steht als eigene Zeile: Kein frei
+verfügbares Modell rechnet Seeing, der Jetstream über dem Standort ist der beste Hinweis darauf –
+und darf auch nur als Hinweis auftreten.
+
+### Der Haken
+
+Eine Nacht bekommt den Haken, wenn nach Beginn der astronomischen Dämmerung mindestens **90 Minuten**
+mit höchstens 30 % Bewölkung und ohne Niederschlag zusammenkommen; ab 45 Minuten steht ein halber
+Haken. Bewusst nur das Wetter – der Mond lässt sich ausrechnen, das Wetter nicht. Damit trotzdem
+niemand bei Vollmond umsonst aufbaut, sagt der Satz daneben es dazu („5 h 12 klar – aber der Mond
+hellt die ganze Nacht auf"), und die Zeile *Davon brauchbar* rechnet den Mond mit ein.
+
+### Das Diagramm
+
+Eine Achse, eine Einheit: **Prozent, und oben ist gut.** Die Bewölkung hängt deshalb von oben herein
+statt von unten aufzusteigen – ihre Unterkante liest sich auf derselben Skala als „so viel Himmel
+ist frei", und die Eignungskurve darunter zeigt in dieselbe Richtung. Zwei Kurven mit
+entgegengesetzter Bedeutung auf einer Achse wären der sicherste Weg, ein Diagramm falsch zu lesen.
+
+Der Hintergrund trägt die Dämmerung: je heller der Himmel zur jeweiligen Stunde, desto heller die
+Fläche – gezeichnet aus demselben Faktor, den auch die Bewertung benutzt, so dass Fläche und Zahl
+nicht auseinanderlaufen können. Ein schmaler Streifen oben zeigt, wann der Mond über dem Horizont
+steht, heller je voller er ist.
+
+Die Kurve lässt sich **mit dem Finger abfahren**: Uhrzeit, Bewölkung in Prozent, Eignung und
+Mondstand stehen dann in einem Kasten neben der Berührung. Der Zeiger rastet auf die volle Stunde
+ein, statt zwischen zwei Stützstellen zu interpolieren – das Modell rechnet Stundenwerte, eine
+Zwischenzahl wäre erfunden. Senkrechte Wischer gibt die Fläche wieder frei, damit die Liste darunter
+weiter scrollt.
+
+### Sonne und Mond
+
+Dafür haben Sonne und Mond endlich Ephemeriden bekommen (`core/astro/Ephemeris.kt`), in derselben
+Frame-Konvention wie alles andere – Ergebnis ist eine Position zum Äquinoktium des Datums, fertig für
+die Horizontrechnung:
+
+* **Sonne** nach Meeus Kap. 25, rund 0,01° genau. Daraus die Dämmerungsschwellen −0,833°, −6°, −12°
+  und −18°, gefunden wie überall in dieser App: grob abtasten, dann um den Vorzeichenwechsel herum
+  halbieren.
+* **Mond** nach Meeus Kap. 47 mit den 30 größten Gliedern jeder Reihe, rund 0,02° in der Länge. Die
+  **Parallaxe** von knapp einem Grad wird abgezogen – bei der Frage „steht der Mond schon oder noch
+  über dem Horizont" ist genau das der Unterschied, auf den es ankommt.
+* **Beleuchtung und Phase** aus dem Dreieck Sonne–Erde–Mond, mit Namen in Klartext.
+
+Eine Nacht läuft von Mittag bis Mittag, nicht von Mitternacht bis Mitternacht – nur so stehen der
+Abend und der zugehörige Morgen im selben Eintrag. Vor sechs Uhr morgens meint „heute Abend" noch
+den Abend von gestern: Wer um zwei Uhr nachts hinschaut, steht draußen. Fehlende Zeiten sind kein
+Fehler, sondern eine Aussage: Nördlich von etwa 48,5° wird es zwischen Ende Mai und Mitte Juli
+überhaupt nicht mehr astronomisch dunkel, und die Ansicht sagt das auch so.
+
+### Bortle-Stufe – und was sie hier wert ist
+
+Zu jedem Ort steht die Bortle-Stufe bei den Daten. **Sie ist geschätzt, und das steht dabei.** Ein
+belastbarer Wert kommt aus einem Lichtatlas, also aus Satellitenmessungen der Aufhellung, Gitterpunkt
+für Gitterpunkt. So ein Atlas liegt hier nicht vor, und ihn über eine kostenpflichtige Schnittstelle
+nachzuladen passt weder zur Katalogstrategie noch dazu, dass die App sonst ohne Netz rechnet.
+
+Geschätzt wird deshalb aus **Einwohnerzahl und Entfernung**, in zwei Teilen: Im Ort hängt die
+Aufhellung an der Ortsgröße – Weiler Stufe 4, Kleinstadt 6, Großstadt 9, an gemessenen Werten in
+Mitteleuropa ausgerichtet. Außerhalb greift Walkers Gesetz, die Aufhellung fällt mit `d^-2,5`. Beide
+Teile treffen sich am Rand der bebauten Fläche, so dass der Verlauf stetig und in beide Richtungen
+monoton ist. Kommt die Position vom GPS, liefert der Geocoder des Systems die nächste Ortschaft und
+Open-Meteo deren Einwohnerzahl; die **Koordinaten bleiben die eigenen**, übernommen werden nur Name,
+Zeitzone und Größe – wer fünf Kilometer außerhalb steht, bekommt das Wetter für seinen Standort und
+die Lichtverschmutzung für die Entfernung dorthin.
+
+Die Schätzung kennt außerdem immer nur *einen* Ort: die Lichtglocke der Großstadt hinter dem
+nächsten Hügel taucht in ihr nicht auf. Deswegen lässt sich die Stufe antippen und von Hand setzen –
+mit allen neun Klassen im Klartext, was man am Himmel sieht und was daraus für die Fotografie folgt.
+Der gesetzte Wert hängt am Ort und verschwindet beim Ortswechsel, statt stillschweigend
+weiterzugelten.
+
+---
+
 ## Kataloge
 
 Alles liegt lokal, zusammen **184 KB gepackt**:
@@ -407,16 +590,17 @@ als Ergänzung für ungewöhnlich tiefe Suchen, nicht als Ersatz.
 ```
 app/src/main/java/com/starwindow/app/
 ├── core/
-│   ├── astro/       Zeit, Koordinaten, Transformationen  (reine Mathematik, testbar)
+│   ├── astro/       Zeit, Koordinaten, Ephemeriden, Dämmerung  (reine Mathematik, testbar)
 │   ├── geometry/    Kugelgeometrie, Fensterformen
 │   ├── camera/      Kameraoptik, Bildschirm ⇄ Himmel
 │   └── sensors/     Lage- und Standortverfolgung
 ├── data/
 │   ├── catalog/     Katalogquellen und -modell
 │   ├── tracking/    Das verfolgte Objekt, über Neustarts hinweg
+│   ├── weather/     Vorhersage und Ortssuche (Open-Meteo)
 │   └── windows/     Persistenz (JSON) und Einstellungen
-├── domain/          Durchgangsberechnung, Katalogsuche
-└── ui/              Compose-Oberfläche (Kamera, Suche, Liste, Detail)
+├── domain/          Durchgangsberechnung, Katalogsuche, Nachtbewertung, Bortle-Skala
+└── ui/              Compose-Oberfläche (Kamera, Suche, Liste, Detail, Wetter)
 ```
 
 `core/` hat bis auf die Sensorschicht keine Android-Abhängigkeiten – deswegen laufen die Tests als
@@ -424,14 +608,15 @@ normale JVM-Unit-Tests ohne Emulator.
 
 Bewusste Entscheidungen: kein Dependency-Injection-Framework (`AppContainer` reicht bei dieser
 Größe), keine Play Services (`LocationManager` genügt für eine Genauigkeit von einigen hundert
-Metern), keine Datenbank (Fenster liegen als eine JSON-Datei, damit sie exportierbar bleiben).
-Jede dieser Stellen ist eine einzelne Naht, die sich später austauschen lässt.
+Metern), keine Datenbank (Fenster liegen als eine JSON-Datei, damit sie exportierbar bleiben), keine
+Netzwerkbibliothek (drei GET-Anfragen gegen JSON – Bilddienst, Vorhersage, Ortssuche – tragen keine
+Abhängigkeit). Jede dieser Stellen ist eine einzelne Naht, die sich später austauschen lässt.
 
 ---
 
 ## Tests
 
-222 Unit-Tests in `app/src/test/`, alle grün. Sie prüfen nicht nur, dass Funktionen etwas
+282 Unit-Tests in `app/src/test/`, alle grün. Sie prüfen nicht nur, dass Funktionen etwas
 zurückgeben, sondern physikalische Invarianten:
 
 * GMST zur Epoche J2000 gegen die IAU-Konstante, siderischer Tag gegen Sonnentag,
@@ -469,7 +654,37 @@ zurückgeben, sondern physikalische Invarianten:
   sie durchwinkt und die Neigungsprüfung sie fängt; das ist der Fall, für den es sie gibt,
 * gespeicherte Fenster überstehen den JSON-Umlauf, Basiskatalog und Sternbildfiguren werden gegen
   veröffentlichte J2000-Positionen geprüft – und kein Figurabschnitt darf unplausibel lang sein,
-  was einen Tippfehler in einer der 203 Koordinaten sofort auffliegen lässt.
+  was einen Tippfehler in einer der 203 Koordinaten sofort auffliegen lässt,
+* die Sonnenephemeride trifft Meeus' durchgerechnetes Beispiel auf 0,01°, erreicht zu den
+  Sonnenwenden genau die Schiefe der Ekliptik, geht zum Frühlingspunkt durch RA 0 und kulminiert auf
+  die von der Geometrie geforderte Höhe – letzteres prüft Ephemeride und Koordinatenwandlung in
+  einem, ohne dass irgendwo eine Uhrzeit erraten werden müsste,
+* die Mondephemeride trifft Meeus' Beispiel auf 0,02° und 300 km, bleibt über zwei Jahre in
+  Tagesschritten innerhalb ihres Abstandsbereichs und der 5,3° Bahnneigung – das fängt einen
+  Vorzeichenfehler in einem der 60 Reihenglieder – und liefert zu bekannten Neu- und Vollmonden die
+  passende Beleuchtung; die Parallaxe senkt den Mond und bleibt dabei unter einem Grad,
+* die Dämmerungsrechnung durchläuft im Berliner Dezember alle vier Schwellen in der richtigen
+  Reihenfolge, liefert für den Berliner Juni ausdrücklich *keine* astronomische Dunkelheit, für
+  Zürich im selben Juni die knappen zwei Stunden, die 47,4° Breite hergeben, und Tromsø hat im Juni
+  keinen Sonnenuntergang und im Dezember keinen Sonnenaufgang. Zur Kontrolle steht die Sonne zum
+  gemeldeten Zeitpunkt auch wirklich auf −18°, der Mond zu Auf- und Untergang auf dem Horizont,
+* die Nachtbewertung fällt bei Regen auf null, benennt jeweils den richtigen begrenzenden Faktor,
+  lässt die Dunkelheit mit steigender Sonne nie wieder zunehmen – und eine wolkenlose Vollmondnacht
+  behält ihren Haken, wird aber als mondgestört markiert, während dieselbe Nacht zwei Wochen später
+  sauber durchgeht,
+* die Bortle-Schätzung wird mit der Ortsgröße heller und mit der Entfernung streng monoton dunkler,
+  bleibt innerhalb der bebauten Fläche konstant, und ein von Hand gesetzter Wert schlägt sie,
+* der Vorhersage-Parser ordnet Spalten den Zeitstempeln zu, behält Lücken als Lücken, kommt mit
+  einer Größe zurecht, die der Lauf gar nicht führt, und gibt bei einer abgelehnten Anfrage den
+  Grund des Dienstes weiter statt einer allgemeinen Meldung,
+* die leeren Stunden hinter der Reichweite eines Kurzfristmodells werden abgeschnitten – ohne das
+  läse die Nachtbewertung sie als „keine Bewölkung gemeldet" und erfände traumhafte Nächte,
+* jedes Wettermodell der Auswahl trägt einen plausiblen Bezeichner, eine Maschenweite und eine
+  Anfragelänge innerhalb dessen, was der Dienst hergibt – ein Tippfehler in der von Hand gepflegten
+  Liste fiele sonst erst draußen im Feld auf, wo kein Netz ist,
+* `meta.json` wird auf Lauf-Zeitpunkt, Veröffentlichung, Laufintervall und Zeitschritt ausgewertet,
+  das Modellgebiet aus der WKT-Beschreibung gezogen (Zürich liegt im ICON-EU-Gebiet, New York
+  nicht), das Alter eines Laufs nie negativ – und ohne Gebietsangabe behauptet die App gar nichts.
 
 ---
 
@@ -478,10 +693,13 @@ zurückgeben, sondern physikalische Invarianten:
 Die vollständige, nach Dringlichkeit sortierte Liste steht in **[TODO.md](TODO.md)**. Das Wichtigste
 daraus:
 
-* **Zuerst:** Projekt in Android Studio kompilieren – die UI-Schicht wurde ohne Zugriff auf Google
-  Maven gebaut und ist noch von keinem Compiler gesehen worden. Danach Feldabgleich an einem
-  bekannten Stern; das ist der eigentliche Abnahmetest.
+* **Zuerst:** Feldabgleich an einem bekannten Stern – das ist der eigentliche Abnahmetest, und den
+  kann kein Unit-Test ersetzen.
 * Nachtsicht und Kalibrierung sind gebaut, aber noch auf keiner echten Kamera gelaufen – die
   erreichbaren Belichtungszeiten und die Schwenkmethode gehören als Erstes aufs Gerät.
 * Bildstapelung, damit auch schwächere Sterne im Sucher erscheinen.
-* Mond, Sonne und Planeten sowie die Anbindung der Online-Kataloge.
+* Die Wetteransicht ist gegen echte Antworten von Open-Meteo geprüft, aber noch nicht auf dem Gerät
+  bedient worden – Fingerbedienung der Kurve und Ortssuche gehören ausprobiert.
+* Sonne und Mond haben jetzt Ephemeriden, sind aber noch keine **Katalogobjekte**: „wann zieht der
+  Mond durch mein Fenster" fehlt weiterhin, ebenso die Planeten und die Online-Kataloge.
+* Ein echter Lichtatlas statt der Bortle-Schätzung aus der Einwohnerzahl.

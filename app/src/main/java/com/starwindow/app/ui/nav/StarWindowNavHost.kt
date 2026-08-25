@@ -22,6 +22,8 @@ import com.starwindow.app.ui.search.ObjectDetailScreen
 import com.starwindow.app.ui.search.ObjectDetailViewModel
 import com.starwindow.app.ui.search.ObjectSearchScreen
 import com.starwindow.app.ui.search.ObjectSearchViewModel
+import com.starwindow.app.ui.weather.WeatherScreen
+import com.starwindow.app.ui.weather.WeatherViewModel
 import com.starwindow.app.ui.windows.WindowDetailScreen
 import com.starwindow.app.ui.windows.WindowDetailViewModel
 import com.starwindow.app.ui.windows.WindowListScreen
@@ -33,6 +35,7 @@ object Routes {
     const val WINDOW_LIST = "windows"
     const val WINDOW_DETAIL = "windows/{windowId}"
     const val SEARCH = "search"
+    const val WEATHER = "weather"
     const val OBJECT_DETAIL = "objects/{objectId}"
 
     fun windowDetail(windowId: String) = "windows/$windowId"
@@ -60,7 +63,17 @@ fun StarWindowNavHost(
                 onOpenWindows = { navController.navigate(Routes.WINDOW_LIST) },
                 onOpenCalibration = { navController.navigate(Routes.CALIBRATION) },
                 onOpenSearch = { navController.navigate(Routes.SEARCH) },
+                onOpenWeather = { navController.navigate(Routes.WEATHER) },
                 onOpenTrackedObject = { navController.navigate(Routes.objectDetail(it)) },
+            )
+        }
+
+        composable(Routes.WEATHER) {
+            val viewModel: WeatherViewModel =
+                viewModel(factory = WeatherViewModel.factory(container))
+            WeatherScreen(
+                viewModel = viewModel,
+                onBack = { navController.popBackStack() },
             )
         }
 

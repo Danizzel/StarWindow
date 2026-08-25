@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CloudQueue
 import androidx.compose.material.icons.filled.CropFree
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Explore
@@ -87,6 +88,7 @@ fun CaptureScreen(
     onOpenWindows: () -> Unit,
     onOpenCalibration: () -> Unit,
     onOpenSearch: () -> Unit,
+    onOpenWeather: () -> Unit,
     onOpenTrackedObject: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -214,6 +216,7 @@ fun CaptureScreen(
                     hasOrientationSensor = viewModel.hasOrientationSensor,
                     nightMode = state.settings.exposure.mode == ExposureMode.NIGHT,
                     onOpenSearch = onOpenSearch,
+                    onOpenWeather = onOpenWeather,
                     onOpenWindows = onOpenWindows,
                     onOpenSettings = { showSettings = true },
                     onOpenNightVision = { showNightVision = true },
@@ -341,6 +344,7 @@ private fun CaptureHud(
     hasOrientationSensor: Boolean,
     nightMode: Boolean,
     onOpenSearch: () -> Unit,
+    onOpenWeather: () -> Unit,
     onOpenWindows: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenNightVision: () -> Unit,
@@ -349,6 +353,13 @@ private fun CaptureHud(
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 SearchPill(onClick = onOpenSearch, modifier = Modifier.weight(1f))
+                IconButton(onClick = onOpenWeather) {
+                    Icon(
+                        Icons.Filled.CloudQueue,
+                        contentDescription = "Wetter für die Nacht",
+                        tint = StarWindowColors.Starlight,
+                    )
+                }
                 IconButton(onClick = onOpenNightVision) {
                     Icon(
                         Icons.Filled.NightlightRound,

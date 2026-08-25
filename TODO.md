@@ -1,8 +1,9 @@
 # StarWindow – was noch fehlt
 
 Stand: Grundgerüst, Nachtsicht-Sucher, Kalibrierung, Sternbilder, Laufbahnen, Deep-Sky-Katalog,
-Objektsuche und Verfolgung im Sucher. Die Rechenkette Bildschirm → Himmel steht und ist durch
-222 Unit-Tests abgesichert; die App übersetzt und läuft auf einem echten Gerät.
+Objektsuche und Verfolgung im Sucher, Wettervorhersage für die Nacht. Die Rechenkette
+Bildschirm → Himmel steht und ist durch 282 Unit-Tests abgesichert; die App übersetzt und läuft auf
+einem echten Gerät.
 
 Reihenfolge ist bewusst: Abschnitt 2 sind Stellen, die ich beim Nachlesen des eigenen Codes als
 tatsächlich unfertig verifiziert habe (kein Raten). Was noch aussteht, ist zum großen Teil nicht
@@ -14,7 +15,7 @@ mehr Code, sondern **Gegenprüfung am Himmel** – siehe Abschnitt 1.
 
 - [x] ~~Projekt synchronisieren und kompilieren.~~ Werkzeugkette auf Gradle 9.4.1, AGP 9.2.1,
       Kotlin 2.3.21, SDK 36 angehoben.
-- [x] ~~`./gradlew :app:testDebugUnitTest`~~ – 222 Tests, grün.
+- [x] ~~`./gradlew :app:testDebugUnitTest`~~ – 282 Tests, grün.
 - [x] ~~Auf echtem Gerät starten.~~ Läuft auf einem Pixel 9.
 - [ ] **Feldabgleich am Himmel:** auf einen bekannten hellen Stern zielen und prüfen, ob dessen
       Katalogmarkierung darauf sitzt. Sitzt sie daneben → Kompass kalibrieren (Achterbewegung).
@@ -83,11 +84,18 @@ mehr Code, sondern **Gegenprüfung am Himmel** – siehe Abschnitt 1.
 
 ## 4. Kataloge und Objekte
 
-- [ ] **Mond, Sonne, Planeten.** Brauchen Ephemeriden statt fester RA/Dec. Für den Mond ist das der
-      aufwendigste Teil (Parallaxe, schnelle Eigenbewegung), aber „wann zieht der Mond durch mein
-      Fenster" ist die naheliegendste Frage überhaupt.
-- [ ] **Dämmerungszeiten und Mondstörung** in der Detailansicht: ein Durchgang um 14 Uhr nützt
-      nichts. Setzt die Sonnen-Ephemeride aus dem Punkt darüber voraus.
+- [x] ~~**Ephemeriden für Sonne und Mond.**~~ `core/astro/Ephemeris.kt` nach Meeus Kap. 25 und 47:
+      Sonne auf 0,01°, Mond auf 0,02° in der Länge, samt Parallaxe, Beleuchtungsgrad und Phase.
+      `Twilight` findet daraus Dämmerungsschwellen, Auf- und Untergänge.
+- [ ] **Mond und Sonne als Katalogobjekte.** Die Ephemeriden liegen vor, aber die
+      Durchgangsberechnung kennt weiterhin nur feste RA/Dec — „wann zieht der Mond durch mein
+      Fenster" ist die naheliegendste Frage überhaupt und geht noch nicht. Nötig: ein
+      `SkyObject`, dessen Position eine Funktion der Zeit ist, und ein `TransitCalculator`, der
+      das aushält.
+- [ ] **Planeten.** Brauchen zusätzlich VSOP87 oder eine gekürzte Fassung davon.
+- [ ] **Dämmerungszeiten und Mondstörung in der Fensteransicht:** ein Durchgang um 14 Uhr nützt
+      nichts. Die Rechnung dafür steht jetzt in `Twilight` und `AstroWeather` — sie muss nur noch
+      in die Durchgangsliste hinein.
 - [ ] **Satelliten (ISS, Starlink)** über TLE + SGP4 – passt konzeptionell perfekt zum Fenster,
       ist aber ein eigenes Teilprojekt.
 - [x] ~~OpenNGC lokal mitliefern.~~ 3.241 fotografisch interessante Objekte, 179 KB gepackt,
@@ -257,3 +265,40 @@ mehr Code, sondern **Gegenprüfung am Himmel** – siehe Abschnitt 1.
       ProGuard-Regeln gegen einen echten Release-Build prüfen.
 - [ ] **Datenschutzhinweis:** Standort und Kamera werden nur lokal verarbeitet – für den Play
       Store ohnehin nötig.
+
+---
+
+## 8. Wetter und Nachtplanung
+
+- [x] ~~**Wetteransicht.**~~ Eigener Tab über dem Sucher: Urteil und Kurve für heute Abend,
+      Dämmerung, Mond, Bewölkung nach Schichten, Taupunkt, Wind, Höhenwind und Bortle-Stufe,
+      darunter bis zu 15 Nächte mit Wochentag, Datum und Haken zum Aufklappen. Vorhersage aus
+      sechs wählbaren Modellen über Open-Meteo (ICON-CH1 bis ECMWF IFS) samt Zeitpunkt des letzten
+      Laufs, Ortssuche über deren Geocoder.
+- [ ] **Auf dem Gerät bedienen.** Parser und Modellzustand sind gegen echte Antworten des Dienstes
+      geprüft und die Bewertung gegen vollständige Läufe aller vier mitteleuropäischen Modelle, aber
+      die Ansicht selbst hat noch niemand in der Hand gehabt: Fingerbedienung der Kurve,
+      Modellwechsel, Ortssuche mit Tastatur, Verhalten ohne Netz.
+- [ ] **Echter Lichtatlas statt Einwohnerschätzung.** Die Bortle-Angabe kommt aus Ortsgröße und
+      Entfernung und kennt immer nur *einen* Ort – die Lichtglocke der Stadt hinter dem Hügel fehlt
+      ihr. Ein gekachelter Auszug des Weltatlas als mitgeliefertes Asset wäre die saubere Lösung;
+      zu prüfen ist, wie groß eine brauchbare Auflösung wird.
+- [ ] **Ensemble statt Einzellauf.** Open-Meteo führt auch die IFS-Ensembles. Aus der Streuung der
+      50 Läufe ließe sich sagen, wie *sicher* eine Vorhersage ist – bei einer Planung fünf Tage im
+      Voraus ist das die interessantere Zahl als der Mittelwert.
+- [x] ~~**Kurzfristmodelle für heute Abend.**~~ Sechs Modelle zur Wahl, oben in der Ansicht und
+      nach Maschenweite sortiert: ICON-CH1 (1 km), AROME HD (1,5 km), HARMONIE (2 km), ICON-D2
+      (2,2 km), ICON-EU (7 km) und ECMWF IFS (25 km, 15 Tage, Voreinstellung). Zu jedem steht der
+      Zeitpunkt des letzten Laufs aus `meta.json` des Dienstes, dazu Laufintervall und Reichweite;
+      Modelle außerhalb ihres Gebiets sind ausgegraut.
+- [ ] **Modelle nebeneinander zeigen.** Wenn ICON-D2 „teilweise" sagt und ECMWF „geeignet", ist
+      genau das die interessante Information — bisher sieht man immer nur eines. Zwei Kurven
+      übereinander oder ein Streuungsband wären der nächste Schritt.
+- [ ] **Modell nach Vorlauf automatisch wechseln:** für heute Abend das feinste verfügbare, für
+      nächste Woche ECMWF. Open-Meteos `best_match` täte das, liefert dann aber keinen einzelnen
+      Lauf-Zeitpunkt mehr — die Angabe „zuletzt aktualisiert" müsste anders gelöst werden.
+- [ ] **Wetter mit den Fenstern verbinden:** „In deinem Fenster zieht am Donnerstag M31 durch, und
+      das Wetter passt." Braucht nur, dass die Durchgangsliste die Nachtbewertung nachschlägt.
+- [ ] **Benachrichtigung bei Aufklaren** für eine Nacht, die man vorgemerkt hat.
+- [ ] **Vorhersage zwischenspeichern**, damit die Ansicht auch ohne Netz noch die letzte bekannte
+      Lage zeigt. Derzeit hält der Zwischenspeicher nur die laufende Sitzung.

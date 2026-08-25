@@ -6,6 +6,8 @@ import androidx.core.content.edit
 import com.starwindow.app.core.astro.ObserverLocation
 import com.starwindow.app.core.calibration.Calibration
 import com.starwindow.app.core.camera.ExposureSettings
+import com.starwindow.app.data.weather.WeatherModel
+import com.starwindow.app.data.weather.WeatherPlace
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,6 +30,16 @@ data class Settings(
     val manualLocation: ObserverLocation? = null,
     val calibration: Calibration = Calibration.NONE,
     val exposure: ExposureSettings = ExposureSettings.AUTO,
+    /**
+     * Der Ort, für den die Wettervorhersage gilt.
+     *
+     * Getrennt von [manualLocation]: Der Beobachtungsort für die Fenster ist der, an dem das Handy
+     * steht, der Wetterort ist der, für den man plant — und das sind vor der Fahrt zum dunklen
+     * Platz zwei verschiedene.
+     */
+    val weatherPlace: WeatherPlace? = null,
+    /** Das Wettermodell, mit dem die Vorhersage gerechnet wird. */
+    val weatherModel: WeatherModel = WeatherModel.DEFAULT,
 )
 
 class SettingsStore(context: Context) {
@@ -51,6 +63,10 @@ class SettingsStore(context: Context) {
     fun setCalibration(calibration: Calibration) = update { it.copy(calibration = calibration) }
 
     fun setExposure(exposure: ExposureSettings) = update { it.copy(exposure = exposure) }
+
+    fun setWeatherPlace(place: WeatherPlace?) = update { it.copy(weatherPlace = place) }
+
+    fun setWeatherModel(model: WeatherModel) = update { it.copy(weatherModel = model) }
 
     /** Applies [transform] to the stored settings and persists the result. */
     fun update(transform: (Settings) -> Settings) {
