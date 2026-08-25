@@ -61,12 +61,15 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.starwindow.app.core.astro.Horizontal
+import com.starwindow.app.core.calibration.trustAt
 import com.starwindow.app.core.camera.EdgeInsets
 import com.starwindow.app.core.camera.ExposureMode
 import com.starwindow.app.core.camera.SkyProjection
 import com.starwindow.app.core.sensors.DeviceAttitude
 import com.starwindow.app.core.sensors.compassAccuracyLabel
-import com.starwindow.app.data.catalog.SkyObject
+import com.starwindow.app.data.tracking.TrackTarget
+import com.starwindow.app.data.tracking.TrackedObject
+import com.starwindow.app.data.tracking.TrackedWindow
 import com.starwindow.app.ui.components.ObjectSymbol
 import com.starwindow.app.ui.components.rememberSkyViewport
 import com.starwindow.app.ui.theme.StarWindowColors
@@ -90,7 +93,7 @@ fun CaptureScreen(
     val context = LocalContext.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val hudAttitude by viewModel.hudAttitude.collectAsStateWithLifecycle()
-    val trackedPosition by viewModel.trackedPosition.collectAsStateWithLifecycle()
+    val trackedTarget by viewModel.trackedTarget.collectAsStateWithLifecycle()
 
     // Deliberately NOT read during composition — the overlay reads it in the draw phase and the
     // tap handler in a callback, so sensor updates never trigger a recomposition.
@@ -103,6 +106,8 @@ fun CaptureScreen(
     var showSettings by remember { mutableStateOf(false) }
     var showNightVision by remember { mutableStateOf(false) }
     var viewSize by remember { mutableStateOf(IntSize.Zero) }
+    /** The mode the user asked for while points were already placed; confirmed before it applies. */
+    var pendingMode by remember { mutableStateOf<DrawMode?>(null) }
 
     // The two control bands are measured rather than guessed, so the arrow pointing at the tracked
     // object is never parked behind them — their height changes with the safe-area insets, with
@@ -178,7 +183,7 @@ fun CaptureScreen(
                     observer = state.observer,
                     showGraticule = state.settings.showGraticule,
                     showCatalog = state.settings.showCatalogOverlay,
-                    trackedTarget = state.tracked,
+                    trackedTarget = trackedTarget,
                     chromeInsets = EdgeInsets(
                         top = hudHeightPx.toFloat(),
                         bottom = controlsHeightPx.toFloat(),
@@ -218,24 +223,48 @@ fun CaptureScreen(
             Spacer(Modifier.weight(1f))
 
             Column(modifier = Modifier.onSizeChanged { controlsHeightPx = it.height }) {
-                state.tracked?.let { target ->
+                state.tracked?.let { tracked ->
                     TrackedTargetBar(
-                        target = target,
-                        position = trackedPosition,
-                        onOpenInfo = { onOpenTrackedObject(target.id) },
+                        tracked = tracked,
+                        target = trackedTarget,
+                        // Only a catalogue entry has an info sheet to open; a window has its own
+                        // detail screen, reachable from the list where it was picked.
+                        onOpenInfo = (tracked as? TrackedObject)
+                            ?.let { { onOpenTrackedObject(it.obj.id) } },
                         onStop = viewModel::stopTracking,
                     )
                 }
 
                 CaptureControls(
                     state = state,
-                    onModeChange = viewModel::setMode,
+                    // Switching mode throws the placed points away, because they mean something
+                    // different in each mode. Ask first — but only when there is something to lose,
+                    // so the dialog stays a warning instead of becoming a reflex to tap through.
+                    onModeChange = { mode ->
+                        if (state.anchors.isEmpty() || mode == state.mode) {
+                            viewModel.setMode(mode)
+                        } else {
+                            pendingMode = mode
+                        }
+                    },
                     onUndo = viewModel::undoAnchor,
                     onClear = viewModel::clearAnchors,
                     onSave = { showSaveDialog = true },
                 )
             }
         }
+    }
+
+    pendingMode?.let { mode ->
+        DiscardAnchorsDialog(
+            mode = mode,
+            anchorCount = state.anchors.size,
+            onConfirm = {
+                viewModel.setMode(mode)
+                pendingMode = null
+            },
+            onDismiss = { pendingMode = null },
+        )
     }
 
     if (showSaveDialog) {
@@ -382,21 +411,60 @@ private fun CaptureHud(
                 )
 
                 // Only shown while something is actually wrong: a warning that is always there is
-                // one nobody reads when it finally matters.
-                if (attitude?.isMagneticallyDisturbed == true || attitude?.headingHeld == true) {
+                // one nobody reads when it finally matters. The three cases are kept apart because
+                // the user can do something different about each — wave a figure eight, walk away
+                // from the iron, or simply wait.
+                if (attitude?.needsCompassCalibration == true) {
                     StatusPill(
                         icon = Icons.Filled.Warning,
-                        text = if (attitude.isMagneticallyDisturbed) {
-                            val deviation = attitude.fieldDeviationMicroTesla
-                            if (deviation != null) {
-                                "Magnetstörung %+.0f µT – Nord gehalten".format(deviation)
-                            } else {
-                                "Magnetstörung – Nord gehalten"
+                        text = "Kompass kalibrieren: liegende Acht schwenken",
+                        tint = StarWindowColors.Crosshair,
+                    )
+                } else if (attitude?.isMagneticallyDisturbed == true || attitude?.headingHeld == true) {
+                    StatusPill(
+                        icon = Icons.Filled.Warning,
+                        text = buildString {
+                            when {
+                                attitude.hasFieldDirectionDistortion -> {
+                                    append("Feldrichtung gestört")
+                                    val dip = attitude.inclinationDeg
+                                    val expected = attitude.expectedInclinationDeg
+                                    if (dip != null && expected != null) {
+                                        append(" %+.0f°".format(dip - expected))
+                                    }
+                                }
+
+                                attitude.hasFieldStrengthDistortion -> {
+                                    append("Magnetstörung")
+                                    attitude.fieldDeviationMicroTesla
+                                        ?.let { append(" %+.0f µT".format(it)) }
+                                }
+
+                                else -> append("Kompass unsicher")
                             }
-                        } else {
-                            "Nord gehalten"
+                            append(" – Nord gehalten")
+                            // A held heading ages. Saying for how long, and how far it may have
+                            // wandered, is the difference between a warning and a fact.
+                            if (attitude.headingDriftDeg >= 0.5) {
+                                append(" (±%.0f°)".format(attitude.headingDriftDeg))
+                            }
                         },
                         tint = StarWindowColors.Crosshair,
+                    )
+                }
+
+                // A stored calibration that no longer describes this place is worse than none: it
+                // would be applied with full confidence to a direction it cannot correct.
+                val trust = state.settings.calibration.trustAt(state.observer, System.currentTimeMillis())
+                if (trust.isQuestionable) {
+                    StatusPill(
+                        icon = Icons.Filled.Warning,
+                        text = "Kalibrierung ${trust.label}",
+                        tint = if (trust.needsRemeasuring) {
+                            StarWindowColors.Crosshair
+                        } else {
+                            StarWindowColors.AnchorPoint
+                        },
                     )
                 }
 
@@ -481,21 +549,32 @@ private fun StatusPill(icon: ImageVector, text: String, tint: Color) {
  */
 @Composable
 private fun TrackedTargetBar(
-    target: SkyObject,
-    position: Horizontal?,
-    onOpenInfo: () -> Unit,
+    tracked: TrackTarget,
+    target: SkyTarget?,
+    onOpenInfo: (() -> Unit)?,
     onStop: () -> Unit,
 ) {
+    val position = target?.direction
     Surface(color = Color.Black.copy(alpha = 0.62f)) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(start = 14.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            ObjectSymbol(target.type, size = 20.dp, color = StarWindowColors.TrackTarget)
+            when (tracked) {
+                is TrackedObject ->
+                    ObjectSymbol(tracked.type, size = 20.dp, color = StarWindowColors.TrackTarget)
+
+                is TrackedWindow -> Icon(
+                    Icons.Filled.CropFree,
+                    contentDescription = null,
+                    tint = StarWindowColors.TrackTarget,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
             Spacer(Modifier.size(10.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = target.name.ifBlank { target.id },
+                    text = tracked.label,
                     style = MaterialTheme.typography.titleSmall,
                     color = StarWindowColors.TrackTarget,
                     maxLines = 1,
@@ -522,12 +601,14 @@ private fun TrackedTargetBar(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            IconButton(onClick = onOpenInfo) {
-                Icon(
-                    Icons.Outlined.Info,
-                    contentDescription = "Infos zu ${target.name.ifBlank { target.id }}",
-                    tint = StarWindowColors.CatalogMarker,
-                )
+            onOpenInfo?.let {
+                IconButton(onClick = it) {
+                    Icon(
+                        Icons.Outlined.Info,
+                        contentDescription = "Infos zu ${tracked.label}",
+                        tint = StarWindowColors.CatalogMarker,
+                    )
+                }
             }
             IconButton(onClick = onStop) {
                 Icon(
@@ -583,6 +664,24 @@ private fun CaptureControls(
                     style = MaterialTheme.typography.labelMedium,
                     color = StarWindowColors.WindowStroke,
                 )
+            }
+
+            if (state.outlineCrossesItself) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Filled.Warning,
+                        contentDescription = null,
+                        tint = StarWindowColors.AnchorPoint,
+                        modifier = Modifier.size(13.dp),
+                    )
+                    Spacer(Modifier.size(5.dp))
+                    Text(
+                        text = "Die Kontur überschneidet sich – Fläche und Durchgänge stimmen so " +
+                            "nicht. Ecken der Reihe nach antippen.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = StarWindowColors.AnchorPoint,
+                    )
+                }
             }
 
             Spacer(Modifier.height(8.dp))

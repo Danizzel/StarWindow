@@ -22,7 +22,7 @@ Anforderungen: Android Studio Ladybug oder neuer, JDK 17, Android SDK 35, minSdk
 
 ```
 ./gradlew :app:assembleDebug     # APK bauen
-./gradlew :app:testDebugUnitTest # 177 Unit-Tests
+./gradlew :app:testDebugUnitTest # 222 Unit-Tests
 ```
 
 ---
@@ -65,8 +65,9 @@ Ein Fenster ist **horizontfest**: an Azimut und Höhe geheftet, wie eine Lücke 
 Dächern. Es folgt weder der Kamera noch den Sternen.
 
 * **Schwenkt man die Kamera**, bleibt das Fenster dort am Himmel, wo es gezeichnet wurde, und
-  wandert dabei über den Bildschirm – bis aus dem Bild heraus. (Für ein *Objekt* gibt es den
-  Rückweg-Pfeil, siehe unten; für ein gespeichertes Fenster noch nicht, siehe [TODO.md](TODO.md).)
+  wandert dabei über den Bildschirm – bis aus dem Bild heraus. Zurück führt derselbe Pfeil, der auch
+  zu einem Objekt führt: das Zielsymbol in der Fensterliste, und im Sucher erscheint die Kontur
+  wieder, sobald das Fenster im Bild ist.
 * **Wartet man**, dreht sich der Sternhimmel durch das stehende Fenster. Ein Stern, auf den ein
   Punkt gesetzt wurde, ist zehn Minuten später gut zweieinhalb Grad weitergewandert – die
   Markierung nicht. Genau diese Relativbewegung ist es, die die Durchgangsberechnung auswertet.
@@ -101,11 +102,32 @@ Magnetsensor. Über Sekunden und Minuten, also genau über die Zeitspanne, in de
 ausrichtet, ist er um eine Größenordnung ruhiger. Der Kompass wird nur noch für **eine einzige Zahl**
 befragt: den Winkel zwischen dieser Kreiselwelt und echtem Norden. Diese Zahl läuft durch einen
 Filter mit zehn Sekunden Zeitkonstante und wird nur nachgeführt, wenn drei Bedingungen stimmen –
-Android meldet den Magnetsensor als brauchbar, die gemessene Feldstärke passt zum Erdmagnetfeld am
-eigenen Ort (`GeomagneticField`), und das Handy schwenkt gerade nicht. Fällt eine davon weg, hält der
-Kreisel die Nordrichtung weiter, und der Sucher zeigt „Nord gehalten" statt den Himmel zu verreißen.
-Genau das ist das richtige Verhalten: **eine langsam alternde Richtung ist brauchbar, eine springende
+Android meldet den Magnetsensor als brauchbar, das gemessene Feld passt zum Erdmagnetfeld am eigenen
+Ort (`GeomagneticField`), und das Handy schwenkt gerade nicht. Fällt eine davon weg, hält der Kreisel
+die Nordrichtung weiter, und der Sucher zeigt „Nord gehalten" statt den Himmel zu verreißen. Genau
+das ist das richtige Verhalten: **eine langsam alternde Richtung ist brauchbar, eine springende
 nicht.**
+
+„Passt zum Erdmagnetfeld" heißt dabei zweierlei, und der zweite Teil ist der wichtigere. Geprüft wird
+die **Stärke** – 25 bis 65 µT, je nach Ort, und das Modell weiß auf ein Prozent genau welche – *und*
+die **Neigung** der Feldlinien, also der Winkel, unter dem sie in den Boden zeigen (in Mitteleuropa
+rund 64°). Der Grund: Eisen in der Nähe addiert einen Vektor zum Erdfeld, und diese Summe kann fast
+genauso lang bleiben und trotzdem zwanzig Grad schief zeigen. Eine reine Längenprüfung winkt das
+durch – und der Fehler landet ungebremst in der Nordrichtung. Die Neigung hängt nur an der
+Schwerkraft und am Feld, nie an der Nordrichtung, und darf deswegen über den Kompass urteilen, ohne
+aus ihm abgeleitet zu sein.
+
+Gelesen wird dafür `TYPE_MAGNETIC_FIELD_UNCALIBRATED`: derselbe Sensor liefert zusätzlich die
+Hard-Iron-Schätzung der Plattform – die Lautsprecher-, Kamera- und Akkumagnete des Telefons selbst.
+Deren Größe trennt zwei Fälle, die der Nutzer völlig verschieden behandeln muss: **„neben dir steht
+Eisen"** (ein paar Schritte weggehen) gegen **„der Sensor ist noch nicht eingemessen"** (liegende
+Acht schwenken). Vorher hieß beides „unzuverlässig", was auf keines von beidem eine Antwort war.
+
+Und weil der Kreisel driftet, während er Norden trägt, zählt die App die **Haltedauer** mit und
+rechnet sie in einen Winkel um: „Nord gehalten (±3°)". Drei Sekunden und zwanzig Minuten sind nicht
+dasselbe, und ab dreißig Grad hört die ehrliche Antwort auf, eine Zahl zu sein. Die Driftrate dahinter
+ist eine bewusst konservative **Annahme, keine Messung** – sie steht als einzelne Konstante da, damit
+ein Feldtest sie ersetzen kann.
 
 Die Glättung selbst läuft über eine **Zeitkonstante** statt über ein festes Gewicht pro Probe. Geräte
 liefern zwischen 30 und 200 Proben pro Sekunde; mit festem Gewicht glättet derselbe Code auf dem
@@ -157,6 +179,15 @@ jedem Wetter und auch am Tag im Zimmer.
 
 Die Ausrichtungsmethoden peilen mit dem **Fadenkreuz**, also in der Bildmitte, wo das Bildfeld
 rechnerisch keine Rolle spielt. Dadurch verrechnen sich die beiden Kalibrierungen nie gegenseitig.
+
+**Eine Kalibrierung altert.** Der Kompassfehler ist kein Merkmal des Handys, sondern des *Ortes*: Er
+steckt im Eisen des Balkongeländers, im Auto in der Einfahrt, im Betonstahl der Wand – und nichts
+davon reist mit. Deshalb merkt sich die Ausrichtungskorrektur, **wo** und **wann** sie gemessen
+wurde, und wird beim Benutzen beurteilt: frisch, älter (über zwei Tage), veraltet (über zwei Wochen)
+oder anderer Ort (über 5 km). Sie gilt weiter – aber Sucher und Kalibrierbildschirm sagen es an,
+statt eine falsche Richtung mit voller Überzeugung zu melden. Entfernung schlägt Alter: eine heute
+Morgen drei Orte weiter gemessene Korrektur ist weniger wert als eine eine Woche alte von diesem
+Balkon.
 
 ---
 
@@ -225,8 +256,33 @@ Fenster werden **in Azimut/Höhe** gespeichert, also fest gegenüber dem Horizon
 physikalisch richtige Beschreibung einer Lücke zwischen zwei Häusern – der Himmel dreht sich
 hindurch, und darauf beruht die Durchgangsberechnung.
 
+Wer die Ecken in der falschen Reihenfolge antippt, erzeugt eine Schleife statt einer Kontur. Beide
+Folgen wären stumm – die Fläche fällt zu klein aus, weil sich die Schleifen gegenseitig aufheben,
+und die Durchgangsprüfung antwortet für die falsche Hälfte –, deshalb **warnt die App**, sobald sich
+die Kontur überschneidet. Konkave Formen, also gerade die L-Form zwischen zwei Dächern, lösen
+ausdrücklich nichts aus.
+
 Zusätzlich zeigt die Detailansicht, wo die Fenstermitte zum Aufnahmezeitpunkt und jetzt am
 Sternhimmel steht (RA/Dec), zusammen mit Ort, Missweisung und Kompassgüte.
+
+### Wie genau ein Fenster überhaupt ist
+
+Ein bei „unzuverlässigem" Kompass gezeichnetes Fenster kann mehrere Grad danebenliegen, und Monate
+später sieht man ihm das nicht an: Die Durchgangsliste wirkt so oder so gleich überzeugt. Deshalb
+wandert die **Güte der Messung** mit ins Fenster – Kompassgüte, die gemessene Restabweichung der
+Kalibrierung, die damals galt, und ob der Kompass gerade gestört war –, und die Detailansicht zeigt
+daraus einen Fehlerbalken.
+
+Der Balken unterscheidet zwei sehr verschiedene Dinge, und das ist der Punkt:
+
+* Ein **Kalibrierrest** ist eine Messung. Die App hat auf bekannte Referenzen gezielt und
+  aufgeschrieben, wie weit sie danebenlag. „± 0,4°" heißt dann etwas.
+* Ein **Kompass-Gütekennzeichen** ist keine. Android meldet nur hoch/mittel/niedrig und nennt nie
+  einen Winkel. Der Wert steht deshalb als „etwa ± 5°" da, nicht als „± 5,0°" – aus einem
+  Kennzeichen eine Nachkommastelle zu zitieren wäre erfundene Genauigkeit.
+
+Skaliert ist der Balken auf den Fensterradius, weil das die Frage ist, die zählt: ein halbes Grad
+Fehler ist in einer 5°-Lücke nichts und in einem halben Grad Schlitz alles.
 
 ---
 
@@ -239,13 +295,39 @@ Die Detailansicht eines Fensters beantwortet drei Fragen auf einmal:
   eingeschachtelt.
 * **Wie die Laufbahn verläuft** – die Fensteransicht oben zeichnet das stehende Fenster und die
   Bahnen, die hindurchziehen. Durchgezogen ist die Zeit im Fenster, gepunktet der An- und Abflug,
-  Punkte markieren volle Stunden, ein Pfeil zeigt die Richtung. Eine Zeile antippen hebt ihre Bahn
-  hervor.
+  Punkte markieren volle Stunden, ein Pfeil zeigt die Richtung.
+
+**Antippen filtert.** Solange nichts ausgewählt ist, zeigt das Diagramm eine Handvoll Bahnen als
+Überblick – ein leeres Diagramm unter einer vollen Ergebnisliste sähe kaputt aus. Sobald eine Zeile
+angetippt wird, zeigt es **nur noch** die ausgewählten, dafür mit allen ihren Durchgängen. Ein
+Dutzend sich kreuzender Bahnen sagt über keine einzelne etwas aus; genau eine herauszulösen ist der
+Grund, eine Zeile überhaupt anzutippen. „Alle" führt zurück zum Überblick.
+
+Damit dabei überhaupt etwas lesbar bleibt, **konkurrieren die Beschriftungen um Platz**: jede
+beansprucht ein Rechteck, und wer keins mehr findet, wird weggelassen statt übereinandergedruckt.
+Vergeben wird nach Wert – erst der Name, der eine Bahn identifiziert, dann Ein- und Austritt, die
+Zahlen, wegen derer man hergekommen ist, und zuletzt die vollen Stunden. Die Stundenpunkte selbst
+werden immer gezeichnet; sie liegen gleichmäßig, sodass sich die Zwischenzeiten ohnehin abzählen
+lassen.
 
 ### Das Info-Symbol an jedem Objekt
 
 Öffnet ein Blatt mit allem, was zu dem Objekt bekannt ist:
 
+* **Was es überhaupt ist.** Ein Katalogeintrag sagt `EMISSION_NEBULA, 6,0 mag, 120'` – für die
+  Durchgangsrechnung vollständig, für einen Menschen nichts. Deshalb steht oben ein Absatz in
+  Klartext, und zwar in zwei Schichten. Die **Art** wird für alle 3.241 Einträge erklärt: dass ein
+  Emissionsnebel sein Licht in wenigen schmalen Linien abstrahlt und deshalb auf Schmalbandfilter
+  anspricht, ein Reflexionsnebel dagegen nur fremdes Sternlicht streut – und derselbe Filter dort
+  genau das wegwirft, was den Nebel ausmacht. Ein Planetarischer Nebel bekommt dazu gesagt, dass er
+  nichts mit Planeten zu tun hat. Darüber steht bei den rund 150 bekannten Objekten eine
+  **handgeschriebene Notiz** mit dem, was kein Katalog enthält: dass in M51 1845 überhaupt zum
+  ersten Mal Spiralstruktur erkannt wurde, dass der blaue Schleier der Plejaden nicht ihre
+  Geburtswolke ist, sondern eine fremde Staubwolke, durch die sie gerade hindurchziehen.
+* **Was seine Zahlen bedeuten.** „190 Bogenminuten" ist eine Einheit; „sechsmal so breit wie der
+  Vollmond" ist eine Aussage über den Abend. Ausdehnung, Flächenhelligkeit und Morphologiecode
+  werden entsprechend übersetzt – `SB(s)b` wird zu „Balkenspirale, die Arme setzen an einem Balken
+  durchs Zentrum an".
 * **Ein Bild des Ausschnitts**, gerendert aus dem DSS2-Himmelsdurchmusterung über hips2fits (CDS
   Straßburg) – auf die Koordinaten des Objekts gerahmt, also genau der Ausschnitt, den auch das
   Fenster zeigt. Ohne Verbindung bleibt das Feld leer; alles andere im Blatt funktioniert weiter.
@@ -349,7 +431,7 @@ Jede dieser Stellen ist eine einzelne Naht, die sich später austauschen lässt.
 
 ## Tests
 
-177 Unit-Tests in `app/src/test/`, alle grün. Sie prüfen nicht nur, dass Funktionen etwas
+222 Unit-Tests in `app/src/test/`, alle grün. Sie prüfen nicht nur, dass Funktionen etwas
 zurückgeben, sondern physikalische Invarianten:
 
 * GMST zur Epoche J2000 gegen die IAU-Konstante, siderischer Tag gegen Sonnentag,
@@ -377,6 +459,14 @@ zurückgeben, sondern physikalische Invarianten:
 * der Zielpfeil bleibt über den ganzen abgetasteten Himmel hinweg auf dem Bildschirm und außerhalb
   der Bedienbalken, zeigt bei einem Ziel im Rücken nach oben statt nach unten, und sein
   Winkelabstand stimmt mit dem Winkel zwischen Bildmitte und Ziel überein,
+* eine Kontur, deren Ecken über Kreuz getippt wurden, wird als Schleife erkannt – und eine konkave
+  L-Form ausdrücklich nicht; der Test hält gleich fest, warum es zählt: die Fläche der Schleife
+  fällt auf unter die Hälfte,
+* eine Kalibrierung gilt nach 600 km als ortsfremd, aber nicht nach fünfzig Metern über den Garten,
+  und die Entfernung stimmt über die Datumsgrenze hinweg,
+* die Feldneigung kommt bei jeder Handhaltung gleich heraus – der Test dazu baut die Störung
+  ausdrücklich so, dass sie die **Feldstärke** unangetastet lässt, und prüft, dass die Längenprüfung
+  sie durchwinkt und die Neigungsprüfung sie fängt; das ist der Fall, für den es sie gibt,
 * gespeicherte Fenster überstehen den JSON-Umlauf, Basiskatalog und Sternbildfiguren werden gegen
   veröffentlichte J2000-Positionen geprüft – und kein Figurabschnitt darf unplausibel lang sein,
   was einen Tippfehler in einer der 203 Koordinaten sofort auffliegen lässt.

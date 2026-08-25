@@ -1,7 +1,9 @@
 package com.starwindow.app.ui.windows
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -16,8 +18,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CenterFocusStrong
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -29,13 +33,16 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.starwindow.app.appContainer
@@ -47,7 +54,10 @@ import com.starwindow.app.core.geometry.SkyWindow
 import com.starwindow.app.domain.ConstellationTransit
 import com.starwindow.app.data.images.SkyImageLoader
 import com.starwindow.app.domain.ObjectTransit
+import com.starwindow.app.domain.AccuracyBand
 import com.starwindow.app.domain.ResultFilter
+import com.starwindow.app.domain.WindowAccuracy
+import com.starwindow.app.domain.accuracy
 import com.starwindow.app.ui.components.ObjectSymbol
 import com.starwindow.app.ui.components.objectSubtitle
 import com.starwindow.app.ui.theme.ObjectPalette
@@ -67,6 +77,7 @@ private val trackPalette = listOf(
 fun WindowDetailScreen(
     viewModel: WindowDetailViewModel,
     onBack: () -> Unit,
+    onTrackWindow: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -91,7 +102,22 @@ fun WindowDetailScreen(
             Text(
                 text = state.window?.name ?: "Fenster",
                 style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.weight(1f),
             )
+            state.window?.let { window ->
+                IconButton(
+                    onClick = {
+                        viewModel.track(window)
+                        onTrackWindow()
+                    }
+                ) {
+                    Icon(
+                        Icons.Filled.CenterFocusStrong,
+                        contentDescription = "Fenster im Sucher zeigen",
+                        tint = StarWindowColors.TrackTarget,
+                    )
+                }
+            }
         }
 
         val window = state.window
@@ -112,24 +138,46 @@ fun WindowDetailScreen(
                 Column {
                     Text("Laufbahnen durch das Fenster", style = MaterialTheme.typography.titleSmall)
                     Spacer(Modifier.height(6.dp))
+                    // Coloured by entry rather than by path: a circumpolar object crossing the
+                    // window three times has to read as one object making three passes, not as
+                    // three unrelated things.
+                    val trackLabels = state.tracks.map { it.label }.distinct()
                     WindowTrackChart(
                         window = window,
                         tracks = state.tracks.mapIndexed { index, track ->
                             ChartTrack(
                                 track = track,
-                                color = trackPalette[index % trackPalette.size],
-                                emphasised = index == state.emphasisedTrackIndex,
+                                color = trackPalette[
+                                    trackLabels.indexOf(track.label).coerceAtLeast(0) %
+                                        trackPalette.size
+                                ],
+                                emphasised = index in state.emphasisedTrackIndices,
                             )
                         },
                         figureSegments = state.figureSegments,
                     )
-                    Text(
-                        "Das Fenster steht still, der Himmel zieht hindurch. Durchgezogen ist die " +
-                            "Zeit im Fenster, gepunktet der An- und Abflug; Punkte markieren volle " +
-                            "Stunden. Eine Zeile antippen hebt ihre Bahn hervor.",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = StarWindowColors.Muted,
-                    )
+                    Spacer(Modifier.height(4.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = if (state.selectedIds.isEmpty()) {
+                                "Das Fenster steht still, der Himmel zieht hindurch. Durchgezogen " +
+                                    "ist die Zeit im Fenster, gepunktet der An- und Abflug. " +
+                                    "Zeilen unten antippen, um nur deren Bahnen zu sehen."
+                            } else {
+                                "Nur die ausgewählten Bahnen. Durchgezogen ist die Zeit im " +
+                                    "Fenster, gepunktet der An- und Abflug; Punkte markieren " +
+                                    "volle Stunden."
+                            },
+                            style = MaterialTheme.typography.labelSmall,
+                            color = StarWindowColors.Muted,
+                            modifier = Modifier.weight(1f),
+                        )
+                        if (state.selectedIds.isNotEmpty()) {
+                            TextButton(onClick = viewModel::clearSelection) {
+                                Text("Alle", style = MaterialTheme.typography.labelMedium)
+                            }
+                        }
+                    }
                 }
             }
 
@@ -210,8 +258,8 @@ fun WindowDetailScreen(
                         items(constellations, key = { "con-${it.constellation.id}" }) { transit ->
                             ConstellationCard(
                                 transit = transit,
-                                selected = state.selectedId == transit.constellation.id,
-                                onClick = { viewModel.select(transit.constellation.id) },
+                                selected = transit.constellation.id in state.selectedIds,
+                                onClick = { viewModel.toggleSelection(transit.constellation.id) },
                             )
                         }
                     }
@@ -228,8 +276,8 @@ fun WindowDetailScreen(
                         items(objects, key = { "obj-${it.obj.id}" }) { transit ->
                             TransitCard(
                                 transit = transit,
-                                selected = state.selectedId == transit.obj.id,
-                                onClick = { viewModel.select(transit.obj.id) },
+                                selected = transit.obj.id in state.selectedIds,
+                                onClick = { viewModel.toggleSelection(transit.obj.id) },
                                 onInfo = { viewModel.openInfo(transit.obj.id) },
                             )
                         }
@@ -237,6 +285,62 @@ fun WindowDetailScreen(
                 }
             }
         }
+    }
+}
+
+/**
+ * How far the window might really be from where it was drawn.
+ *
+ * Drawn as a bar rather than written as a number alone because the useful comparison is against the
+ * window itself: an error of half a degree in a five-degree gap is nothing, the same error in a
+ * half-degree slot means the outline could be anywhere. The bar is scaled so that full width is
+ * "as wide as the window", which makes that comparison the thing the eye does first.
+ */
+@Composable
+private fun AccuracyBar(accuracy: WindowAccuracy, windowRadiusDeg: Double? = null) {
+    val color = when (accuracy.band) {
+        AccuracyBand.GOOD -> StarWindowColors.WindowStroke
+        AccuracyBand.FAIR -> StarWindowColors.AnchorPoint
+        AccuracyBand.POOR -> StarWindowColors.Crosshair
+    }
+    val reference = windowRadiusDeg?.takeIf { it > 0.1 } ?: 15.0
+    val fraction = (accuracy.uncertaintyDeg / reference).coerceIn(0.02, 1.0).toFloat()
+
+    Column(modifier = Modifier.padding(top = 4.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = accuracy.headline,
+                style = MaterialTheme.typography.titleSmall,
+                color = color,
+            )
+            Spacer(Modifier.size(8.dp))
+            Text(
+                text = accuracy.band.label,
+                style = MaterialTheme.typography.labelMedium,
+                color = StarWindowColors.Muted,
+            )
+        }
+        Spacer(Modifier.height(4.dp))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(6.dp)
+                .clip(RoundedCornerShape(3.dp))
+                .background(StarWindowColors.NightSurfaceHigh)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(fraction)
+                    .height(6.dp)
+                    .background(color)
+            )
+        }
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = accuracy.reason,
+            style = MaterialTheme.typography.labelSmall,
+            color = StarWindowColors.Muted,
+        )
     }
 }
 
@@ -319,6 +423,13 @@ private fun WindowSummaryCard(window: SkyWindow) {
             HorizontalDivider()
             Spacer(Modifier.height(8.dp))
 
+            Text("Zeigegenauigkeit", style = MaterialTheme.typography.titleSmall)
+            AccuracyBar(window.accuracy(), window.shape.angularRadiusDeg())
+
+            Spacer(Modifier.height(8.dp))
+            HorizontalDivider()
+            Spacer(Modifier.height(8.dp))
+
             Text("Himmelskoordinaten", style = MaterialTheme.typography.titleSmall)
             val atCapture = window.centerEquatorialAtCapture()
             Text(
@@ -361,28 +472,64 @@ private fun ConstellationCard(
         }
         Text(
             text = buildString {
-                append("Sternbild · höchstens ")
                 append("${transit.peakStarsInside} von ${transit.figureStarCount} Figursternen")
-                append(" gleichzeitig im Fenster")
-                if (transit.showsMostOfTheFigure) append(" – die Figur ist gut zu erkennen")
+                if (transit.showsMostOfTheFigure) append(" · Figur gut zu erkennen")
             },
             style = MaterialTheme.typography.labelSmall,
-            color = StarWindowColors.Muted,
+            color = if (transit.showsMostOfTheFigure) {
+                StarWindowColors.WindowStroke
+            } else {
+                StarWindowColors.Muted
+            },
         )
         Spacer(Modifier.height(6.dp))
         transit.intervals.forEach { interval ->
-            Text(
-                text = buildString {
-                    append(if (interval.clippedAtStart) "bereits drin" else formatClock(interval.enterMillis))
-                    append(" → ")
-                    append(if (interval.clippedAtEnd) "noch drin" else formatClock(interval.exitMillis))
-                    append("   ${formatDuration(interval.durationMillis)}")
-                    append("   am meisten um ${formatClock(interval.peakMillis)}")
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = StarWindowColors.Starlight,
+            IntervalRow(
+                fromLabel = if (interval.clippedAtStart) "läuft" else formatClock(interval.enterMillis),
+                toLabel = if (interval.clippedAtEnd) "läuft" else formatClock(interval.exitMillis),
+                duration = formatDuration(interval.durationMillis),
+                peak = "max ${formatClock(interval.peakMillis)}",
             )
         }
+    }
+}
+
+/**
+ * One pass through the window, in fixed columns.
+ *
+ * The three values answer three different questions — when, how long, and when it is best — and as
+ * a run-on sentence they had to be read one at a time. In columns the same three numbers can be
+ * compared straight down a list of passes, which is what the eye wants to do with them.
+ */
+@Composable
+private fun IntervalRow(fromLabel: String, toLabel: String, duration: String, peak: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 1.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = "$fromLabel → $toLabel",
+            style = MaterialTheme.typography.bodySmall,
+            color = StarWindowColors.Starlight,
+            maxLines = 1,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = duration,
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.Medium,
+            color = StarWindowColors.WindowStroke,
+            maxLines = 1,
+            modifier = Modifier.weight(0.7f),
+        )
+        Text(
+            text = peak,
+            style = MaterialTheme.typography.labelSmall,
+            color = StarWindowColors.Muted,
+            maxLines = 1,
+            textAlign = TextAlign.End,
+            modifier = Modifier.weight(0.7f),
+        )
     }
 }
 
@@ -457,16 +604,11 @@ private fun TransitCard(
         Spacer(Modifier.height(6.dp))
 
         transit.intervals.firstOrNull()?.let { interval ->
-            Text(
-                text = buildString {
-                    append(if (interval.clippedAtStart) "bereits drin" else formatClock(interval.enterMillis))
-                    append(" → ")
-                    append(if (interval.clippedAtEnd) "noch drin" else formatClock(interval.exitMillis))
-                    append("   ${formatDuration(interval.durationMillis)}")
-                    append("   max %.1f°".format(interval.bestAltitudeDeg))
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = StarWindowColors.Starlight,
+            IntervalRow(
+                fromLabel = if (interval.clippedAtStart) "läuft" else formatClock(interval.enterMillis),
+                toLabel = if (interval.clippedAtEnd) "läuft" else formatClock(interval.exitMillis),
+                duration = formatDuration(interval.durationMillis),
+                peak = "max %.0f°".format(interval.bestAltitudeDeg),
             )
         }
         if (transit.intervals.size > 1) {

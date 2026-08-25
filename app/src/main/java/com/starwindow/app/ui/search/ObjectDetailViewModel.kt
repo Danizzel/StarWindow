@@ -11,9 +11,12 @@ import com.starwindow.app.core.astro.ObserverLocation
 import com.starwindow.app.core.astro.Precession
 import com.starwindow.app.core.sensors.LocationTracker
 import com.starwindow.app.data.catalog.CatalogRepository
+import com.starwindow.app.data.catalog.ObjectNotesRepository
 import com.starwindow.app.data.catalog.SkyObject
+import com.starwindow.app.data.tracking.TrackedObject
 import com.starwindow.app.data.tracking.TrackingStore
 import com.starwindow.app.data.windows.SettingsStore
+import com.starwindow.app.domain.ObjectDescription
 import com.starwindow.app.domain.SkyTrackBuilder
 import com.starwindow.app.ui.windows.ObjectInfo
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,6 +30,7 @@ data class ObjectDetailUiState(
     val info: ObjectInfo? = null,
     val observer: ObserverLocation? = null,
     val isTracked: Boolean = false,
+    val description: ObjectDescription? = null,
     val isLoading: Boolean = true,
     val error: String? = null,
 )
@@ -44,6 +48,7 @@ class ObjectDetailViewModel(
     private val locationTracker: LocationTracker,
     private val settingsStore: SettingsStore,
     private val trackingStore: TrackingStore,
+    private val objectNotesRepository: ObjectNotesRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ObjectDetailUiState())
@@ -60,11 +65,13 @@ class ObjectDetailViewModel(
             }
 
             val observer = settingsStore.current.manualLocation ?: locationTracker.lastKnown()
+            val description = ObjectDescription.describe(obj, objectNotesRepository.noteFor(obj))
             _uiState.update {
                 it.copy(
                     obj = obj,
                     observer = observer,
-                    info = buildInfo(obj, observer),
+                    info = buildInfo(obj, observer, description),
+                    description = description,
                     isLoading = false,
                 )
             }
@@ -78,7 +85,7 @@ class ObjectDetailViewModel(
 
     /** Starts following the object; the viewfinder picks it up from the store. */
     fun track() {
-        _uiState.value.obj?.let { trackingStore.track(it) }
+        _uiState.value.obj?.let { trackingStore.track(TrackedObject(it)) }
     }
 
     fun untrack() = trackingStore.clear()
@@ -90,7 +97,11 @@ class ObjectDetailViewModel(
      * screen then shows the catalogue facts alone rather than a plausible looking curve computed
      * for Greenwich.
      */
-    private fun buildInfo(obj: SkyObject, observer: ObserverLocation?): ObjectInfo? {
+    private fun buildInfo(
+        obj: SkyObject,
+        observer: ObserverLocation?,
+        description: ObjectDescription,
+    ): ObjectInfo? {
         if (observer == null) return null
         val now = System.currentTimeMillis()
         val equatorial = obj.positionAt(Precession.forEpoch(now))
@@ -103,6 +114,7 @@ class ObjectDetailViewModel(
                 fromMillis = now,
                 toMillis = now + CURVE_SPAN_MILLIS,
             ),
+            description = description,
             currentPosition = CoordinateTransforms.apparentHorizontalAtLst(
                 equatorial,
                 observer.latitudeDeg,
@@ -123,6 +135,7 @@ class ObjectDetailViewModel(
                     locationTracker = container.locationTracker,
                     settingsStore = container.settingsStore,
                     trackingStore = container.trackingStore,
+                    objectNotesRepository = container.objectNotesRepository,
                 )
             }
         }

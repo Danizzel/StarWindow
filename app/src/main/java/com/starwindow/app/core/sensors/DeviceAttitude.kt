@@ -43,11 +43,32 @@ data class DeviceAttitude(
     /** What the geomagnetic model says the field should be here, in µT. */
     val expectedFieldMicroTesla: Float? = null,
     /**
-     * True while north is being carried by the gyroscope alone because the compass is not currently
-     * worth believing. The direction stays usable; it just slowly ages instead of jumping about.
+     * Dip angle the magnetometer actually measures, in degrees below the horizon.
+     *
+     * Independent of the heading — it is fixed by gravity and the field vector — which is what
+     * makes it a check on the compass rather than a restatement of it.
      */
-    val headingHeld: Boolean = false,
+    val inclinationDeg: Double? = null,
+    /** What the geomagnetic model says the dip should be here. */
+    val expectedInclinationDeg: Double? = null,
+    /**
+     * Size of the hard-iron offset the platform is subtracting, in µT: the phone's own speaker,
+     * camera and battery magnets. Null when the device has no uncalibrated magnetometer.
+     */
+    val hardIronMicroTesla: Float? = null,
+    /**
+     * How long north has been carried by the gyroscope alone because the compass was not worth
+     * believing. Zero while the compass is being followed normally.
+     *
+     * A duration rather than a flag, because the two situations behave completely differently: held
+     * for three seconds is nothing, held for twenty minutes means the direction has quietly aged
+     * into something the app should stop claiming to know.
+     */
+    val headingHeldSeconds: Double = 0.0,
 ) {
+
+    /** True while north is being carried by the gyroscope instead of pulled by the compass. */
+    val headingHeld: Boolean get() = headingHeldSeconds > 0.0
 
     /** How far the measured field is from the model, in µT, or null without a magnetometer. */
     val fieldDeviationMicroTesla: Float?
@@ -57,13 +78,47 @@ data class DeviceAttitude(
             return measured - expected
         }
 
-    /** True when something ferrous or magnetic nearby is bending the compass. */
-    val isMagneticallyDisturbed: Boolean
+    /** True when the field is the wrong *strength* — a magnet or a mass of iron nearby. */
+    val hasFieldStrengthDistortion: Boolean
         get() {
             val measured = fieldMicroTesla ?: return false
             val expected = expectedFieldMicroTesla ?: return false
             return !AttitudeFusion.isFieldPlausible(measured, expected)
         }
+
+    /**
+     * True when the field points the wrong *way*.
+     *
+     * The more valuable of the two tests. Something ferrous nearby adds a vector to the Earth's
+     * field, and that sum can keep almost the same length while pointing twenty degrees off — a
+     * strength check waves it through, and the error lands squarely in the heading.
+     */
+    val hasFieldDirectionDistortion: Boolean
+        get() {
+            val measured = inclinationDeg ?: return false
+            val expected = expectedInclinationDeg ?: return false
+            return !AttitudeFusion.isInclinationPlausible(measured, expected)
+        }
+
+    /** True when something nearby is bending the compass, by either measure. */
+    val isMagneticallyDisturbed: Boolean
+        get() = hasFieldStrengthDistortion || hasFieldDirectionDistortion
+
+    /**
+     * True when the phone's own magnetometer calibration has not settled — the case the user can
+     * actually fix, by waving a figure eight, as opposed to a disturbance they can only walk away
+     * from.
+     */
+    val needsCompassCalibration: Boolean
+        get() = accuracy < android.hardware.SensorManager.SENSOR_STATUS_ACCURACY_MEDIUM &&
+            (hardIronMicroTesla ?: 0f) >= AttitudeFusion.HARD_IRON_NOTABLE_MICRO_TESLA
+
+    /**
+     * How far north may have drifted while the gyroscope has been carrying it, in degrees. Zero
+     * while the compass is being followed.
+     */
+    val headingDriftDeg: Double
+        get() = AttitudeFusion.heldHeadingDriftDeg(headingHeldSeconds)
 
     /**
      * Magnetic world frame → true, calibrated world frame. Built once per attitude because the
@@ -139,7 +194,10 @@ data class DeviceAttitude(
             source == other.source &&
             fieldMicroTesla == other.fieldMicroTesla &&
             expectedFieldMicroTesla == other.expectedFieldMicroTesla &&
-            headingHeld == other.headingHeld
+            inclinationDeg == other.inclinationDeg &&
+            expectedInclinationDeg == other.expectedInclinationDeg &&
+            hardIronMicroTesla == other.hardIronMicroTesla &&
+            headingHeldSeconds == other.headingHeldSeconds
     }
 
     override fun hashCode(): Int {
@@ -151,7 +209,10 @@ data class DeviceAttitude(
         result = 31 * result + source.hashCode()
         result = 31 * result + (fieldMicroTesla?.hashCode() ?: 0)
         result = 31 * result + (expectedFieldMicroTesla?.hashCode() ?: 0)
-        result = 31 * result + headingHeld.hashCode()
+        result = 31 * result + (inclinationDeg?.hashCode() ?: 0)
+        result = 31 * result + (expectedInclinationDeg?.hashCode() ?: 0)
+        result = 31 * result + (hardIronMicroTesla?.hashCode() ?: 0)
+        result = 31 * result + headingHeldSeconds.hashCode()
         return result
     }
 

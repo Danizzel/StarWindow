@@ -12,9 +12,13 @@ import com.starwindow.app.core.astro.Precession
 import com.starwindow.app.core.geometry.SkyWindow
 import com.starwindow.app.data.catalog.CatalogRepository
 import com.starwindow.app.data.catalog.ConstellationRepository
+import com.starwindow.app.data.catalog.ObjectNotesRepository
+import com.starwindow.app.data.tracking.TrackedWindow
+import com.starwindow.app.data.tracking.TrackingStore
 import com.starwindow.app.data.windows.SkyWindowRepository
 import com.starwindow.app.domain.ConstellationTransit
 import com.starwindow.app.domain.ConstellationTransitCalculator
+import com.starwindow.app.domain.ObjectDescription
 import com.starwindow.app.domain.ObjectTransit
 import com.starwindow.app.domain.ResultFilter
 import com.starwindow.app.domain.SkyTrack
@@ -34,10 +38,18 @@ data class WindowDetailUiState(
     val hoursAhead: Int = 24,
     val magnitudeLimit: Double = 8.0,
     val filter: ResultFilter = ResultFilter.ALL,
-    /** Catalogue id or constellation id of the entry whose path is highlighted. */
-    val selectedId: String? = null,
+    /**
+     * Catalogue and constellation ids whose paths the chart shows.
+     *
+     * Empty means "nothing chosen yet", and then the chart falls back to a handful of the results
+     * so it is never blank. As soon as one entry is picked the chart shows **only** the picked ones:
+     * with a dozen paths crossing each other, isolating the one being considered is the whole point
+     * of the view.
+     */
+    val selectedIds: Set<String> = emptySet(),
     val tracks: List<SkyTrack> = emptyList(),
-    val emphasisedTrackIndex: Int? = null,
+    /** Indices of the paths belonging to the selected entry; all of its passes are lifted. */
+    val emphasisedTrackIndices: Set<Int> = emptySet(),
     val figureSegments: List<Pair<Horizontal, Horizontal>> = emptyList(),
     /** The object whose info sheet is open, or null. */
     val info: ObjectInfo? = null,
@@ -64,6 +76,8 @@ class WindowDetailViewModel(
     private val constellationRepository: ConstellationRepository,
     private val transitCalculator: TransitCalculator,
     private val constellationTransitCalculator: ConstellationTransitCalculator,
+    private val trackingStore: TrackingStore,
+    private val objectNotesRepository: ObjectNotesRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(WindowDetailUiState())
@@ -97,9 +111,18 @@ class WindowDetailViewModel(
         rebuildTracks()
     }
 
-    /** Highlights one entry's path, or clears the highlight when it is tapped again. */
-    fun select(id: String?) {
-        _uiState.update { it.copy(selectedId = if (it.selectedId == id) null else id) }
+    /** Adds an entry to the chart, or takes it out again when it is tapped a second time. */
+    fun toggleSelection(id: String) {
+        _uiState.update {
+            val next = if (id in it.selectedIds) it.selectedIds - id else it.selectedIds + id
+            it.copy(selectedIds = next)
+        }
+        rebuildTracks()
+    }
+
+    /** Back to the overview: no choice made, so the chart shows a sample of the results again. */
+    fun clearSelection() {
+        _uiState.update { it.copy(selectedIds = emptySet()) }
         rebuildTracks()
     }
 
@@ -117,32 +140,41 @@ class WindowDetailViewModel(
         val obj = transit.obj
         val precession = Precession.forEpoch(now)
 
-        _uiState.update {
-            it.copy(
-                info = ObjectInfo(
-                    obj = obj,
-                    track = SkyTrackBuilder.overSpan(
-                        label = obj.name.ifBlank { obj.id },
-                        equatorial = obj.positionAt(precession),
-                        observer = window.observer,
-                        fromMillis = now,
-                        toMillis = until,
-                    ),
-                    passes = transit.intervals.map { interval ->
-                        WindowPass(interval.enterMillis, interval.exitMillis)
-                    },
-                    currentPosition = CoordinateTransforms.apparentHorizontalAtLst(
-                        obj.positionAt(precession),
-                        window.observer.latitudeDeg,
-                        AstroTime.lstDeg(now, window.observer.longitudeDeg),
-                    ),
-                    fillFactor = obj.fillFactor(window.shape.angularRadiusDeg()),
+        // Built in one go rather than filled in afterwards: the notes come off disk the first time,
+        // and a sheet that pops open and then grows a paragraph reads as a glitch.
+        viewModelScope.launch {
+            val description = ObjectDescription.describe(obj, objectNotesRepository.noteFor(obj))
+            _uiState.update {
+                it.copy(
+                    info = ObjectInfo(
+                        obj = obj,
+                        description = description,
+                        track = SkyTrackBuilder.overSpan(
+                            label = obj.name.ifBlank { obj.id },
+                            equatorial = obj.positionAt(precession),
+                            observer = window.observer,
+                            fromMillis = now,
+                            toMillis = until,
+                        ),
+                        passes = transit.intervals.map { interval ->
+                            WindowPass(interval.enterMillis, interval.exitMillis)
+                        },
+                        currentPosition = CoordinateTransforms.apparentHorizontalAtLst(
+                            obj.positionAt(precession),
+                            window.observer.latitudeDeg,
+                            AstroTime.lstDeg(now, window.observer.longitudeDeg),
+                        ),
+                        fillFactor = obj.fillFactor(window.shape.angularRadiusDeg()),
+                    )
                 )
-            )
+            }
         }
     }
 
     fun closeInfo() = _uiState.update { it.copy(info = null) }
+
+    /** Points the viewfinder back at this window; the overlay draws its outline once in view. */
+    fun track(window: SkyWindow) = trackingStore.track(TrackedWindow.of(window))
 
     fun search() {
         val window = _uiState.value.window ?: return
@@ -185,8 +217,10 @@ class WindowDetailViewModel(
     /**
      * Rebuilds the paths shown in the chart.
      *
-     * Only a handful are drawn at once: a chart with forty overlapping paths says nothing. The
-     * selected entry is always among them, so tapping a row always shows its path.
+     * With nothing chosen the chart shows a sample, because a blank chart under a full result list
+     * looks broken. Once anything is chosen it shows **only** what was chosen: a dozen paths
+     * crossing each other tell you nothing about any single one of them, and isolating one is the
+     * reason to tap a row at all.
      */
     private fun rebuildTracks() {
         val state = _uiState.value
@@ -194,28 +228,40 @@ class WindowDetailViewModel(
         val precession = Precession.forEpoch(System.currentTimeMillis())
 
         val objectTransits = state.visibleObjects
-        val selected = state.selectedId
+        val selected = state.selectedIds
+        val hasSelection = selected.isNotEmpty()
 
-        val chosen = buildList {
-            objectTransits.firstOrNull { it.obj.id == selected }?.let { add(it) }
-            addAll(objectTransits.filter { it.obj.id != selected }.take(MAX_TRACKS - size))
+        val chosen = if (hasSelection) {
+            objectTransits.filter { it.obj.id in selected }
+        } else {
+            objectTransits.take(MAX_TRACKS)
         }
 
-        val tracks = chosen.map { transit ->
-            val interval = transit.intervals.first()
-            SkyTrackBuilder.forInterval(
-                label = transit.obj.name.ifBlank { transit.obj.id },
-                equatorial = transit.obj.positionAt(precession),
-                observer = window.observer,
-                enterMillis = interval.enterMillis,
-                exitMillis = interval.exitMillis,
-            )
+        // Every pass of a chosen object, only the first of the sample. A circumpolar object can
+        // cross the same window three or four times in a night, and seeing them together is the
+        // point of picking it — drawing every pass of every object would be a thicket.
+        val tracks = chosen.flatMap { transit ->
+            val intervals = if (hasSelection) {
+                transit.intervals.take(MAX_PASSES_PER_OBJECT)
+            } else {
+                transit.intervals.take(1)
+            }
+            intervals.map { interval ->
+                SkyTrackBuilder.forInterval(
+                    label = transit.obj.name.ifBlank { transit.obj.id },
+                    equatorial = transit.obj.positionAt(precession),
+                    observer = window.observer,
+                    enterMillis = interval.enterMillis,
+                    exitMillis = interval.exitMillis,
+                )
+            }
         }.toMutableList()
 
-        var emphasised = chosen.indexOfFirst { it.obj.id == selected }.takeIf { it >= 0 }
+        // Everything drawn on an explicit choice is in the foreground; the fallback sample is not.
+        var emphasised = if (hasSelection) tracks.indices.toSet() else emptySet()
         var figure: List<Pair<Horizontal, Horizontal>> = emptyList()
 
-        val selectedConstellation = state.constellations.firstOrNull { it.constellation.id == selected }
+        val selectedConstellation = state.constellations.firstOrNull { it.constellation.id in selected }
         if (selectedConstellation != null) {
             val interval = selectedConstellation.intervals.maxByOrNull { it.peakStarsInside }
                 ?: selectedConstellation.intervals.first()
@@ -226,7 +272,7 @@ class WindowDetailViewModel(
             )
             // The figure's brightest stars carry the path; the whole outline would be a thicket.
             val stars = selectedConstellation.constellation.stars.take(MAX_FIGURE_TRACKS)
-            emphasised = tracks.size
+            val firstFigureTrack = tracks.size
             stars.forEach { star ->
                 tracks += SkyTrackBuilder.forInterval(
                     label = star.name,
@@ -236,16 +282,20 @@ class WindowDetailViewModel(
                     exitMillis = interval.exitMillis,
                 )
             }
+            emphasised = (firstFigureTrack until tracks.size).toSet()
         }
 
         _uiState.update {
-            it.copy(tracks = tracks, emphasisedTrackIndex = emphasised, figureSegments = figure)
+            it.copy(tracks = tracks, emphasisedTrackIndices = emphasised, figureSegments = figure)
         }
     }
 
     companion object {
         private const val MAX_TRACKS = 6
         private const val MAX_FIGURE_TRACKS = 3
+
+        /** A circumpolar object can cross the same window several times in one night. */
+        private const val MAX_PASSES_PER_OBJECT = 4
 
         fun factory(container: AppContainer, windowId: String) = viewModelFactory {
             initializer {
@@ -256,6 +306,8 @@ class WindowDetailViewModel(
                     constellationRepository = container.constellationRepository,
                     transitCalculator = container.transitCalculator,
                     constellationTransitCalculator = container.constellationTransitCalculator,
+                    trackingStore = container.trackingStore,
+                    objectNotesRepository = container.objectNotesRepository,
                 )
             }
         }

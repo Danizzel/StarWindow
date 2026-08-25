@@ -165,6 +165,80 @@ object AttitudeFusion {
     }
 
     /**
+     * Dip angle of the measured field: how far below the horizon the field lines point, in degrees.
+     *
+     * [fieldDevice] is the magnetometer reading in device axes, [deviceToWorld] the platform's
+     * row-major device→world matrix. Only the *tilt* of that matrix is used, and the tilt comes from
+     * gravity, so the answer does not depend on the heading — which is what makes this an
+     * independent check on the compass rather than a restatement of it.
+     */
+    fun inclinationDeg(fieldDevice: FloatArray, deviceToWorld: FloatArray): Double? {
+        if (fieldDevice.size < 3 || deviceToWorld.size < 9) return null
+        var east = 0.0
+        var north = 0.0
+        var up = 0.0
+        for (k in 0..2) {
+            east += deviceToWorld[k].toDouble() * fieldDevice[k]
+            north += deviceToWorld[3 + k].toDouble() * fieldDevice[k]
+            up += deviceToWorld[6 + k].toDouble() * fieldDevice[k]
+        }
+        val horizontal = kotlin.math.hypot(east, north)
+        if (horizontal < 1e-6 && abs(up) < 1e-6) return null
+        // Positive downwards, matching GeomagneticField.getInclination().
+        return Math.toDegrees(atan2(-up, horizontal))
+    }
+
+    /**
+     * Whether the measured dip angle matches the geomagnetic model.
+     *
+     * This is the check the field-strength test cannot make. A magnet, a steel window frame or the
+     * soft iron in a phone case adds a vector to the Earth's field: it can *rotate* the result by
+     * twenty degrees while barely changing its length, and a magnitude-only gate waves that
+     * straight through. The dip angle is fixed by latitude and known to a fraction of a degree, so
+     * a reading far away from it means the direction is being bent — which is precisely the error
+     * that ends up in the heading.
+     */
+    fun isInclinationPlausible(measuredDeg: Double, expectedDeg: Double): Boolean =
+        abs(measuredDeg - expectedDeg) <= INCLINATION_TOLERANCE_DEG
+
+    /**
+     * Tolerance on the dip angle.
+     *
+     * Wide enough to survive the phone's own residual hard iron and the accelerometer's idea of
+     * level while it is being held in a hand, narrow enough to catch anything worth calling a
+     * disturbance.
+     */
+    const val INCLINATION_TOLERANCE_DEG = 12.0
+
+    /**
+     * How far north may have wandered after the gyroscope has been carrying it alone for a while.
+     *
+     * A budget, not a measurement — and deliberately conservative. The fused game rotation vector
+     * is bias-compensated by the platform and in practice drifts well under this, but the whole
+     * point of the number is to be an upper bound the app can quote honestly while the compass is
+     * not being believed. Above [MAX_HELD_DRIFT_DEG] the truthful answer stops being a number at
+     * all: the heading is simply no longer known.
+     */
+    fun heldHeadingDriftDeg(heldSeconds: Double): Double =
+        (heldSeconds / 60.0 * GYRO_DRIFT_DEG_PER_MINUTE).coerceIn(0.0, MAX_HELD_DRIFT_DEG)
+
+    /** Replace with a measured figure once the drift has been characterised on real hardware. */
+    const val GYRO_DRIFT_DEG_PER_MINUTE = 0.5
+
+    const val MAX_HELD_DRIFT_DEG = 30.0
+
+    /**
+     * How much hard iron the platform is having to subtract before the compass is usable at all.
+     *
+     * `TYPE_MAGNETIC_FIELD_UNCALIBRATED` hands over its own hard-iron estimate, and its size is the
+     * one number that separates the two failure modes the user can act on differently: a large,
+     * settled offset is the phone's own speaker and camera magnets and is nothing to worry about,
+     * while an offset this large *together with* an accuracy the platform calls poor means the
+     * estimate has not converged — and that one is fixed in five seconds by waving a figure eight.
+     */
+    const val HARD_IRON_NOTABLE_MICRO_TESLA = 40.0f
+
+    /**
      * Time constant for tracking the heading offset.
      *
      * Ten seconds: long enough that walking past a parked car cannot drag the sky with it, short

@@ -22,6 +22,9 @@ import com.starwindow.app.core.sensors.LocationTracker
 import com.starwindow.app.core.sensors.OrientationTracker
 import com.starwindow.app.data.catalog.CatalogRepository
 import com.starwindow.app.data.catalog.SkyObject
+import com.starwindow.app.data.tracking.TrackTarget
+import com.starwindow.app.data.tracking.TrackedObject
+import com.starwindow.app.data.tracking.TrackedWindow
 import com.starwindow.app.data.tracking.TrackingStore
 import com.starwindow.app.data.windows.Settings
 import com.starwindow.app.data.windows.SettingsStore
@@ -60,7 +63,7 @@ data class CaptureUiState(
     val cameraError: String? = null,
     val message: String? = null,
     /** The object the overlay points at, picked in the search. */
-    val tracked: SkyObject? = null,
+    val tracked: TrackTarget? = null,
 ) {
     /** The window the current anchors describe, or null while there are not enough of them. */
     val shape: WindowShape? get() = buildShape(mode, anchors)
@@ -68,6 +71,16 @@ data class CaptureUiState(
     val canSave: Boolean get() = shape != null && observer != null
 
     val missingAnchors: Int get() = (mode.requiredAnchors - anchors.size).coerceAtLeast(0)
+
+    /**
+     * True when the corners were tapped in an order that makes the outline cross itself.
+     *
+     * Saving is still allowed — it is the user's window — but the area and the transit list would
+     * be quietly wrong, and on a dark screen a bow tie does not look obviously different from the
+     * shape that was meant.
+     */
+    val outlineCrossesItself: Boolean
+        get() = (shape as? PolygonWindow)?.isSelfIntersecting == true
 }
 
 /** Builds the shape for a draw mode from the points the user placed. */
@@ -98,13 +111,15 @@ class CaptureViewModel(
     val uiState: StateFlow<CaptureUiState> = _uiState.asStateFlow()
 
     /**
-     * Where the tracked object stands, refreshed once a second.
+     * The tracked target resolved to a direction, refreshed once a second.
      *
-     * The overlay works this out again for itself in the draw phase — it has to, at sensor rate —
-     * but the text readout at the bottom of the screen must not recompose fifty times a second for
-     * a number that changes by a fifteenth of a degree per minute.
+     * A catalogue object is fixed to the sky and drifts across the viewfinder at fifteen arcseconds
+     * a second; a saved window is fixed to the horizon and never moves at all. Both come out of here
+     * as a plain direction, so neither the overlay nor the status bar has to know the difference —
+     * and a second's worth of drift, four thousandths of a degree, is far below what the sensor can
+     * resolve.
      */
-    val trackedPosition: StateFlow<Horizontal?> =
+    val trackedTarget: StateFlow<SkyTarget?> =
         combine(
             trackingStore.target,
             _uiState.map { it.observer }.distinctUntilChanged(),
@@ -115,14 +130,27 @@ class CaptureViewModel(
                 }
             },
         ) { target, observer, now ->
-            if (target == null || observer == null) {
-                null
-            } else {
-                CoordinateTransforms.apparentHorizontalAtLst(
-                    target.positionAt(Precession.forEpoch(now)),
-                    observer.latitudeDeg,
-                    AstroTime.lstDeg(now, observer.longitudeDeg),
+            when (target) {
+                null -> null
+
+                // Horizon-fixed: the centre of the window is the direction, no astronomy needed.
+                is TrackedWindow -> SkyTarget(
+                    label = target.name,
+                    direction = target.shape.center(),
+                    shape = target.shape,
                 )
+
+                is TrackedObject -> observer?.let {
+                    SkyTarget(
+                        label = target.label,
+                        direction = CoordinateTransforms.apparentHorizontalAtLst(
+                            target.obj.positionAt(Precession.forEpoch(now)),
+                            it.latitudeDeg,
+                            AstroTime.lstDeg(now, it.longitudeDeg),
+                        ),
+                        type = target.type,
+                    )
+                }
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
@@ -170,7 +198,7 @@ class CaptureViewModel(
         startLocationUpdates()
     }
 
-    /** Stops pointing at the tracked object. */
+    /** Stops pointing at the tracked object or window. */
     fun stopTracking() = trackingStore.clear()
 
     /**
@@ -270,6 +298,13 @@ class CaptureViewModel(
             capturedAtMillis = System.currentTimeMillis(),
             magneticDeclinationDeg = attitude.value?.magneticDeclinationDeg ?: 0.0,
             compassAccuracy = attitude.value?.accuracy ?: 0,
+            // How good the pointing was at this moment, recorded with the window: months later
+            // nothing else can tell whether the outline is worth a tenth of a degree or ten.
+            calibrationResidualDeg = state.settings.calibration
+                .takeIf { it.hasAttitudeCorrection }
+                ?.attitudeResidualDeg,
+            headingHeld = attitude.value?.headingHeld ?: false,
+            headingHeldSeconds = attitude.value?.headingHeldSeconds ?: 0.0,
             cameraFovDeg = visibleFovDeg,
         )
 

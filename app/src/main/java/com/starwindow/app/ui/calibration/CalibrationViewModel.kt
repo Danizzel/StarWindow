@@ -279,6 +279,9 @@ class CalibrationViewModel(
                 residualDeg = fit.residualDeg,
                 sampleCount = fit.sampleCount,
                 atMillis = System.currentTimeMillis(),
+                // A compass error belongs to the place it was measured in, so the place is
+                // recorded with it — see CalibrationTrust.
+                measuredAt = _uiState.value.observer,
             )
         )
         _uiState.update {
@@ -317,6 +320,7 @@ class CalibrationViewModel(
                 residualDeg = fit.residualDeg,
                 sampleCount = 1,
                 atMillis = System.currentTimeMillis(),
+                measuredAt = _uiState.value.observer,
             )
         )
         _uiState.update {

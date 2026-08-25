@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
@@ -54,21 +55,98 @@ fun WindowTrackChart(
     val plane = remember(window.id) { TangentPlane(window.centerHorizontal) }
     val outline = remember(window.id) { window.shape.outline(96) }
 
-    Canvas(modifier = modifier.fillMaxWidth().height(240.dp)) {
+    Canvas(modifier = modifier.fillMaxWidth().height(260.dp)) {
         val projectedOutline = outline.mapNotNull { plane.project(it) }
         if (projectedOutline.size < 3) return@Canvas
 
         val view = ChartViewport.fit(projectedOutline, size.width, size.height, margin = 1.5)
+        val space = LabelSpace(size.width, size.height, 2.dp.toPx())
 
-        drawReferenceLines(view, paints)
+        drawReferenceLines(view, paints, space)
+        // Early, so the space they occupy is claimed before any track label goes looking for room.
+        drawOrientationLabels(view, paints, space)
         figureSegments.forEach { (a, b) ->
             drawSegment(plane, view, a, b, StarWindowColors.Muted.copy(alpha = 0.5f), 1.dp.toPx())
         }
         drawWindow(projectedOutline, view)
-        tracks.forEach { drawTrack(plane, view, it, paints) }
-        drawOrientationLabels(view, paints)
+
+        // Geometry first, all of it. Lines and dots cannot collide in a way that costs information,
+        // so they are never dropped.
+        tracks.forEach { drawTrackGeometry(plane, view, it) }
+
+        // Then the words, in order of how much they are worth, because there is only so much room:
+        // a name identifies a path, an entry time is what the user came for, and an hour mark is a
+        // nicety. Whatever no longer fits is left out rather than drawn over something else.
+        val ordered = tracks.sortedByDescending { it.emphasised }
+        ordered.forEach { drawTrackName(plane, view, it, paints, space) }
+        ordered.forEach { drawEntryExitLabels(plane, view, it, paints, space) }
+        ordered.forEach { drawHourLabels(plane, view, it, paints, space) }
     }
 }
+
+/**
+ * Keeps labels off each other.
+ *
+ * A chart with six paths wants something like sixty labels and has room for perhaps fifteen. Drawing
+ * all of them anyway is how the old version ended up with times stacked three deep and none of them
+ * readable — so every label claims a rectangle, and one that cannot find free space is simply not
+ * drawn. Dropping a label costs one number; overlapping two costs both.
+ */
+private class LabelSpace(
+    private val widthPx: Float,
+    private val heightPx: Float,
+    private val padPx: Float,
+) {
+    private val taken = ArrayList<Rect>()
+
+    /** Blocks out an area that is not a label — the grid caption, the orientation hints. */
+    fun reserve(rect: Rect) {
+        taken += rect
+    }
+
+    /**
+     * Finds room for [text] near ([x], [y]), trying each anchor in turn.
+     *
+     * @return the baseline position to draw at, or null when nothing fits.
+     */
+    fun place(
+        x: Float,
+        y: Float,
+        text: String,
+        paint: Paint,
+        gap: Float,
+        anchors: List<LabelAnchor>,
+    ): Offset? {
+        val width = paint.measureText(text)
+        val ascent = -paint.ascent()
+        val descent = paint.descent()
+
+        for (anchor in anchors) {
+            val left: Float
+            val baseline: Float
+            when (anchor) {
+                LabelAnchor.RIGHT -> { left = x + gap; baseline = y + ascent / 2f }
+                LabelAnchor.LEFT -> { left = x - gap - width; baseline = y + ascent / 2f }
+                LabelAnchor.ABOVE -> { left = x - width / 2f; baseline = y - gap }
+                LabelAnchor.BELOW -> { left = x - width / 2f; baseline = y + gap + ascent }
+            }
+            val rect = Rect(
+                left - padPx,
+                baseline - ascent - padPx,
+                left + width + padPx,
+                baseline + descent + padPx,
+            )
+            if (rect.left < 0f || rect.right > widthPx) continue
+            if (rect.top < 0f || rect.bottom > heightPx) continue
+            if (taken.any { it.overlaps(rect) }) continue
+            taken += rect
+            return Offset(left, baseline)
+        }
+        return null
+    }
+}
+
+private enum class LabelAnchor { RIGHT, LEFT, ABOVE, BELOW }
 
 /** Maps tangent-plane coordinates onto the canvas with a single uniform scale. */
 private class ChartViewport(
@@ -111,7 +189,11 @@ private class ChartViewport(
     }
 }
 
-private fun DrawScope.drawReferenceLines(view: ChartViewport, paints: ChartPaints) {
+private fun DrawScope.drawReferenceLines(
+    view: ChartViewport,
+    paints: ChartPaints,
+    space: LabelSpace,
+) {
     drawRect(StarWindowColors.Night)
 
     // A grid at a round number of degrees, chosen so it never becomes a moiré pattern.
@@ -146,7 +228,18 @@ private fun DrawScope.drawReferenceLines(view: ChartViewport, paints: ChartPaint
         y += stepPx
     }
 
-    drawLabel("Raster ${formatDegrees(stepDeg)}", 6.dp.toPx(), view.heightPx - 6.dp.toPx(), paints.hint)
+    val caption = "Raster ${formatDegrees(stepDeg)}"
+    val captionX = 6.dp.toPx()
+    val captionY = view.heightPx - 6.dp.toPx()
+    drawLabel(caption, captionX, captionY, paints.hint)
+    space.reserve(
+        Rect(
+            captionX,
+            captionY + paints.hint.ascent(),
+            captionX + paints.hint.measureText(caption),
+            captionY + paints.hint.descent(),
+        )
+    )
 }
 
 private fun DrawScope.drawWindow(outline: List<PlanarPoint>, view: ChartViewport) {
@@ -174,15 +267,17 @@ private fun DrawScope.drawSegment(
     drawLine(color, pa, pb, strokeWidth = width)
 }
 
-private fun DrawScope.drawTrack(
+/** The line, the hour dots, the entry and exit markers and the direction arrow — no words. */
+private fun DrawScope.drawTrackGeometry(
     plane: TangentPlane,
     view: ChartViewport,
     chartTrack: ChartTrack,
-    paints: ChartPaints,
 ) {
     val track = chartTrack.track
     if (track.isEmpty) return
 
+    // Unselected paths are drawn back a little so the selected one reads as the foreground.
+    val alpha = if (chartTrack.emphasised) 1f else 0.75f
     val width = if (chartTrack.emphasised) 3.dp.toPx() else 1.8.dp.toPx()
     val dashed = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 5.dp.toPx()))
     val margin = 600f
@@ -196,7 +291,7 @@ private fun DrawScope.drawTrack(
             // Solid while inside the window, dotted for the approach and the exit.
             val insideWindow = point.millis in track.enterMillis..track.exitMillis
             drawLine(
-                color = chartTrack.color.copy(alpha = if (insideWindow) 1f else 0.55f),
+                color = chartTrack.color.copy(alpha = if (insideWindow) alpha else alpha * 0.55f),
                 start = previousOffset,
                 end = offset,
                 strokeWidth = if (insideWindow) width else width * 0.7f,
@@ -213,30 +308,115 @@ private fun DrawScope.drawTrack(
     track.hourMarks().forEach { mark ->
         val offset = plane.project(mark.position)?.let(view::toCanvas) ?: return@forEach
         if (!view.isOnCanvas(offset, 20f)) return@forEach
-        drawCircle(chartTrack.color, 3.dp.toPx(), offset)
-        drawLabel(formatClock(mark.millis), offset.x + 5.dp.toPx(), offset.y - 4.dp.toPx(), paints.time)
+        drawCircle(chartTrack.color.copy(alpha = alpha), 3.dp.toPx(), offset)
     }
 
-    // Entry and exit are the numbers the user came for, so they are always labelled.
-    listOf(track.enterMillis to "ein", track.exitMillis to "aus").forEach { (millis, tag) ->
-        val point = track.points.minByOrNull { kotlin.math.abs(it.millis - millis) } ?: return@forEach
-        val offset = plane.project(point.position)?.let(view::toCanvas) ?: return@forEach
-        if (!view.isOnCanvas(offset, 30f)) return@forEach
+    entryExitPoints(plane, view, track).forEach { (_, offset) ->
         drawCircle(chartTrack.color, 4.5.dp.toPx(), offset)
         drawCircle(StarWindowColors.Night, 2.dp.toPx(), offset)
-        drawLabel(
-            "$tag ${formatClock(millis)}",
-            offset.x + 7.dp.toPx(),
-            offset.y + 12.dp.toPx(),
-            paints.time,
-        )
     }
+}
 
-    // Name the path where it comes in, so several of them stay tellable apart.
-    plane.project(track.points.first().position)?.let(view::toCanvas)?.let { offset ->
-        if (view.isOnCanvas(offset, 40f)) {
-            drawLabel(track.label, offset.x + 6.dp.toPx(), offset.y, paints.label)
+/** Names the path where it comes in, so several of them stay tellable apart. */
+private fun DrawScope.drawTrackName(
+    plane: TangentPlane,
+    view: ChartViewport,
+    chartTrack: ChartTrack,
+    paints: ChartPaints,
+    space: LabelSpace,
+) {
+    val track = chartTrack.track
+    if (track.isEmpty) return
+    val offset = plane.project(track.points.first().position)?.let(view::toCanvas) ?: return
+    if (!view.isOnCanvas(offset, 40f)) return
+
+    val paint = if (chartTrack.emphasised) paints.labelStrong else paints.label
+    space.place(
+        offset.x,
+        offset.y,
+        track.label,
+        paint,
+        6.dp.toPx(),
+        listOf(LabelAnchor.RIGHT, LabelAnchor.LEFT, LabelAnchor.ABOVE, LabelAnchor.BELOW),
+    )?.let { drawLabel(track.label, it.x, it.y, paint) }
+}
+
+/** Entry and exit are the numbers the user came for, so they come before the hour marks. */
+private fun DrawScope.drawEntryExitLabels(
+    plane: TangentPlane,
+    view: ChartViewport,
+    chartTrack: ChartTrack,
+    paints: ChartPaints,
+    space: LabelSpace,
+) {
+    entryExitPoints(plane, view, chartTrack.track).forEach { (label, offset) ->
+        space.place(
+            offset.x,
+            offset.y,
+            label,
+            paints.time,
+            8.dp.toPx(),
+            listOf(LabelAnchor.BELOW, LabelAnchor.RIGHT, LabelAnchor.ABOVE, LabelAnchor.LEFT),
+        )?.let { drawLabel(label, it.x, it.y, paints.time) }
+    }
+}
+
+/**
+ * Clock times along the path.
+ *
+ * The dots are always drawn; only some get a number. Labelling every full hour of every path is
+ * what turned the chart into soup — and the hours in between can be read off the dots anyway, since
+ * they are evenly spaced by construction.
+ */
+private fun DrawScope.drawHourLabels(
+    plane: TangentPlane,
+    view: ChartViewport,
+    chartTrack: ChartTrack,
+    paints: ChartPaints,
+    space: LabelSpace,
+) {
+    val marks = chartTrack.track.hourMarks()
+    if (marks.isEmpty()) return
+    // On a path nobody selected, a couple of times is orientation enough.
+    val step = if (chartTrack.emphasised) 1 else 2
+    var placed = 0
+    val budget = if (chartTrack.emphasised) MAX_HOUR_LABELS_EMPHASISED else MAX_HOUR_LABELS
+
+    marks.filterIndexed { index, _ -> index % step == 0 }.forEach { mark ->
+        if (placed >= budget) return
+        val offset = plane.project(mark.position)?.let(view::toCanvas) ?: return@forEach
+        if (!view.isOnCanvas(offset, 20f)) return@forEach
+        val text = formatClock(mark.millis)
+        space.place(
+            offset.x,
+            offset.y,
+            text,
+            paints.time,
+            6.dp.toPx(),
+            listOf(LabelAnchor.ABOVE, LabelAnchor.RIGHT, LabelAnchor.LEFT, LabelAnchor.BELOW),
+        )?.let {
+            drawLabel(text, it.x, it.y, paints.time)
+            placed++
         }
+    }
+}
+
+private const val MAX_HOUR_LABELS = 2
+private const val MAX_HOUR_LABELS_EMPHASISED = 5
+
+/** Where the path enters and leaves the window, with the caption each deserves. */
+private fun entryExitPoints(
+    plane: TangentPlane,
+    view: ChartViewport,
+    track: SkyTrack,
+): List<Pair<String, Offset>> {
+    if (track.isEmpty) return emptyList()
+    return listOf(track.enterMillis to "ein", track.exitMillis to "aus").mapNotNull { (millis, tag) ->
+        val point = track.points.minByOrNull { kotlin.math.abs(it.millis - millis) }
+            ?: return@mapNotNull null
+        val offset = plane.project(point.position)?.let(view::toCanvas) ?: return@mapNotNull null
+        if (!view.isOnCanvas(offset, 30f)) return@mapNotNull null
+        "$tag ${formatClock(millis)}" to offset
     }
 }
 
@@ -260,10 +440,23 @@ private fun DrawScope.drawArrowHead(from: Offset, to: Offset, color: Color, size
     )
 }
 
-private fun DrawScope.drawOrientationLabels(view: ChartViewport, paints: ChartPaints) {
+/**
+ * Drawn last but reserved first in spirit: these two never move, so a label that would land on them
+ * has to give way rather than the other way round.
+ */
+private fun DrawScope.drawOrientationLabels(
+    view: ChartViewport,
+    paints: ChartPaints,
+    space: LabelSpace,
+) {
     val pad = 8.dp.toPx()
-    drawLabel("↑ Zenit", pad, pad + 12.dp.toPx(), paints.hint)
-    drawLabel("Osten →", view.widthPx - 62.dp.toPx(), pad + 12.dp.toPx(), paints.hint)
+    val baseline = pad + 12.dp.toPx()
+    listOf("↑ Zenit" to pad, "Osten →" to view.widthPx - 62.dp.toPx()).forEach { (text, x) ->
+        drawLabel(text, x, baseline, paints.hint)
+        space.reserve(
+            Rect(x, baseline + paints.hint.ascent(), x + paints.hint.measureText(text), baseline + paints.hint.descent())
+        )
+    }
 }
 
 private fun DrawScope.drawLabel(text: String, x: Float, y: Float, paint: Paint) {
@@ -279,6 +472,7 @@ private class ChartPaints(density: Density) {
 
     val time = paint(StarWindowColors.Starlight, 10f)
     val label = paint(StarWindowColors.Starlight, 11f)
+    val labelStrong = paint(StarWindowColors.Starlight, 12.5f).apply { isFakeBoldText = true }
     val hint = paint(StarWindowColors.Muted, 10f)
 
     private fun paint(color: Color, sizeSp: Float) = Paint().apply {

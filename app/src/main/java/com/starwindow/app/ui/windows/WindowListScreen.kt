@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CenterFocusStrong
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
@@ -37,9 +38,11 @@ fun WindowListScreen(
     viewModel: WindowListViewModel,
     onOpenWindow: (String) -> Unit,
     onBack: () -> Unit,
+    onTrackWindow: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val windows by viewModel.windows.collectAsStateWithLifecycle()
+    val trackedWindowId by viewModel.trackedWindowId.collectAsStateWithLifecycle()
 
     Column(modifier = modifier.fillMaxSize().safeDrawingPadding()) {
         Row(
@@ -72,7 +75,12 @@ fun WindowListScreen(
                 items(windows, key = { it.id }) { window ->
                     WindowCard(
                         window = window,
+                        isTracked = window.id == trackedWindowId,
                         onClick = { onOpenWindow(window.id) },
+                        onTrack = {
+                            viewModel.track(window)
+                            onTrackWindow()
+                        },
                         onDelete = { viewModel.delete(window.id) },
                     )
                 }
@@ -82,7 +90,13 @@ fun WindowListScreen(
 }
 
 @Composable
-private fun WindowCard(window: SkyWindow, onClick: () -> Unit, onDelete: () -> Unit) {
+private fun WindowCard(
+    window: SkyWindow,
+    isTracked: Boolean,
+    onClick: () -> Unit,
+    onTrack: () -> Unit,
+    onDelete: () -> Unit,
+) {
     Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Row(
             modifier = Modifier.padding(14.dp),
@@ -112,6 +126,17 @@ private fun WindowCard(window: SkyWindow, onClick: () -> Unit, onDelete: () -> U
                     formatTimestamp(window.capturedAtMillis),
                     style = MaterialTheme.typography.labelSmall,
                     color = StarWindowColors.Muted,
+                )
+            }
+            IconButton(onClick = onTrack) {
+                Icon(
+                    Icons.Filled.CenterFocusStrong,
+                    contentDescription = "\"${window.name}\" im Sucher zeigen",
+                    tint = if (isTracked) {
+                        StarWindowColors.TrackTarget
+                    } else {
+                        StarWindowColors.Starlight
+                    },
                 )
             }
             IconButton(onClick = onDelete) {

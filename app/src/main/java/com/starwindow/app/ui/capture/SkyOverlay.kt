@@ -40,6 +40,24 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
+ * The thing the viewfinder is leading the user to, already resolved to a direction.
+ *
+ * Resolved outside the overlay on purpose. A catalogue object moves with the sky and a saved window
+ * does not, and that difference belongs in the view model where sidereal time and precession live —
+ * not in a draw lambda that runs fifty times a second. The sky moves fifteen arcseconds per second,
+ * so a direction recomputed once a second is four thousandths of a degree stale at worst: far below
+ * anything the sensor can resolve, and it keeps the draw phase free of astronomy.
+ */
+data class SkyTarget(
+    val label: String,
+    val direction: Horizontal,
+    /** Set for a catalogue object, so the marker can carry the same chart symbol as the list. */
+    val type: ObjectType? = null,
+    /** Set for a saved window, so the overlay can draw the outline the user is walking back to. */
+    val shape: WindowShape? = null,
+)
+
+/**
  * Everything drawn on top of the viewfinder.
  *
  * The overlay is rendered from sky coordinates, never from screen coordinates: a point the user
@@ -71,7 +89,7 @@ fun SkyOverlay(
     highlightDirection: Horizontal? = null,
     highlightLabel: String = "",
     /** The object picked in the search; the overlay leads the user to it. */
-    trackedTarget: SkyObject? = null,
+    trackedTarget: SkyTarget? = null,
     /**
      * How much of each edge the screen's own controls cover, in view pixels. The edge arrow is kept
      * out of those bands — an arrow drawn behind the control panel points at nothing.
@@ -99,23 +117,19 @@ fun SkyOverlay(
                 chromeInsets = chromeInsets,
             )
         }
-        if (trackedTarget != null && observer != null) {
-            val now = System.currentTimeMillis()
-            val lst = AstroTime.lstDeg(now, observer.longitudeDeg)
-            val position = CoordinateTransforms.apparentHorizontalAtLst(
-                trackedTarget.positionAt(Precession.forEpoch(now)),
-                observer.latitudeDeg,
-                lst,
-            )
+        trackedTarget?.let { target ->
+            // A tracked window gets its outline drawn as well: the arrow brings the user round, and
+            // the outline is what tells them they have arrived.
+            target.shape?.let { drawWindowShape(projection, it, StarWindowColors.TrackTarget) }
             drawTargetMarker(
                 projection = projection,
-                direction = position,
-                label = trackedTarget.name.ifBlank { trackedTarget.id },
+                direction = target.direction,
+                label = target.label,
                 color = StarWindowColors.TrackTarget,
                 paints = paints,
                 chromeInsets = chromeInsets,
-                type = trackedTarget.type,
-                belowHorizon = position.altitudeDeg < 0.0,
+                type = target.type,
+                belowHorizon = target.direction.altitudeDeg < 0.0,
             )
         }
         drawAnchors(projection, anchors, paints)
@@ -197,10 +211,14 @@ private fun cardinalLabel(azimuthDeg: Double): String = when (azimuthDeg.roundTo
 
 // --- Window ----------------------------------------------------------------------------------
 
-private fun DrawScope.drawWindowShape(projection: SkyProjection, shape: WindowShape) {
+private fun DrawScope.drawWindowShape(
+    projection: SkyProjection,
+    shape: WindowShape,
+    color: Color = StarWindowColors.WindowStroke,
+) {
     val path = skyPath(projection, shape.outline(96)) ?: return
-    drawPath(path, StarWindowColors.WindowFill)
-    drawPath(path, StarWindowColors.WindowStroke, style = Stroke(width = 3.dp.toPx()))
+    drawPath(path, color.copy(alpha = 0.13f))
+    drawPath(path, color, style = Stroke(width = 3.dp.toPx()))
 }
 
 private fun DrawScope.drawAnchors(

@@ -81,6 +81,21 @@ data class PolygonWindow(
 
     override fun areaSquareDeg(): Double = abs(SphericalGeometry.signedAreaSquareDeg(anchors))
 
+    /**
+     * True when the corners were tapped in an order that makes the outline cross itself.
+     *
+     * Worth asking before saving: a bow tie reports a far too small area and answers the
+     * containment test for the wrong lobe, and neither is visible at a glance on a dark screen.
+     */
+    val isSelfIntersecting: Boolean
+        get() {
+            val plane = TangentPlane(center())
+            val projected = anchors.mapNotNull { plane.project(it) }
+            // Corners on the far hemisphere cannot be judged; that is the >90° limit, not a loop.
+            if (projected.size != anchors.size) return false
+            return projected.hasSelfIntersection()
+        }
+
     override fun outline(segments: Int): List<Horizontal> {
         val perEdge = (segments / anchors.size).coerceAtLeast(2)
         val result = ArrayList<Horizontal>(anchors.size * perEdge)
@@ -223,6 +238,25 @@ data class SkyWindow(
     val magneticDeclinationDeg: Double = 0.0,
     /** Compass accuracy reported by the sensor when the window was closed (0 = unreliable). */
     val compassAccuracy: Int = 0,
+    /**
+     * Residual of the attitude calibration that was in force at capture, in degrees, or null when
+     * the window was drawn uncalibrated. Unlike [compassAccuracy] this is a measured number, and
+     * that difference is what lets the detail view quote a real error instead of a guess.
+     */
+    val calibrationResidualDeg: Double? = null,
+    /**
+     * True when the compass was disturbed at capture and north was being carried by the gyroscope.
+     * Recorded because it is invisible afterwards and it widens the error.
+     */
+    val headingHeld: Boolean = false,
+    /**
+     * How long the gyroscope had been carrying north on its own when the window was saved, in
+     * seconds. Zero means the compass was being followed normally.
+     *
+     * The duration matters, not just the fact: held for a few seconds costs nothing, held for a
+     * quarter of an hour means the direction had drifted into something worth doubting.
+     */
+    val headingHeldSeconds: Double = 0.0,
     /** Horizontal field of view of the camera used, for the record. */
     val cameraFovDeg: Double? = null,
     val notes: String = "",

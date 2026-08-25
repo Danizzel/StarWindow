@@ -34,6 +34,35 @@ import com.starwindow.app.data.windows.Settings
 import kotlin.math.ln
 import kotlin.math.pow
 
+/**
+ * Asked before a mode switch throws away points that have already been placed.
+ *
+ * The points mean something different in each mode — corners, centre and rim, opposite corners —
+ * so they genuinely cannot be carried over. Only shown when there is something to lose: a dialog
+ * that appears every time turns into a reflex and stops being read.
+ */
+@Composable
+fun DiscardAnchorsDialog(
+    mode: DrawMode,
+    anchorCount: Int,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Zu \"${mode.label}\" wechseln?") },
+        text = {
+            Text(
+                "Dabei gehen die schon gesetzten Punkte ($anchorCount) verloren – in jedem Modus " +
+                    "bedeuten sie etwas anderes.",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        },
+        confirmButton = { TextButton(onClick = onConfirm) { Text("Wechseln") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Abbrechen") } },
+    )
+}
+
 @Composable
 fun SaveWindowDialog(
     defaultName: String,

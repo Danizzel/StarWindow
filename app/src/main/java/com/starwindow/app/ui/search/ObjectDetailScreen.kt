@@ -91,8 +91,31 @@ fun ObjectDetailScreen(
                         .padding(horizontal = 16.dp),
                 )
 
-                // Known object, unknown observer: the facts hold, the sky position does not.
-                else -> NoPositionNotice(Modifier.align(Alignment.Center))
+                // Known object, unknown observer: what it *is* still holds, only where it stands
+                // does not — so the description stays and the curve goes.
+                else -> Column(
+                    modifier = Modifier
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp)
+                ) {
+                    NoPositionNotice(Modifier.align(Alignment.CenterHorizontally))
+                    state.description?.let {
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = it.note ?: it.whatItIs,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = StarWindowColors.Starlight,
+                        )
+                        if (it.note != null) {
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                text = it.whatItIs,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = StarWindowColors.Muted,
+                            )
+                        }
+                    }
+                }
             }
         }
 

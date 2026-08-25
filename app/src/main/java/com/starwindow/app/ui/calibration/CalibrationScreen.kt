@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.starwindow.app.core.calibration.CalibrationSource
+import com.starwindow.app.core.calibration.trustAt
 import com.starwindow.app.core.sensors.DeviceAttitude
 import com.starwindow.app.core.sensors.compassAccuracyLabel
 import com.starwindow.app.data.windows.Settings
@@ -178,6 +179,23 @@ private fun CalibrationHeader(
                 },
                 modifier = Modifier.padding(horizontal = 8.dp),
             )
+
+            // A correction measured elsewhere, or long ago, is still applied — but the user should
+            // know it is being applied, because it may no longer describe this place at all.
+            val trust = calibration.trustAt(state.observer, System.currentTimeMillis())
+            if (trust.isQuestionable) {
+                Text(
+                    text = "Diese Messung ist ${trust.label}. ${trust.explanation}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (trust.needsRemeasuring) {
+                        StarWindowColors.Crosshair
+                    } else {
+                        StarWindowColors.AnchorPoint
+                    },
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                )
+            }
+
             Text(
                 text = if (calibration.hasFovCorrection) {
                     "Bildfeld: Faktor %.3f (%s)".format(
@@ -226,18 +244,71 @@ private fun SensorHealthLine(attitude: DeviceAttitude?) {
         modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
     )
 
-    if (attitude.isMagneticallyDisturbed) {
+    // The dip angle is the sensitive half of the check and worth showing next to the strength:
+    // iron nearby often leaves the strength alone and bends the direction instead.
+    val dip = attitude.inclinationDeg
+    val expectedDip = attitude.expectedInclinationDeg
+    if (dip != null && expectedDip != null) {
         Text(
+            text = buildString {
+                append("Feldneigung %.0f° (erwartet %.0f°)".format(dip, expectedDip))
+                attitude.hardIronMicroTesla?.let {
+                    append(" · Eigenmagnetismus %.0f µT".format(it))
+                }
+            },
+            style = MaterialTheme.typography.labelSmall,
+            color = if (attitude.hasFieldDirectionDistortion) {
+                StarWindowColors.Crosshair
+            } else {
+                StarWindowColors.Muted
+            },
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+        )
+    }
+
+    when {
+        // The one the user can actually fix, so it goes first.
+        attitude.needsCompassCalibration -> Text(
+            text = "Der Magnetsensor ist noch nicht eingemessen – das Handy ein paar Mal in einer " +
+                "liegenden Acht schwenken, dann meldet Android ihn neu kalibriert. Jetzt zu " +
+                "kalibrieren hieße, den Fehler des Sensors mitzumessen.",
+            style = MaterialTheme.typography.labelSmall,
+            color = StarWindowColors.Crosshair,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+        )
+
+        attitude.hasFieldDirectionDistortion -> Text(
+            text = "Die Feldrichtung stimmt nicht – etwas Eisenhaltiges in der Nähe verbiegt das " +
+                "Erdmagnetfeld, ohne seine Stärke zu ändern. Ein paar Schritte weggehen; " +
+                "Nordrichtung wird solange vom Kreisel gehalten.",
+            style = MaterialTheme.typography.labelSmall,
+            color = StarWindowColors.Crosshair,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+        )
+
+        attitude.hasFieldStrengthDistortion -> Text(
             text = "Magnetstörung – das Feld passt nicht zum Erdmagnetfeld. Nordrichtung wird " +
                 "vom Kreisel gehalten; jetzt zu kalibrieren würde die Störung mit einmessen.",
             style = MaterialTheme.typography.labelSmall,
             color = StarWindowColors.Crosshair,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
         )
-    } else if (attitude.accuracy < android.hardware.SensorManager.SENSOR_STATUS_ACCURACY_MEDIUM) {
-        Text(
+
+        attitude.accuracy < android.hardware.SensorManager.SENSOR_STATUS_ACCURACY_MEDIUM -> Text(
             text = "Kompassgüte niedrig – das Handy einmal in einer Acht bewegen, dann meldet " +
                 "Android den Magnetsensor neu kalibriert.",
+            style = MaterialTheme.typography.labelSmall,
+            color = StarWindowColors.AnchorPoint,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+        )
+    }
+
+    if (attitude.headingDriftDeg >= 0.5) {
+        Text(
+            text = "Nord wird seit %.0f s vom Kreisel getragen – bis zu ±%.0f° Drift.".format(
+                attitude.headingHeldSeconds,
+                attitude.headingDriftDeg,
+            ),
             style = MaterialTheme.typography.labelSmall,
             color = StarWindowColors.AnchorPoint,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),

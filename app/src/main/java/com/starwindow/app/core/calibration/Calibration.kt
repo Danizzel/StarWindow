@@ -2,6 +2,7 @@ package com.starwindow.app.core.calibration
 
 import com.starwindow.app.core.astro.Angles
 import com.starwindow.app.core.astro.Horizontal
+import com.starwindow.app.core.astro.ObserverLocation
 import com.starwindow.app.core.astro.Rotation3
 import com.starwindow.app.core.astro.Vec3
 import kotlinx.serialization.Serializable
@@ -55,6 +56,13 @@ data class Calibration(
     val attitudeResidualDeg: Double? = null,
     val attitudeSampleCount: Int = 0,
     val attitudeUpdatedAtMillis: Long = 0L,
+    /**
+     * Where the attitude correction was measured. A compass error belongs to the place rather than
+     * to the phone, so a correction carried far enough away is marked questionable instead of being
+     * applied in silence — see [trustAt].
+     */
+    val attitudeLatitudeDeg: Double? = null,
+    val attitudeLongitudeDeg: Double? = null,
 
     val fovSource: CalibrationSource = CalibrationSource.NONE,
     val fovResidualDeg: Double? = null,
@@ -90,6 +98,8 @@ data class Calibration(
         residualDeg: Double?,
         sampleCount: Int,
         atMillis: Long,
+        /** Where it was measured, so [trustAt] can tell later whether it still applies. */
+        measuredAt: ObserverLocation? = null,
     ): Calibration {
         val v = rotationVectorOf(rotation)
         return copy(
@@ -100,6 +110,8 @@ data class Calibration(
             attitudeResidualDeg = residualDeg,
             attitudeSampleCount = sampleCount,
             attitudeUpdatedAtMillis = atMillis,
+            attitudeLatitudeDeg = measuredAt?.latitudeDeg,
+            attitudeLongitudeDeg = measuredAt?.longitudeDeg,
         )
     }
 
@@ -125,6 +137,8 @@ data class Calibration(
         attitudeResidualDeg = null,
         attitudeSampleCount = 0,
         attitudeUpdatedAtMillis = 0L,
+        attitudeLatitudeDeg = null,
+        attitudeLongitudeDeg = null,
     )
 
     fun clearFov(): Calibration = copy(

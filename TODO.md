@@ -1,26 +1,30 @@
 # StarWindow – was noch fehlt
 
-Stand: Grundgerüst, Nachtsicht-Sucher, Kalibrierung, Sternbilder, Laufbahnen und der
-Deep-Sky-Katalog gepusht. Die Rechenkette Bildschirm → Himmel steht und ist durch 122 Unit-Tests
-abgesichert; die Android-/Compose-Schicht ist noch von keinem Compiler gesehen worden.
+Stand: Grundgerüst, Nachtsicht-Sucher, Kalibrierung, Sternbilder, Laufbahnen, Deep-Sky-Katalog,
+Objektsuche und Verfolgung im Sucher. Die Rechenkette Bildschirm → Himmel steht und ist durch
+222 Unit-Tests abgesichert; die App übersetzt und läuft auf einem echten Gerät.
 
-Reihenfolge ist bewusst: Abschnitt 1 blockiert alles andere, Abschnitt 2 sind Stellen, die ich beim
-Nachlesen des eigenen Codes als tatsächlich unfertig verifiziert habe (kein Raten).
+Reihenfolge ist bewusst: Abschnitt 2 sind Stellen, die ich beim Nachlesen des eigenen Codes als
+tatsächlich unfertig verifiziert habe (kein Raten). Was noch aussteht, ist zum großen Teil nicht
+mehr Code, sondern **Gegenprüfung am Himmel** – siehe Abschnitt 1.
 
 ---
 
-## 1. Zuerst: zum Laufen bringen  ⛔ blockiert alles Weitere
+## 1. Gegenprüfung am Himmel  ⛔ das Einzige, was Code nicht ersetzen kann
 
-- [ ] **Projekt in Android Studio synchronisieren und kompilieren.** Google Maven war in der
-      Bauumgebung nicht erreichbar, deswegen konnte die UI-Schicht (Compose, CameraX, Sensoren)
-      nicht übersetzt werden. Erwartbar sind Import- und Signaturkorrekturen, kein Umbau.
-- [ ] **`./gradlew :app:testDebugUnitTest`** laufen lassen – muss grün sein (122 Tests).
-- [ ] **Auf echtem Gerät starten.** Emulatoren haben weder brauchbaren Kompass noch Kamera.
+- [x] ~~Projekt synchronisieren und kompilieren.~~ Werkzeugkette auf Gradle 9.4.1, AGP 9.2.1,
+      Kotlin 2.3.21, SDK 36 angehoben.
+- [x] ~~`./gradlew :app:testDebugUnitTest`~~ – 222 Tests, grün.
+- [x] ~~Auf echtem Gerät starten.~~ Läuft auf einem Pixel 9.
 - [ ] **Feldabgleich am Himmel:** auf einen bekannten hellen Stern zielen und prüfen, ob dessen
       Katalogmarkierung darauf sitzt. Sitzt sie daneben → Kompass kalibrieren (Achterbewegung).
       Wandert sie beim Schwenken schneller/langsamer als das Bild → Bildfeld-Faktor in den
       Einstellungen nachziehen. Das ist der eigentliche Abnahmetest der ganzen App.
 - [ ] Abgleich in **Hoch- und Querformat** sowie mit **Haupt- und Ultraweitwinkelkamera**.
+- [ ] **Sensorfusion gegenprüfen:** steht in der Statusleiste „Kreisel + Kompass"? Stehen die
+      Markierungen beim Stillhalten wirklich still? Meldet die App eine Magnetstörung, wenn man
+      das Handy neben ein Auto hält, und hält sie danach die Nordrichtung? Die Fusionsmathematik
+      ist getestet, die Sensorverdrahtung nicht.
 
 ---
 
@@ -63,8 +67,11 @@ Nachlesen des eigenen Codes als tatsächlich unfertig verifiziert habe (kein Rat
       erreichbaren Belichtungszeiten unterscheiden sich stark zwischen Geräten.
 - [x] ~~Belichtungskorrektur~~ als Rückfallebene für Geräte ohne `MANUAL_SENSOR`.
 - [ ] **Rotlichtmodus** für die Bedienelemente (Dunkeladaption der Augen).
-- [ ] **Kompasskalibrierung im UI:** bei niedriger Genauigkeit die Achterbewegung erklären, nicht
-      nur „unzuverlässig" anzeigen.
+- [x] ~~**Kompasskalibrierung im UI.**~~ Der Kalibrierbildschirm zeigt Feldstärke, Feldneigung und
+      Eigenmagnetismus mit den jeweils erwarteten Werten und unterscheidet in Klartext, was zu tun
+      ist: liegende Acht schwenken (Sensor nicht eingemessen), ein paar Schritte weggehen
+      (Feldrichtung verbogen), warten (Störung der Stärke). Der Sucher zeigt dieselbe
+      Unterscheidung kurz in der Statusleiste.
 - [ ] **Zoom** (Pinch) – erhöht die Zeigegenauigkeit deutlich, muss aber zwingend über
       `ZoomState.zoomRatio` in die Brennweitenberechnung einfließen, sonst stimmt die Projektion nicht.
 - [ ] **Bildschirm nur in der Kameraansicht wachhalten**, nicht in Liste und Detail
@@ -105,6 +112,15 @@ Nachlesen des eigenen Codes als tatsächlich unfertig verifiziert habe (kein Rat
       Suchfeld und keine Sortierung nach Dauer. `ObjectSearch` ließe sich dort wiederverwenden.
 - [x] ~~Sternbilder als Ganzes.~~ 29 Figuren mit 203 Figursternen mitgeliefert, eigene
       Durchgangsrechnung, Angabe wie viel der Figur gleichzeitig im Fenster steht.
+- [x] ~~**Beschreibungstext zu jedem Objekt.**~~ Zwei Schichten: `ObjectDescription` erklärt für alle
+      3.241 Einträge die **Art** (Emissions- gegen Reflexionsnebel samt der Folge für den Filter,
+      Planetarischer Nebel hat nichts mit Planeten zu tun, …) und übersetzt die Zahlen des Eintrags
+      in Aussagen – Ausdehnung im Vergleich zum Vollmond, Flächenhelligkeit als Anspruch an den
+      Himmel, Morphologiecode ausgeschrieben. Darüber liegen rund 150 handgeschriebene Notizen in
+      `assets/catalog/object_notes.json` für die Objekte, die man wirklich anschaut.
+- [ ] **Mehr Objektnotizen** – abgedeckt sind Messier, die bekannten NGC/IC-Namen und die hellen
+      Sterne. Die restlichen benannten Einträge fehlen noch; ohne Notiz greift die erzeugte
+      Beschreibung, das ist kein Loch, nur weniger.
 - [ ] **Mehr Sternbilder** – bisher die 29 auffälligsten. Die übrigen 59 ergänzen.
 - [ ] **IAU-Sternbildgrenzen** zusätzlich zu den Figuren, für die Frage „in welchem Sternbild liegt
       mein Fenster" (im Unterschied zu „welche Figur zieht hindurch").
@@ -117,19 +133,24 @@ Nachlesen des eigenen Codes als tatsächlich unfertig verifiziert habe (kein Rat
       Sternmuster (Ausrichtung, ab zwei Sternen auch die Neigung), Peilung auf einen Punkt bekannter
       Richtung, Schwenk über ein beliebiges Merkmal (Bildfeld, ohne Himmel und ohne Kompass) und
       der manuelle Regler. **Auf dem Gerät gegenprüfen**, besonders die Schwenkmethode.
-- [ ] **Kalibrierung altert:** Der Kompassfehler ist ortsabhängig (Eisen, Fahrzeuge, Gebäude). Eine
-      an einem Ort gemessene Ausrichtungskorrektur sollte nach Ortswechsel oder nach einer gewissen
-      Zeit als fraglich markiert werden statt stillschweigend weiterzugelten.
+- [x] ~~**Kalibrierung altert.**~~ Die Ausrichtungskorrektur merkt sich jetzt, **wo** sie gemessen
+      wurde. `CalibrationTrust` beurteilt sie beim Benutzen: frisch, älter (> 2 Tage), veraltet
+      (> 14 Tage) oder anderer Ort (> 5 km). Sucher und Kalibrierbildschirm sagen es an, sobald sie
+      fraglich wird. Entfernung schlägt Alter – eine heute Morgen drei Orte weiter gemessene
+      Korrektur ist weniger wert als eine eine Woche alte von diesem Balkon. Bewusst getrennt von
+      der Magnetstörungserkennung: die fängt „hier steht gerade Eisen neben dir", diese fängt „was
+      du gemessen hast, beschreibt nicht mehr, wo du bist".
 - [ ] **Kalibrierung pro Kamera** ablegen, sobald der Zoom oder ein Objektivwechsel dazukommt –
-      Haupt- und Ultraweitwinkelkamera haben völlig verschiedene Bildfelder.
+      Haupt- und Ultraweitwinkelkamera haben völlig verschiedene Bildfelder. Hängt am Zoom
+      (Abschnitt 3); vorher gibt es nichts zu unterscheiden.
 - [x] ~~**Präzession** von J2000 auf das Datum.~~ IAU-2006-Reihe (P03) in `Precession`, als
       umkehrbare Drehung von Richtungsvektoren; jede Stelle, die eine Katalogposition an den Himmel
       hängt, geht über `positionAt()`. Rund 0,37° Mitte der 2020er. Die Einschätzung „liegt unter
       dem Kompassfehler" galt nur unkalibriert – die Sternkalibrierung hätte die Präzession sonst
       als Kompassfehler eingemessen und auf alles angewendet.
-- [ ] **Nutation und jährliche Aberration** – bewusst weggelassen: zusammen unter 0,01°, zwei
-      Größenordnungen unter dem, was der Sensor auflöst. Erst interessant, wenn die App je an einer
-      Montierung hängt.
+- [x] ~~**Nutation und jährliche Aberration** – gestrichen.~~ Kein offener Punkt, sondern eine
+      Entscheidung: zusammen unter 0,01°, zwei Größenordnungen unter dem, was der Sensor auflöst.
+      Wieder aufmachen, falls die App je an einer Montierung hängt.
 - [x] ~~**Sensorfusion statt roher Rotationsvektor.**~~ `TYPE_GAME_ROTATION_VECTOR` (Kreisel,
       ohne Magnetsensor) trägt die Lage, der Kompass steuert nur die Nordrichtung bei, über einen
       Filter mit 10 s Zeitkonstante und drei Gütetoren. Glättung mit adaptiver Zeitkonstante statt
@@ -138,13 +159,52 @@ Nachlesen des eigenen Codes als tatsächlich unfertig verifiziert habe (kein Rat
 - [x] ~~**Magnetstörung erkennen.**~~ Gemessene Feldstärke gegen `GeomagneticField` geprüft; passt
       sie nicht, wird die Nordrichtung vom Kreisel gehalten statt vom gestörten Kompass gezogen.
       Sucher und Kalibrierbildschirm sagen es an.
-- [ ] **Kompassgüte in die gespeicherten Daten übernehmen** und in der Detailansicht als
-      Fehlerbalken zeigen – ein bei „unzuverlässig" aufgenommenes Fenster kann mehrere Grad
-      danebenliegen, das sollte man später noch sehen.
-- [ ] **Fenster über 90° Ausdehnung.** `TangentPlane` deckt nur eine Halbkugel ab, sehr große
-      Polygone liefern `false`. Dokumentierte Grenze, für den Regelfall unkritisch.
-- [ ] **Selbstüberschneidende Polygone** erkennen und warnen – tippt man die Ecken in falscher
-      Reihenfolge, entsteht eine Schleife mit überraschendem Ergebnis.
+- [x] ~~**Feldrichtung prüfen, nicht nur die Feldstärke.**~~ Die Stärkeprüfung allein übersieht
+      genau den Fall, auf den es ankommt: Eisen in der Nähe addiert einen Vektor zum Erdfeld, und
+      diese Summe kann nahezu gleich lang bleiben und trotzdem 20° schief zeigen – der Fehler
+      landet dann ungebremst in der Nordrichtung. Zusätzlich wird deshalb die **Inklination**
+      (Neigungswinkel der Feldlinien) gegen `GeomagneticField.getInclination()` geprüft. Sie hängt
+      an der Schwerkraft und am Feld, nie an der Nordrichtung – deswegen darf sie über den Kompass
+      urteilen, ohne aus ihm abgeleitet zu sein.
+- [x] ~~**Eigenmagnetismus des Geräts ausweisen.**~~ Statt `TYPE_MAGNETIC_FIELD` wird
+      `TYPE_MAGNETIC_FIELD_UNCALIBRATED` gelesen: derselbe Sensor liefert damit zusätzlich die
+      Hard-Iron-Schätzung der Plattform (Lautsprecher-, Kamera- und Akkumagnete). Deren Größe
+      trennt zwei Fälle, die der Nutzer völlig verschieden behandeln muss – „neben dir steht
+      Eisen, geh ein paar Schritte weiter" gegen „der Sensor ist noch nicht eingemessen, schwenk
+      eine liegende Acht". Bisher hieß beides „unzuverlässig".
+- [x] ~~**Gierdrift des Kreisels beziffern.**~~ „Nord gehalten" war ein Ja/Nein-Kennzeichen – drei
+      Sekunden und zwanzig Minuten sahen gleich aus. Jetzt zählt die App die Haltedauer und rechnet
+      sie über eine dokumentierte, bewusst konservative Driftrate in einen Winkel um, der im Sucher
+      steht und mit ins Fenster gespeichert wird. Oberhalb von 30° hört die ehrliche Antwort auf,
+      eine Zahl zu sein. **Die Rate ist eine Annahme, keine Messung** – am Gerät nachmessen und
+      `GYRO_DRIFT_DEG_PER_MINUTE` ersetzen.
+- [x] ~~**ARCore / Visual Inertial Odometry** – geprüft und verworfen.~~ Wäre gegen Kreiseldrift
+      das stärkste Mittel, scheitert hier aber an der Anwendung selbst: ARCore verfolgt
+      *Bildmerkmale*, und ein dunkler Nachthimmel hat keine – genau dort, wo die App benutzt wird,
+      hätte es nichts zum Verfolgen. Dazu übernimmt ARCore die Kamerasitzung, was mit dem manuellen
+      Nachtsicht-Sucher (Belichtungszeit, ISO, Fokus über Camera2) kollidiert, der hier zentral ist.
+      Und Norden liefert es von sich aus auch nicht: ARCores Weltsystem ist schwerkraftbezogen mit
+      beliebigem Gierwinkel; die Geospatial-API bräuchte Netz und Street-View-Abdeckung. Wieder
+      aufmachen, falls die App je bei Tageslicht gegen eine Skyline ausgerichtet werden soll –
+      dafür wäre es tatsächlich das richtige Werkzeug (siehe Horizontprofil, Abschnitt 6).
+- [x] ~~**Kompassgüte in die gespeicherten Daten übernehmen**~~ und als Fehlerbalken zeigen. Ein
+      Fenster merkt sich jetzt zusätzlich die **gemessene Restabweichung** der Kalibrierung, die
+      beim Aufnehmen galt, und ob der Kompass dabei gestört war. `WindowAccuracy` macht daraus eine
+      Zahl – und unterscheidet ausdrücklich, ob sie **gemessen** ist (Kalibrierrest) oder nur aus
+      dem Kompass-Gütekennzeichen **geschätzt**; Android nennt dafür nie einen Winkel, und „±5,0°"
+      aus einem Kennzeichen zu zitieren wäre erfundene Genauigkeit. Der Balken ist auf den
+      Fensterradius skaliert: ein halbes Grad Fehler ist in einer 5°-Lücke nichts und in einem
+      halben Grad Schlitz alles.
+- [x] ~~**Fenster über 90° Ausdehnung** – gestrichen.~~ Dokumentierte Grenze, kein Auftrag: ein
+      Fenster ist eine Lücke zwischen zwei Dächern, und über eine Halbkugel hinweg ist das keine
+      Lücke mehr. `TangentPlane` liefert dort `false`, und die Überschneidungsprüfung wertet
+      Ecken auf der Gegenhalbkugel ausdrücklich nicht als Schleife.
+- [x] ~~**Selbstüberschneidende Polygone** erkennen und warnen.~~ `hasSelfIntersection()` auf der
+      Tangentialebene, echte Kreuzungen statt bloßer Berührungen; berührende Nachbarkanten und
+      konkave Konturen (die L-Form zwischen zwei Dächern) lösen bewusst nichts aus. Die Warnung
+      steht direkt bei der Flächenangabe, blockiert aber das Speichern nicht. Nötig, weil beide
+      Folgen stumm sind: die Fläche fällt zu klein aus, weil sich die Schleifen aufheben, und der
+      Enthaltensein-Test antwortet für die falsche Hälfte.
 
 ---
 
@@ -154,20 +214,35 @@ Nachlesen des eigenen Codes als tatsächlich unfertig verifiziert habe (kein Rat
       „nächste Woche Freitagnacht".
 - [x] ~~Laufbahn-Darstellung~~ – die Fensteransicht zeigt das stehende Fenster mit den Bahnen,
       Stundenmarken und Ein-/Austrittszeiten.
+- [x] ~~**Laufbahn-Diagramm entwirren.**~~ Es zeichnete für jede der sechs Bahnen jede volle Stunde
+      plus Ein- und Austritt plus Namen – sechzig Beschriftungen auf einer Fläche für fünfzehn.
+      Jetzt beanspruchen sie Rechtecke und werden weggelassen statt übereinandergedruckt, vergeben
+      nach Wert (Name → Ein/Aus → volle Stunden). Die Stundenpunkte bleiben immer stehen.
+- [x] ~~**Auswahl filtert das Diagramm.**~~ Ohne Auswahl weiter eine Handvoll Bahnen als Überblick,
+      mit Auswahl nur noch die gewählten – mehrere gleichzeitig, jede mit allen Durchgängen. Die
+      Ergebniskarten setzen ihre drei Zahlen (Zeitraum, Dauer, Bestzeit) jetzt in feste Spalten
+      statt in einen Fließtext.
 - [ ] **Zeitleiste** als Ergänzung: welche Objekte wann und wie lange, als Balkendiagramm über die
       Nacht – beantwortet „wann lohnt sich das Rausgehen" schneller als die Bahnen.
-- [ ] **Bahn über mehrere Durchgänge**: gezeichnet wird bisher der erste Durchgang eines Objekts;
-      bei zirkumpolaren Objekten gibt es weitere.
+- [x] ~~**Bahn über mehrere Durchgänge**.~~ Vom ausgewählten Objekt werden alle Durchgänge
+      gezeichnet (bis zu vier), von den übrigen weiterhin nur der erste – alle von allen wären ein
+      Dickicht. Die Farbe hängt jetzt am Eintrag statt an der Bahn, sonst läse sich ein
+      zirkumpolares Objekt mit drei Durchgängen wie drei verschiedene Dinge.
 - [x] ~~**Objekt wiederfinden:**~~ „Track" auf dem Objektblatt führt zurück in den Sucher, wo ein
       Pfeil am Bildschirmrand die Richtung zeigt (`TargetIndicator`) – auch wenn das Objekt hinter
       dem Rücken steht, wo die Projektion selbst keine Antwort mehr gibt.
-- [ ] **Fenster wiederfinden:** derselbe Pfeil für ein gespeichertes Fenster. `TargetIndicator`
-      arbeitet auf einer beliebigen Richtung, es fehlt nur der Weg von der Fensterliste dorthin.
+- [x] ~~**Fenster wiederfinden:**~~ derselbe Pfeil für ein gespeichertes Fenster, aus der Liste
+      oder aus der Detailansicht. Das Verfolgungsziel ist dafür ein Summentyp geworden
+      (`TrackTarget`): ein Katalogobjekt hängt am Himmel und wandert durchs Bild, ein Fenster hängt
+      am Horizont und steht still – nur das Objekt braucht Sternzeit und Präzession. Ist das
+      Fenster wieder im Bild, zeichnet der Sucher seine Kontur, denn der Pfeil sagt nur „dorthin",
+      nicht „du bist da". Ein gelöschtes Fenster hört auf, verfolgt zu werden.
 - [ ] **Benachrichtigung** „M31 ist in 10 Minuten in deinem Fenster".
 - [ ] **Horizontprofil** statt Einzelfenster: die ganze Skyline einmal umlaufend aufnehmen und
       daraus jede Sichtbarkeit ableiten. Die konsequente Fortsetzung der Grundidee.
 - [ ] **Querformat-Layout** prüfen, die Bedienleiste wird dort eng.
-- [ ] **Bestätigung beim Moduswechsel**, der löscht aktuell kommentarlos alle gesetzten Punkte.
+- [x] ~~**Bestätigung beim Moduswechsel.**~~ Gefragt wird nur, wenn tatsächlich Punkte verloren
+      gingen – ein Dialog, der jedes Mal erscheint, wird zum Reflex und dann nicht mehr gelesen.
 
 ---
 

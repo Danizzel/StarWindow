@@ -105,11 +105,18 @@ class OrientationTracker(context: Context) {
             }
             val primary = motion ?: compass
 
+            // Preferred because it hands over the platform's hard-iron estimate alongside the
+            // reading; the plain sensor only gives the corrected field, with no way to tell how
+            // much correction it took.
+            val magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD_UNCALIBRATED)
+                ?: sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
+
             val state = FusionState(fusing, source)
             val listener = object : SensorEventListener {
                 override fun onSensorChanged(event: SensorEvent) {
                     when (event.sensor.type) {
-                        Sensor.TYPE_MAGNETIC_FIELD -> state.onField(event)
+                        Sensor.TYPE_MAGNETIC_FIELD,
+                        Sensor.TYPE_MAGNETIC_FIELD_UNCALIBRATED -> state.onField(event)
                         primary.type -> state.onPrimary(event, ::emit)
                         else -> state.onCompass(event)
                     }
@@ -134,7 +141,7 @@ class OrientationTracker(context: Context) {
                 // nothing to gain from sampling the compass fast — and a real battery cost.
                 sensorManager.registerListener(listener, compass, SensorManager.SENSOR_DELAY_UI)
             }
-            sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)?.let {
+            magnetometer?.let {
                 sensorManager.registerListener(listener, it, SensorManager.SENSOR_DELAY_UI)
             }
 
@@ -168,8 +175,14 @@ class OrientationTracker(context: Context) {
         private var hasHeading = false
         private var headingHeld = false
 
+        private val fieldDevice = FloatArray(3)
+        private var hasField = false
         private var fieldMicroTesla: Float? = null
         private var expectedFieldMicroTesla: Float? = null
+        private var hardIronMicroTesla: Float? = null
+        private var inclinationDeg: Double? = null
+        private var expectedInclinationDeg: Double? = null
+        private var headingHeldSeconds = 0.0
 
         private var lastEventNanos = 0L
         private var rateDegPerSecond = 0.0
@@ -179,10 +192,37 @@ class OrientationTracker(context: Context) {
         private var correction: Rotation3 = Rotation3.IDENTITY
         private var correctionFor: Calibration? = null
 
+        /**
+         * Takes the magnetometer reading apart.
+         *
+         * `TYPE_MAGNETIC_FIELD_UNCALIBRATED` reports the raw field in the first three values and
+         * the platform's own hard-iron estimate in the next three, with
+         * `calibrated ≈ raw − bias`. That single sensor therefore answers two different questions:
+         * subtracting the bias gives the field to judge the surroundings by, and the size of the
+         * bias says how much of the phone's own magnetism had to be removed to get there — which is
+         * what separates "there is iron next to you" from "your compass has not finished
+         * calibrating". A plain `TYPE_MAGNETIC_FIELD` has no bias to report, so only the first
+         * question can be asked there.
+         */
         fun onField(event: SensorEvent) {
             val v = event.values ?: return
             if (v.size < 3) return
-            fieldMicroTesla = sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2])
+
+            if (v.size >= 6) {
+                fieldDevice[0] = v[0] - v[3]
+                fieldDevice[1] = v[1] - v[4]
+                fieldDevice[2] = v[2] - v[5]
+                hardIronMicroTesla = sqrt(v[3] * v[3] + v[4] * v[4] + v[5] * v[5])
+            } else {
+                v.copyInto(fieldDevice, endIndex = 3)
+                hardIronMicroTesla = null
+            }
+            hasField = true
+            fieldMicroTesla = sqrt(
+                fieldDevice[0] * fieldDevice[0] +
+                    fieldDevice[1] * fieldDevice[1] +
+                    fieldDevice[2] * fieldDevice[2]
+            )
         }
 
         fun onCompass(event: SensorEvent) {
@@ -226,6 +266,12 @@ class OrientationTracker(context: Context) {
             SensorManager.getRotationMatrixFromVector(rotation, smoothed)
 
             refreshLocationDerived()
+            // The dip angle needs an attitude to say which way is up, so it is worked out here
+            // rather than when the magnetometer fires. The tilt comes from gravity and is the same
+            // in both frames, so using the gyroscope's keeps this independent of the compass.
+            if (hasField) {
+                inclinationDeg = AttitudeFusion.inclinationDeg(fieldDevice, rotation)
+            }
             val worldFrame = if (fusing) {
                 updateHeading(dtSeconds)
                 // Until the first compass sample arrives there is no north, and a sky turned by an
@@ -250,7 +296,10 @@ class OrientationTracker(context: Context) {
                     source = source,
                     fieldMicroTesla = fieldMicroTesla,
                     expectedFieldMicroTesla = expectedFieldMicroTesla,
-                    headingHeld = fusing && hasHeading && headingHeld,
+                    inclinationDeg = inclinationDeg,
+                    expectedInclinationDeg = expectedInclinationDeg,
+                    hardIronMicroTesla = hardIronMicroTesla,
+                    headingHeldSeconds = if (fusing && hasHeading) headingHeldSeconds else 0.0,
                 )
             )
         }
@@ -282,9 +331,12 @@ class OrientationTracker(context: Context) {
                 fieldLooksLikeEarth() &&
                 rateDegPerSecond <= AttitudeFusion.HEADING_UPDATE_MAX_RATE_DEG_S
             // Only a disturbance or a compass Android itself distrusts counts as "held"; merely
-            // swinging the phone about is normal and must not raise a warning.
-            headingHeld = !fieldLooksLikeEarth() ||
+            // swinging the phone about is normal and must not raise a warning. The duration is
+            // what the rest of the app quotes, because held for a moment and held for a quarter of
+            // an hour are not the same situation at all.
+            val held = !fieldLooksLikeEarth() ||
                 accuracy < SensorManager.SENSOR_STATUS_ACCURACY_MEDIUM
+            headingHeldSeconds = if (held) headingHeldSeconds + dtSeconds else 0.0
             if (!trustworthy) return
 
             headingOffsetDeg = AttitudeFusion.blendHeadingDeg(
@@ -294,10 +346,22 @@ class OrientationTracker(context: Context) {
             )
         }
 
+        /**
+         * Whether the field is the Earth's — in strength *and* in direction.
+         *
+         * Two independent tests because they fail independently. A magnet next to the phone changes
+         * the length; a steel window frame or a case with a magnetic clasp mostly changes the
+         * direction while leaving the length nearly untouched, and that second case is the one that
+         * ends up as a heading error.
+         */
         private fun fieldLooksLikeEarth(): Boolean {
             val measured = fieldMicroTesla ?: return true
             val expected = expectedFieldMicroTesla ?: return true
-            return AttitudeFusion.isFieldPlausible(measured, expected)
+            if (!AttitudeFusion.isFieldPlausible(measured, expected)) return false
+
+            val dip = inclinationDeg ?: return true
+            val expectedDip = expectedInclinationDeg ?: return true
+            return AttitudeFusion.isInclinationPlausible(dip, expectedDip)
         }
 
         private fun refreshLocationDerived() {
@@ -307,8 +371,12 @@ class OrientationTracker(context: Context) {
             if (current == null) {
                 declinationDeg = 0.0
                 expectedFieldMicroTesla = null
+                expectedInclinationDeg = null
                 return
             }
+            // GeomagneticField is Android's World Magnetic Model: it gives the declination that
+            // turns compass north into true north, and — used here as well — the strength and dip
+            // the field ought to have at this spot, which is what any disturbance is judged against.
             val field = GeomagneticField(
                 current.latitudeDeg.toFloat(),
                 current.longitudeDeg.toFloat(),
@@ -318,6 +386,7 @@ class OrientationTracker(context: Context) {
             declinationDeg = field.declination.toDouble()
             // The model reports nanotesla, the sensor microtesla.
             expectedFieldMicroTesla = field.fieldStrength / 1000f
+            expectedInclinationDeg = field.inclination.toDouble()
         }
 
         private fun refreshCalibration() {

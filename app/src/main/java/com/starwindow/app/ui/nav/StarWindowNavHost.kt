@@ -112,6 +112,9 @@ fun StarWindowNavHost(
                 viewModel = viewModel,
                 onOpenWindow = { navController.navigate(Routes.windowDetail(it)) },
                 onBack = { navController.popBackStack() },
+                // Pointing at a window means "show it to me in the sky", so it goes all the way
+                // back to the viewfinder — the same route "Track" takes for an object.
+                onTrackWindow = { navController.popBackStack(Routes.CAPTURE, inclusive = false) },
             )
         }
 
@@ -127,6 +130,7 @@ fun StarWindowNavHost(
             WindowDetailScreen(
                 viewModel = viewModel,
                 onBack = { navController.popBackStack() },
+                onTrackWindow = { navController.popBackStack(Routes.CAPTURE, inclusive = false) },
             )
         }
     }

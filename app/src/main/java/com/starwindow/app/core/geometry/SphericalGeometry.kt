@@ -123,6 +123,45 @@ class TangentPlane(val center: Horizontal) {
 /** A point on a [TangentPlane]; units are tan(angle), i.e. radians for small angles. */
 data class PlanarPoint(val x: Double, val y: Double)
 
+/**
+ * True when the closed outline through these points crosses itself.
+ *
+ * Tapping the corners of a window out of order produces a bow tie rather than the shape the user
+ * meant: the area comes out too small (the two lobes cancel in the signed sum) and the containment
+ * test answers "inside" for the wrong patch of sky. Both failures are silent, and neither is
+ * obvious from the drawn outline in the dark — hence the check.
+ *
+ * Only *proper* crossings count. Edges that merely touch at a shared corner, or that lie along one
+ * another, are the degenerate cases of a legitimate outline and must not raise the alarm.
+ */
+fun List<PlanarPoint>.hasSelfIntersection(): Boolean {
+    if (size < 4) return false
+    for (i in indices) {
+        val a1 = this[i]
+        val a2 = this[(i + 1) % size]
+        // Start at i + 2: edge i and edge i + 1 share a corner by construction.
+        for (j in i + 2 until size) {
+            // The last edge closes back onto the first, so those two are neighbours as well.
+            if (i == 0 && j == size - 1) continue
+            if (segmentsCross(a1, a2, this[j], this[(j + 1) % size])) return true
+        }
+    }
+    return false
+}
+
+/** Strict segment crossing: the two must genuinely pass through each other. */
+private fun segmentsCross(a1: PlanarPoint, a2: PlanarPoint, b1: PlanarPoint, b2: PlanarPoint): Boolean {
+    fun side(from: PlanarPoint, to: PlanarPoint, p: PlanarPoint): Double =
+        (to.x - from.x) * (p.y - from.y) - (to.y - from.y) * (p.x - from.x)
+
+    val d1 = side(a1, a2, b1)
+    val d2 = side(a1, a2, b2)
+    val d3 = side(b1, b2, a1)
+    val d4 = side(b1, b2, a2)
+    return ((d1 > 0.0 && d2 < 0.0) || (d1 < 0.0 && d2 > 0.0)) &&
+        ((d3 > 0.0 && d4 < 0.0) || (d3 < 0.0 && d4 > 0.0))
+}
+
 /** Even–odd ray casting test on the tangent plane. */
 fun List<PlanarPoint>.containsPoint(p: PlanarPoint): Boolean {
     if (size < 3) return false

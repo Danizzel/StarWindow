@@ -97,7 +97,32 @@ data class ObserverLocation(
     /** True when the user typed the position instead of using a GPS fix. */
     val manual: Boolean = false,
 ) {
+    /**
+     * Great-circle distance to another position, in kilometres.
+     *
+     * Used to ask whether a compass calibration measured somewhere else still applies here. Built
+     * on the same unit-vector machinery as everything else rather than on a latitude/longitude
+     * formula, so it cannot break at the date line or near the poles.
+     */
+    fun distanceKmTo(other: ObserverLocation): Double {
+        val a = unitVector()
+        val b = other.unitVector()
+        val angleRad = kotlin.math.atan2((a cross b).length, a dot b)
+        return Math.toDegrees(angleRad) * KM_PER_DEGREE
+    }
+
+    /** Position on the unit sphere; the axis convention does not matter, only the angle does. */
+    private fun unitVector(): Vec3 {
+        val lat = Math.toRadians(latitudeDeg)
+        val lon = Math.toRadians(longitudeDeg)
+        val cosLat = cos(lat)
+        return Vec3(cosLat * cos(lon), cosLat * sin(lon), sin(lat))
+    }
+
     companion object {
+        /** One degree of great circle on Earth, in kilometres (mean radius 6371 km). */
+        const val KM_PER_DEGREE = 111.195
+
         /** Fallback so the app stays usable before the first location fix (Greenwich). */
         val UNKNOWN = ObserverLocation(51.4779, 0.0, 0.0, null, manual = true)
     }

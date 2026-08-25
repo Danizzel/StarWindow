@@ -39,6 +39,7 @@ import com.starwindow.app.core.astro.Horizontal
 import com.starwindow.app.data.catalog.SkyObject
 import com.starwindow.app.data.images.SkyImageLoader
 import com.starwindow.app.data.images.SkyImageRequest
+import com.starwindow.app.domain.ObjectDescription
 import com.starwindow.app.domain.SkyTrack
 import com.starwindow.app.ui.theme.StarWindowColors
 
@@ -55,6 +56,8 @@ data class ObjectInfo(
     val currentPosition: Horizontal? = null,
     /** Fraction of the window's width the object covers; above 1 it does not fit. */
     val fillFactor: Double? = null,
+    /** What the object is and what makes it worth looking at, in plain language. */
+    val description: ObjectDescription? = null,
 )
 
 @Composable
@@ -112,6 +115,13 @@ fun ObjectInfoContent(
     Column(modifier = modifier) {
         SkyImageView(obj, imageLoader)
 
+        // Before any number: what the thing actually is. Everything below this point assumes the
+        // reader already knows, and for most of the catalogue that is not a safe assumption.
+        info.description?.let { description ->
+            Spacer(Modifier.height(12.dp))
+            DescriptionBlock(description)
+        }
+
         Spacer(Modifier.height(12.dp))
         Text("Höhe über dem Horizont", style = MaterialTheme.typography.titleSmall)
         AltitudeCurveChart(track = info.track, passes = info.passes)
@@ -160,12 +170,8 @@ fun ObjectInfoContent(
                 },
             )
         }
-        if (obj.type.respondsToNarrowband) {
-            InfoRow(
-                "Fotografie",
-                "Emissionsobjekt – Schmalbandfilter helfen auch bei Lichtverschmutzung.",
-            )
-        }
+        // The narrowband hint used to live here; it is part of the description above now, where it
+        // sits next to the reason it is true.
         if (obj.catalogIds.isNotEmpty()) {
             InfoRow("Auch bekannt als", obj.catalogIds.take(8).joinToString(", "))
         }
@@ -173,6 +179,52 @@ fun ObjectInfoContent(
             InfoRow("Weitere Namen", obj.alternativeNames.joinToString(", "))
         }
         InfoRow("Quelle", obj.source)
+    }
+}
+
+/**
+ * What the object is, what makes it special, and what its numbers mean.
+ *
+ * Ordered by how much of it is about *this* object: the hand-written note first when there is one,
+ * because that is the part the reader came for, then the type explained, then the traits read off
+ * the catalogue row. Objects nobody has written about start at the second line and still say
+ * something useful.
+ */
+@Composable
+private fun DescriptionBlock(description: ObjectDescription) {
+    Column {
+        description.note?.let {
+            Text(
+                text = it,
+                style = MaterialTheme.typography.bodyMedium,
+                color = StarWindowColors.Starlight,
+            )
+            Spacer(Modifier.height(8.dp))
+        }
+
+        Text(
+            text = description.whatItIs,
+            style = MaterialTheme.typography.bodySmall,
+            color = StarWindowColors.Muted,
+        )
+
+        if (description.traits.isNotEmpty()) {
+            Spacer(Modifier.height(6.dp))
+            description.traits.forEach { trait ->
+                Row(modifier = Modifier.padding(vertical = 1.dp)) {
+                    Text(
+                        text = "· ",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = StarWindowColors.WindowStroke,
+                    )
+                    Text(
+                        text = trait,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = StarWindowColors.Muted,
+                    )
+                }
+            }
+        }
     }
 }
 
