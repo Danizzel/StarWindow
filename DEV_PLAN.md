@@ -205,17 +205,26 @@ Magnetfeld und ohne Nordrichtung.
 
 Gemessen, nicht geschätzt (Stand August 2026):
 
-| Datensatz | Objekte | JSON | gepackt |
+| Datensatz | Objekte | JSON | Parsen |
 |---|---:|---:|---:|
-| Basiskatalog heute | 115 | 20 KB | – |
-| OpenNGC vollständig, auf die benötigten Felder reduziert | 13.970 | 1,5 MB | **228 KB** |
-| OpenNGC bis 13 mag (Amateurteleskop-Grenze) | 3.074 | 361 KB | **58 KB** |
-| Sterne bis 6,5 mag (bloßes Auge, Yale BSC) | 9.110 | 625 KB | 139 KB |
-| Sterne bis ~8 mag (Fernglas) | 42.000 | 2,9 MB | 639 KB |
+| `deepsky.json` – OpenNGC vollständig plus Sh2, Barnard, LBN | 13.432 | 3,8 MB | 38 ms |
+| `stars.json` – Yale BSC, bis rund 6,5 mag | 9.096 | 1,8 MB | 52 ms |
+| `constellations.json` – alle 88 Figuren | 88 | 98 KB | – |
+| Sterne bis ~8 mag (Fernglas), nicht mitgeliefert | 42.000 | 2,9 MB | – |
 
-**Speicherplatz ist damit nicht der Engpass.** Alles, was diese App je zeigen will, liegt gepackt
-unter einem Megabyte – ein Bruchteil einer gewöhnlichen APK. Ein Online-Katalog spart hier nichts,
-kostet aber Verfügbarkeit genau dann, wenn man draußen im Dunkeln steht.
+Die Zeiten sind auf dem Entwicklungsrechner gemessen; auf einem Telefon ist mit dem Drei- bis
+Fünffachen zu rechnen, also gut einer Drittelsekunde für beide Kataloge zusammen – einmalig, in
+einer Coroutine, danach im Speicher gehalten.
+
+**Speicherplatz ist damit nicht der Engpass**, und die Rechenzeit auch nicht. Ein Online-Katalog
+spart hier nichts, kostet aber Verfügbarkeit genau dann, wenn man draußen im Dunkeln steht.
+
+Der Engpass sitzt woanders: der Sucher projiziert **pro Bild** jedes Objekt, das er zeichnen soll,
+von Himmels- in Bildschirmkoordinaten. Zweiundzwanzigtausend davon fünfzigmal je Sekunde geht
+nicht – und wäre auch umsonst, weil zehntausend Markierungen auf einem Telefondisplay keine
+Sternkarte ergeben, sondern eine graue Fläche. Deshalb entscheidet `domain/OverlaySelection.kt`,
+was überhaupt gezeichnet wird: was von dieser Breite je aufgeht, was hell genug ist, und höchstens
+die besten 1.200 davon. Der Katalog darf vollständig sein, weil die Auswahl es nicht ist.
 
 **Gaia ist der falsche Katalog**, unabhängig von der Größe:
 

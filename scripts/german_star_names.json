@@ -1,0 +1,16 @@
+{
+ "comment": "Deutsche Sternnamen fuer den Import aus dem Yale Bright Star Catalogue. Gepflegt von Hand, unabhaengig von den Rohdaten - siehe scripts/import_bsc.py. Schluessel ist der IAU-Name, Wert die im Deutschen uebliche Schreibung. Hier stehen nur die Abweichungen; jeder andere IAU-Name wird unveraendert uebernommen. Der englische Name bleibt in jedem Fall als Suchbegriff erhalten.",
+ "names": {
+  "Arcturus": "Arktur",
+  "Vega": "Wega",
+  "Betelgeuse": "Beteigeuze",
+  "Procyon": "Prokyon",
+  "Altair": "Atair",
+  "Castor": "Kastor",
+  "Schedar": "Schedir",
+  "Alphecca": "Alphekka",
+  "Alcor": "Alkor",
+  "Almach": "Alamak",
+  "Eltanin": "Etamin"
+ }
+}

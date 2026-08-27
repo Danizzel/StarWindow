@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.starwindow.app.data.catalog.SkyObject
+import com.starwindow.app.domain.Feasibility
 import com.starwindow.app.ui.theme.ObjectPalette
 import com.starwindow.app.ui.theme.StarWindowColors
 
@@ -44,6 +45,13 @@ fun ObjectRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     selected: Boolean = false,
+    /**
+     * The verdict for tonight. When given it replaces the "über Hor." caption under the altitude,
+     * because it says the same thing and more: an object at 8° is above the horizon and still not
+     * worth carrying a tripod outside for.
+     */
+    feasibility: Feasibility? = null,
+    /** Overrides the whole right-hand column — used for "noch 41 min" on the suggestion board. */
     trailing: (@Composable () -> Unit)? = null,
 ) {
     Row(
@@ -92,7 +100,7 @@ fun ObjectRow(
         if (trailing != null) {
             trailing()
         } else {
-            AltitudeBadge(altitudeDeg)
+            AltitudeBadge(altitudeDeg, feasibility = feasibility)
         }
     }
 }
@@ -114,11 +122,15 @@ fun objectSubtitle(obj: SkyObject): String = buildString {
  * the dark and for a colour-blind eye.
  */
 @Composable
-fun AltitudeBadge(altitudeDeg: Double?, modifier: Modifier = Modifier) {
+fun AltitudeBadge(
+    altitudeDeg: Double?,
+    modifier: Modifier = Modifier,
+    feasibility: Feasibility? = null,
+) {
     if (altitudeDeg == null) {
         Text(
             text = "–",
-            modifier = modifier.width(66.dp),
+            modifier = modifier.width(72.dp),
             style = MaterialTheme.typography.labelMedium,
             color = StarWindowColors.Muted,
         )
@@ -130,21 +142,36 @@ fun AltitudeBadge(altitudeDeg: Double?, modifier: Modifier = Modifier) {
         altitudeDeg > 0.0 -> StarWindowColors.AnchorPoint
         else -> StarWindowColors.Muted
     }
-    Column(modifier = modifier.width(66.dp), horizontalAlignment = Alignment.End) {
+    Column(modifier = modifier.width(72.dp), horizontalAlignment = Alignment.End) {
         Text(
             text = "%.0f°".format(altitudeDeg),
             style = MaterialTheme.typography.titleSmall,
             color = color,
         )
         Text(
-            text = if (altitudeDeg > 0.0) "über Hor." else "unter Hor.",
+            text = feasibility?.label
+                ?: if (altitudeDeg > 0.0) "über Hor." else "unter Hor.",
             style = MaterialTheme.typography.labelSmall,
-            color = StarWindowColors.Muted,
+            color = feasibility?.let { verdictColor(it) } ?: StarWindowColors.Muted,
             maxLines = 1,
             softWrap = false,
             overflow = TextOverflow.Visible,
         )
     }
+}
+
+/**
+ * The colour of a verdict.
+ *
+ * Three steps down from "works" to "does not", and everything that is out of reach tonight for a
+ * reason other than difficulty — below the horizon, too low, too faint — goes grey rather than red.
+ * Red would read as a warning; those are not warnings, they are simply not tonight.
+ */
+fun verdictColor(feasibility: Feasibility): Color = when (feasibility) {
+    Feasibility.EASY -> StarWindowColors.WindowStroke
+    Feasibility.OK -> StarWindowColors.AnchorPoint
+    Feasibility.HARD -> StarWindowColors.Crosshair
+    Feasibility.LOW, Feasibility.TOO_FAINT, Feasibility.BELOW -> StarWindowColors.Muted
 }
 
 /** Arcminutes as an observer writes them: degrees once they get large. */

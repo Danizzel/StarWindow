@@ -2,45 +2,96 @@
  "version": 1,
  "name": "Sternbildfiguren",
  "epoch": "J2000",
+ "license": "Linienzuege: d3-celestial, Olaf Frohn, BSD-3-Clause",
  "constellations": [
   {
-   "id": "Ori",
-   "name": "Orion",
+   "id": "And",
+   "name": "Andromeda",
    "stars": [
     {
-     "name": "Beteigeuze",
-     "raDeg": 88.7929,
-     "decDeg": 7.4069
+     "name": "Alamak",
+     "raDeg": 30.9748,
+     "decDeg": 42.3297
     },
     {
-     "name": "Bellatrix",
-     "raDeg": 81.2829,
-     "decDeg": 6.3497
+     "name": "Mirach",
+     "raDeg": 17.433,
+     "decDeg": 35.6206
     },
     {
-     "name": "Mintaka",
-     "raDeg": 83.0017,
-     "decDeg": -0.2992
+     "name": "δ And",
+     "raDeg": 9.832,
+     "decDeg": 30.861
     },
     {
-     "name": "Alnilam",
-     "raDeg": 84.0533,
-     "decDeg": -1.2019
+     "name": "Alpheratz",
+     "raDeg": 2.0969,
+     "decDeg": 29.0904
     },
     {
-     "name": "Alnitak",
-     "raDeg": 85.1896,
-     "decDeg": -1.9428
+     "name": "η And",
+     "raDeg": 14.3017,
+     "decDeg": 23.4176
     },
     {
-     "name": "Saiph",
-     "raDeg": 86.9392,
-     "decDeg": -9.6697
+     "name": "ζ And",
+     "raDeg": 11.8347,
+     "decDeg": 24.2672
     },
     {
-     "name": "Rigel",
-     "raDeg": 78.6346,
-     "decDeg": -8.2017
+     "name": "ε And",
+     "raDeg": 9.6389,
+     "decDeg": 29.3118
+    },
+    {
+     "name": "π And",
+     "raDeg": 9.2202,
+     "decDeg": 33.7193
+    },
+    {
+     "name": "ι And",
+     "raDeg": 354.5342,
+     "decDeg": 43.2681
+    },
+    {
+     "name": "ο And",
+     "raDeg": 345.4803,
+     "decDeg": 42.326
+    },
+    {
+     "name": "κ And",
+     "raDeg": 355.1021,
+     "decDeg": 44.3339
+    },
+    {
+     "name": "λ And",
+     "raDeg": 354.391,
+     "decDeg": 46.4582
+    },
+    {
+     "name": "μ And",
+     "raDeg": 14.1884,
+     "decDeg": 38.4993
+    },
+    {
+     "name": "ν And",
+     "raDeg": 12.4535,
+     "decDeg": 41.0789
+    },
+    {
+     "name": "φ And",
+     "raDeg": 17.3755,
+     "decDeg": 47.2418
+    },
+    {
+     "name": "Nembus",
+     "raDeg": 24.4982,
+     "decDeg": 48.6282
+    },
+    {
+     "name": "ψ And",
+     "raDeg": 356.5085,
+     "decDeg": 46.4203
     }
    ],
    "lines": [
@@ -55,85 +106,6 @@
     [
      2,
      3
-    ],
-    [
-     3,
-     4
-    ],
-    [
-     4,
-     0
-    ],
-    [
-     2,
-     6
-    ],
-    [
-     4,
-     5
-    ]
-   ]
-  },
-  {
-   "id": "UMa",
-   "name": "Großer Wagen",
-   "stars": [
-    {
-     "name": "Dubhe",
-     "raDeg": 165.9321,
-     "decDeg": 61.7508
-    },
-    {
-     "name": "Merak",
-     "raDeg": 165.4604,
-     "decDeg": 56.3825
-    },
-    {
-     "name": "Phekda",
-     "raDeg": 178.4575,
-     "decDeg": 53.6947
-    },
-    {
-     "name": "Megrez",
-     "raDeg": 183.8567,
-     "decDeg": 57.0325
-    },
-    {
-     "name": "Alioth",
-     "raDeg": 193.5071,
-     "decDeg": 55.9597
-    },
-    {
-     "name": "Mizar",
-     "raDeg": 200.9812,
-     "decDeg": 54.9253
-    },
-    {
-     "name": "Alkaid",
-     "raDeg": 206.885,
-     "decDeg": 49.3133
-    }
-   ],
-   "lines": [
-    [
-     0,
-     1
-    ],
-    [
-     1,
-     2
-    ],
-    [
-     2,
-     3
-    ],
-    [
-     3,
-     0
-    ],
-    [
-     3,
-     4
     ],
     [
      4,
@@ -142,47 +114,202 @@
     [
      5,
      6
+    ],
+    [
+     6,
+     2
+    ],
+    [
+     2,
+     7
+    ],
+    [
+     7,
+     8
+    ],
+    [
+     8,
+     9
+    ],
+    [
+     8,
+     10
+    ],
+    [
+     10,
+     11
+    ],
+    [
+     1,
+     12
+    ],
+    [
+     12,
+     13
+    ],
+    [
+     13,
+     14
+    ],
+    [
+     14,
+     15
+    ],
+    [
+     10,
+     16
     ]
    ]
   },
   {
-   "id": "UMi",
-   "name": "Kleiner Bär",
+   "id": "Ant",
+   "name": "Luftpumpe",
    "stars": [
     {
-     "name": "Polaris",
-     "raDeg": 37.9546,
-     "decDeg": 89.2642
+     "name": "ε Ant",
+     "raDeg": 142.3113,
+     "decDeg": -35.9513
     },
     {
-     "name": "Yildun",
-     "raDeg": 263.0542,
-     "decDeg": 86.5864
+     "name": "α Ant",
+     "raDeg": 156.7879,
+     "decDeg": -31.0678
     },
     {
-     "name": "Epsilon UMi",
-     "raDeg": 251.4917,
-     "decDeg": 82.0372
+     "name": "ι Ant",
+     "raDeg": 164.1794,
+     "decDeg": -37.1378
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ]
+   ]
+  },
+  {
+   "id": "Aps",
+   "name": "Paradiesvogel",
+   "stars": [
+    {
+     "name": "α Aps",
+     "raDeg": 221.9655,
+     "decDeg": -79.0448
     },
     {
-     "name": "Zeta UMi",
-     "raDeg": 236.0146,
-     "decDeg": 77.7944
+     "name": "δ¹ Aps",
+     "raDeg": 245.0867,
+     "decDeg": -78.6957
     },
     {
-     "name": "Kochab",
-     "raDeg": 222.6763,
-     "decDeg": 74.1556
+     "name": "β Aps",
+     "raDeg": 250.7694,
+     "decDeg": -77.5174
     },
     {
-     "name": "Pherkad",
-     "raDeg": 230.1821,
-     "decDeg": 71.8339
+     "name": "γ Aps",
+     "raDeg": 248.3628,
+     "decDeg": -78.8971
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ]
+   ]
+  },
+  {
+   "id": "Aqr",
+   "name": "Wassermann",
+   "stars": [
+    {
+     "name": "Albali",
+     "raDeg": 311.919,
+     "decDeg": -9.4958
     },
     {
-     "name": "Eta UMi",
-     "raDeg": 244.3762,
-     "decDeg": 75.7553
+     "name": "μ Aqr",
+     "raDeg": 313.1635,
+     "decDeg": -8.9833
+    },
+    {
+     "name": "Sadalsuud",
+     "raDeg": 322.8897,
+     "decDeg": -5.5712
+    },
+    {
+     "name": "Sadalmelik",
+     "raDeg": 331.446,
+     "decDeg": -0.3199
+    },
+    {
+     "name": "Sadachbia",
+     "raDeg": 335.4141,
+     "decDeg": -1.3873
+    },
+    {
+     "name": "ζ² Aqr",
+     "raDeg": 337.208,
+     "decDeg": -0.02
+    },
+    {
+     "name": "η Aqr",
+     "raDeg": 338.8391,
+     "decDeg": -0.1175
+    },
+    {
+     "name": "λ Aqr",
+     "raDeg": 343.1536,
+     "decDeg": -7.5796
+    },
+    {
+     "name": "ψ² Aqr",
+     "raDeg": 349.4759,
+     "decDeg": -9.1825
+    },
+    {
+     "name": "HR 8812",
+     "raDeg": 347.3617,
+     "decDeg": -21.1724
+    },
+    {
+     "name": "ι Aqr",
+     "raDeg": 331.6093,
+     "decDeg": -13.8697
+    },
+    {
+     "name": "Ancha",
+     "raDeg": 334.2085,
+     "decDeg": -7.7833
+    },
+    {
+     "name": "π Aqr",
+     "raDeg": 336.3193,
+     "decDeg": 1.3774
+    },
+    {
+     "name": "HR 8892",
+     "raDeg": 350.7426,
+     "decDeg": -20.1006
+    },
+    {
+     "name": "HR 8982",
+     "raDeg": 355.4409,
+     "decDeg": -17.8165
     }
    ],
    "lines": [
@@ -212,7 +339,1018 @@
     ],
     [
      6,
+     7
+    ],
+    [
+     7,
+     8
+    ],
+    [
+     8,
+     9
+    ],
+    [
+     2,
+     10
+    ],
+    [
+     3,
+     11
+    ],
+    [
+     5,
+     12
+    ],
+    [
+     13,
+     8
+    ],
+    [
+     8,
+     14
+    ]
+   ]
+  },
+  {
+   "id": "Aql",
+   "name": "Adler",
+   "stars": [
+    {
+     "name": "Tarazed",
+     "raDeg": 296.5649,
+     "decDeg": 10.6133
+    },
+    {
+     "name": "Atair",
+     "raDeg": 297.6958,
+     "decDeg": 8.8683
+    },
+    {
+     "name": "Alshain",
+     "raDeg": 298.8283,
+     "decDeg": 6.4068
+    },
+    {
+     "name": "θ Aql",
+     "raDeg": 302.8262,
+     "decDeg": -0.8215
+    },
+    {
+     "name": "η Aql",
+     "raDeg": 298.1182,
+     "decDeg": 1.0057
+    },
+    {
+     "name": "δ Aql",
+     "raDeg": 291.3746,
+     "decDeg": 3.1148
+    },
+    {
+     "name": "Okab",
+     "raDeg": 286.3525,
+     "decDeg": 13.8635
+    },
+    {
+     "name": "Al Thalimain",
+     "raDeg": 286.5622,
+     "decDeg": -4.8826
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
      3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     5,
+     6
+    ],
+    [
+     6,
+     1
+    ],
+    [
+     1,
+     5
+    ],
+    [
+     5,
+     7
+    ]
+   ]
+  },
+  {
+   "id": "Ara",
+   "name": "Altar",
+   "stars": [
+    {
+     "name": "γ Ara",
+     "raDeg": 261.3486,
+     "decDeg": -56.3777
+    },
+    {
+     "name": "δ Ara",
+     "raDeg": 262.7746,
+     "decDeg": -60.6838
+    },
+    {
+     "name": "η Ara",
+     "raDeg": 252.4465,
+     "decDeg": -59.0414
+    },
+    {
+     "name": "ζ Ara",
+     "raDeg": 254.655,
+     "decDeg": -55.9901
+    },
+    {
+     "name": "ε¹ Ara",
+     "raDeg": 254.896,
+     "decDeg": -53.1604
+    },
+    {
+     "name": "α Ara",
+     "raDeg": 262.9604,
+     "decDeg": -49.8761
+    },
+    {
+     "name": "β Ara",
+     "raDeg": 261.325,
+     "decDeg": -55.5299
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     5,
+     6
+    ]
+   ]
+  },
+  {
+   "id": "Ari",
+   "name": "Widder",
+   "stars": [
+    {
+     "name": "Bharani",
+     "raDeg": 42.496,
+     "decDeg": 27.2605
+    },
+    {
+     "name": "Hamal",
+     "raDeg": 31.7934,
+     "decDeg": 23.4624
+    },
+    {
+     "name": "Sheratan",
+     "raDeg": 28.66,
+     "decDeg": 20.808
+    },
+    {
+     "name": "Mesarthim",
+     "raDeg": 28.3826,
+     "decDeg": 19.2939
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ]
+   ]
+  },
+  {
+   "id": "Aur",
+   "name": "Fuhrmann",
+   "stars": [
+    {
+     "name": "Menkalinan",
+     "raDeg": 89.8822,
+     "decDeg": 44.9474
+    },
+    {
+     "name": "Capella",
+     "raDeg": 79.1723,
+     "decDeg": 45.998
+    },
+    {
+     "name": "Haedus",
+     "raDeg": 76.6287,
+     "decDeg": 41.2345
+    },
+    {
+     "name": "Hassaleh",
+     "raDeg": 74.2484,
+     "decDeg": 33.1661
+    },
+    {
+     "name": "Elnath",
+     "raDeg": 81.573,
+     "decDeg": 28.6075
+    },
+    {
+     "name": "Mahasim",
+     "raDeg": 89.9303,
+     "decDeg": 37.2126
+    },
+    {
+     "name": "δ Aur",
+     "raDeg": 89.8818,
+     "decDeg": 54.2847
+    },
+    {
+     "name": "Almaaz",
+     "raDeg": 75.4922,
+     "decDeg": 43.8233
+    },
+    {
+     "name": "Saclateni",
+     "raDeg": 75.6195,
+     "decDeg": 41.0758
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     5,
+     0
+    ],
+    [
+     0,
+     6
+    ],
+    [
+     6,
+     1
+    ],
+    [
+     1,
+     7
+    ],
+    [
+     7,
+     8
+    ]
+   ]
+  },
+  {
+   "id": "Boo",
+   "name": "Bärenhüter",
+   "stars": [
+    {
+     "name": "τ Boo",
+     "raDeg": 206.8156,
+     "decDeg": 17.4569
+    },
+    {
+     "name": "Muphrid",
+     "raDeg": 208.6712,
+     "decDeg": 18.3977
+    },
+    {
+     "name": "Arktur",
+     "raDeg": 213.9153,
+     "decDeg": 19.1824
+    },
+    {
+     "name": "ρ Boo",
+     "raDeg": 217.9575,
+     "decDeg": 30.3714
+    },
+    {
+     "name": "Seginus",
+     "raDeg": 218.0195,
+     "decDeg": 38.3083
+    },
+    {
+     "name": "Nekkar",
+     "raDeg": 225.4865,
+     "decDeg": 40.3906
+    },
+    {
+     "name": "δ Boo",
+     "raDeg": 228.8757,
+     "decDeg": 33.3148
+    },
+    {
+     "name": "Izar",
+     "raDeg": 221.2467,
+     "decDeg": 27.0742
+    },
+    {
+     "name": "ζ Boo",
+     "raDeg": 220.2873,
+     "decDeg": 13.7283
+    },
+    {
+     "name": "Xuange",
+     "raDeg": 214.0959,
+     "decDeg": 46.0883
+    },
+    {
+     "name": "κ² Boo",
+     "raDeg": 213.3659,
+     "decDeg": 51.7879
+    },
+    {
+     "name": "Asellus Primus",
+     "raDeg": 216.2992,
+     "decDeg": 51.8507
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     5,
+     6
+    ],
+    [
+     6,
+     7
+    ],
+    [
+     7,
+     2
+    ],
+    [
+     2,
+     8
+    ],
+    [
+     4,
+     9
+    ],
+    [
+     9,
+     10
+    ],
+    [
+     10,
+     11
+    ],
+    [
+     11,
+     9
+    ]
+   ]
+  },
+  {
+   "id": "Cae",
+   "name": "Grabstichel",
+   "stars": [
+    {
+     "name": "δ Cae",
+     "raDeg": 67.7087,
+     "decDeg": -44.9537
+    },
+    {
+     "name": "α Cae",
+     "raDeg": 70.1405,
+     "decDeg": -41.8638
+    },
+    {
+     "name": "β Cae",
+     "raDeg": 70.5145,
+     "decDeg": -37.1443
+    },
+    {
+     "name": "γ¹ Cae",
+     "raDeg": 76.1017,
+     "decDeg": -35.483
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ]
+   ]
+  },
+  {
+   "id": "Cam",
+   "name": "Giraffe",
+   "stars": [
+    {
+     "name": "HR 1568",
+     "raDeg": 74.3217,
+     "decDeg": 53.7521
+    },
+    {
+     "name": "β Cam",
+     "raDeg": 75.8545,
+     "decDeg": 60.4422
+    },
+    {
+     "name": "α Cam",
+     "raDeg": 73.5125,
+     "decDeg": 66.3427
+    },
+    {
+     "name": "γ Cam",
+     "raDeg": 57.5896,
+     "decDeg": 71.3323
+    },
+    {
+     "name": "BE Cam",
+     "raDeg": 57.3803,
+     "decDeg": 65.526
+    },
+    {
+     "name": "HR 1035",
+     "raDeg": 52.2672,
+     "decDeg": 59.9403
+    },
+    {
+     "name": "HR 2209",
+     "raDeg": 94.7116,
+     "decDeg": 69.3198
+    },
+    {
+     "name": "HR 2527",
+     "raDeg": 105.0168,
+     "decDeg": 76.9774
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     2,
+     6
+    ],
+    [
+     6,
+     7
+    ]
+   ]
+  },
+  {
+   "id": "Cnc",
+   "name": "Krebs",
+   "stars": [
+    {
+     "name": "Acubens",
+     "raDeg": 134.6218,
+     "decDeg": 11.8577
+    },
+    {
+     "name": "Asellus Australis",
+     "raDeg": 131.1712,
+     "decDeg": 18.1543
+    },
+    {
+     "name": "Asellus Borealis",
+     "raDeg": 130.8214,
+     "decDeg": 21.4685
+    },
+    {
+     "name": "ι Cnc",
+     "raDeg": 131.6666,
+     "decDeg": 28.7651
+    },
+    {
+     "name": "Tarf",
+     "raDeg": 124.1288,
+     "decDeg": 9.1855
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     1,
+     4
+    ]
+   ]
+  },
+  {
+   "id": "CVn",
+   "name": "Jagdhunde",
+   "stars": [
+    {
+     "name": "Cor Caroli",
+     "raDeg": 194.0019,
+     "decDeg": 38.3149
+    },
+    {
+     "name": "Chara",
+     "raDeg": 188.4356,
+     "decDeg": 41.3575
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ]
+   ]
+  },
+  {
+   "id": "CMa",
+   "name": "Großer Hund",
+   "stars": [
+    {
+     "name": "Mirzam",
+     "raDeg": 95.6749,
+     "decDeg": -17.9559
+    },
+    {
+     "name": "Sirius",
+     "raDeg": 101.2872,
+     "decDeg": -16.7161
+    },
+    {
+     "name": "ο² CMa",
+     "raDeg": 105.7561,
+     "decDeg": -23.8333
+    },
+    {
+     "name": "Wezen",
+     "raDeg": 107.0979,
+     "decDeg": -26.3932
+    },
+    {
+     "name": "Nganurganity",
+     "raDeg": 105.4298,
+     "decDeg": -27.9348
+    },
+    {
+     "name": "Adhara",
+     "raDeg": 104.6565,
+     "decDeg": -28.9721
+    },
+    {
+     "name": "Furud",
+     "raDeg": 95.0783,
+     "decDeg": -30.0634
+    },
+    {
+     "name": "Aludra",
+     "raDeg": 111.0238,
+     "decDeg": -29.3031
+    },
+    {
+     "name": "ι CMa",
+     "raDeg": 104.0343,
+     "decDeg": -17.0542
+    },
+    {
+     "name": "Muliphein",
+     "raDeg": 105.9396,
+     "decDeg": -15.6333
+    },
+    {
+     "name": "θ CMa",
+     "raDeg": 103.5475,
+     "decDeg": -12.0386
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     5,
+     6
+    ],
+    [
+     7,
+     3
+    ],
+    [
+     1,
+     8
+    ],
+    [
+     8,
+     9
+    ],
+    [
+     9,
+     10
+    ],
+    [
+     10,
+     8
+    ]
+   ]
+  },
+  {
+   "id": "CMi",
+   "name": "Kleiner Hund",
+   "stars": [
+    {
+     "name": "Prokyon",
+     "raDeg": 114.8255,
+     "decDeg": 5.225
+    },
+    {
+     "name": "Gomeisa",
+     "raDeg": 111.7877,
+     "decDeg": 8.2893
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ]
+   ]
+  },
+  {
+   "id": "Cap",
+   "name": "Steinbock",
+   "stars": [
+    {
+     "name": "Algedi",
+     "raDeg": 304.412,
+     "decDeg": -12.5082
+    },
+    {
+     "name": "Dabih",
+     "raDeg": 305.2528,
+     "decDeg": -14.7814
+    },
+    {
+     "name": "ρ Cap",
+     "raDeg": 307.2151,
+     "decDeg": -17.8137
+    },
+    {
+     "name": "ψ Cap",
+     "raDeg": 311.5239,
+     "decDeg": -25.2709
+    },
+    {
+     "name": "ω Cap",
+     "raDeg": 312.9554,
+     "decDeg": -26.9191
+    },
+    {
+     "name": "ζ Cap",
+     "raDeg": 321.6668,
+     "decDeg": -22.4113
+    },
+    {
+     "name": "Deneb Algedi",
+     "raDeg": 326.7602,
+     "decDeg": -16.1273
+    },
+    {
+     "name": "Nashira",
+     "raDeg": 325.0227,
+     "decDeg": -16.6623
+    },
+    {
+     "name": "ι Cap",
+     "raDeg": 320.5617,
+     "decDeg": -16.8345
+    },
+    {
+     "name": "θ Cap",
+     "raDeg": 316.4868,
+     "decDeg": -17.2329
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     5,
+     6
+    ],
+    [
+     6,
+     7
+    ],
+    [
+     7,
+     8
+    ],
+    [
+     8,
+     9
+    ],
+    [
+     9,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "Car",
+   "name": "Kiel des Schiffs",
+   "stars": [
+    {
+     "name": "ν Pup",
+     "raDeg": 99.4403,
+     "decDeg": -43.1959
+    },
+    {
+     "name": "Canopus",
+     "raDeg": 95.988,
+     "decDeg": -52.6957
+    },
+    {
+     "name": "Miaplacidus",
+     "raDeg": 138.2999,
+     "decDeg": -69.7172
+    },
+    {
+     "name": "ω Car",
+     "raDeg": 153.4342,
+     "decDeg": -70.0379
+    },
+    {
+     "name": "θ Car",
+     "raDeg": 160.7392,
+     "decDeg": -64.3945
+    },
+    {
+     "name": "PP Car",
+     "raDeg": 158.0061,
+     "decDeg": -61.6853
+    },
+    {
+     "name": "V337 Car",
+     "raDeg": 154.2707,
+     "decDeg": -61.3323
+    },
+    {
+     "name": "Aspidiske",
+     "raDeg": 139.2725,
+     "decDeg": -59.2752
+    },
+    {
+     "name": "Avior",
+     "raDeg": 125.6285,
+     "decDeg": -59.5095
+    },
+    {
+     "name": "χ Car",
+     "raDeg": 119.1946,
+     "decDeg": -52.9824
+    },
+    {
+     "name": "γ² Vel",
+     "raDeg": 122.3831,
+     "decDeg": -47.3366
+    },
+    {
+     "name": "Alsephina",
+     "raDeg": 131.1759,
+     "decDeg": -54.7088
+    },
+    {
+     "name": "HR 4325",
+     "raDeg": 166.6351,
+     "decDeg": -62.4241
+    },
+    {
+     "name": "V371 Car",
+     "raDeg": 167.1417,
+     "decDeg": -61.9472
+    },
+    {
+     "name": "HR 4352",
+     "raDeg": 168.1501,
+     "decDeg": -60.3176
+    },
+    {
+     "name": "V382 Car",
+     "raDeg": 167.1475,
+     "decDeg": -58.975
+    },
+    {
+     "name": "HR 4257",
+     "raDeg": 163.3736,
+     "decDeg": -58.8532
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     5,
+     6
+    ],
+    [
+     6,
+     7
+    ],
+    [
+     7,
+     8
+    ],
+    [
+     8,
+     9
+    ],
+    [
+     9,
+     10
+    ],
+    [
+     10,
+     11
+    ],
+    [
+     11,
+     7
+    ],
+    [
+     4,
+     12
+    ],
+    [
+     12,
+     13
+    ],
+    [
+     13,
+     14
+    ],
+    [
+     14,
+     15
+    ],
+    [
+     15,
+     16
+    ],
+    [
+     16,
+     5
     ]
    ]
   },
@@ -221,29 +1359,29 @@
    "name": "Kassiopeia",
    "stars": [
     {
-     "name": "Caph",
-     "raDeg": 2.2946,
-     "decDeg": 59.1497
-    },
-    {
-     "name": "Schedir",
-     "raDeg": 10.1267,
-     "decDeg": 56.5375
-    },
-    {
-     "name": "Tsih",
-     "raDeg": 14.1771,
-     "decDeg": 60.7167
+     "name": "Segin",
+     "raDeg": 28.5989,
+     "decDeg": 63.6701
     },
     {
      "name": "Ruchbah",
-     "raDeg": 21.4542,
+     "raDeg": 21.454,
      "decDeg": 60.2353
     },
     {
-     "name": "Segin",
-     "raDeg": 28.5987,
-     "decDeg": 63.6703
+     "name": "Navi",
+     "raDeg": 14.1772,
+     "decDeg": 60.7167
+    },
+    {
+     "name": "Schedir",
+     "raDeg": 10.1268,
+     "decDeg": 56.5373
+    },
+    {
+     "name": "Caph",
+     "raDeg": 2.2945,
+     "decDeg": 59.1498
     }
    ],
    "lines": [
@@ -266,33 +1404,88 @@
    ]
   },
   {
-   "id": "Cyg",
-   "name": "Schwan",
+   "id": "Cen",
+   "name": "Zentaur",
    "stars": [
     {
-     "name": "Deneb",
-     "raDeg": 310.3579,
-     "decDeg": 45.2803
+     "name": "π Cen",
+     "raDeg": 170.2517,
+     "decDeg": -54.491
     },
     {
-     "name": "Sadr",
-     "raDeg": 305.5571,
-     "decDeg": 40.2567
+     "name": "δ Cen",
+     "raDeg": 182.0896,
+     "decDeg": -50.7224
     },
     {
-     "name": "Albireo",
-     "raDeg": 292.6804,
-     "decDeg": 27.9597
+     "name": "σ Cen",
+     "raDeg": 187.0099,
+     "decDeg": -50.2306
     },
     {
-     "name": "Delta Cyg",
-     "raDeg": 296.2437,
-     "decDeg": 45.1308
+     "name": "γ Cen",
+     "raDeg": 190.3793,
+     "decDeg": -48.9599
     },
     {
-     "name": "Gienah",
-     "raDeg": 311.5529,
-     "decDeg": 33.9703
+     "name": "ε Cen",
+     "raDeg": 204.9719,
+     "decDeg": -53.4664
+    },
+    {
+     "name": "ζ Cen",
+     "raDeg": 208.8849,
+     "decDeg": -47.2884
+    },
+    {
+     "name": "μ Cen",
+     "raDeg": 207.4041,
+     "decDeg": -42.4737
+    },
+    {
+     "name": "ν Cen",
+     "raDeg": 207.3762,
+     "decDeg": -41.6877
+    },
+    {
+     "name": "Menkent",
+     "raDeg": 211.6706,
+     "decDeg": -36.37
+    },
+    {
+     "name": "η Cen",
+     "raDeg": 218.8768,
+     "decDeg": -42.1578
+    },
+    {
+     "name": "κ Cen",
+     "raDeg": 224.7904,
+     "decDeg": -42.1042
+    },
+    {
+     "name": "ι Cen",
+     "raDeg": 200.1492,
+     "decDeg": -36.7123
+    },
+    {
+     "name": "Rigil Kentaurus",
+     "raDeg": 219.8962,
+     "decDeg": -60.8372
+    },
+    {
+     "name": "Hadar",
+     "raDeg": 210.9559,
+     "decDeg": -60.373
+    },
+    {
+     "name": "ρ Cen",
+     "raDeg": 182.913,
+     "decDeg": -52.3685
+    },
+    {
+     "name": "ο¹ Cen",
+     "raDeg": 172.942,
+     "decDeg": -59.4421
     }
    ],
    "lines": [
@@ -305,43 +1498,327 @@
      2
     ],
     [
-     3,
-     1
+     2,
+     3
     ],
     [
-     1,
+     3,
      4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     5,
+     6
+    ],
+    [
+     6,
+     7
+    ],
+    [
+     7,
+     8
+    ],
+    [
+     8,
+     9
+    ],
+    [
+     9,
+     10
+    ],
+    [
+     7,
+     11
+    ],
+    [
+     12,
+     4
+    ],
+    [
+     4,
+     13
+    ],
+    [
+     2,
+     14
+    ],
+    [
+     14,
+     15
     ]
    ]
   },
   {
-   "id": "Lyr",
-   "name": "Leier",
+   "id": "Cep",
+   "name": "Kepheus",
    "stars": [
     {
-     "name": "Wega",
-     "raDeg": 279.2346,
-     "decDeg": 38.7836
+     "name": "θ Cep",
+     "raDeg": 307.3954,
+     "decDeg": 62.9941
     },
     {
-     "name": "Zeta Lyr",
-     "raDeg": 281.1929,
-     "decDeg": 37.605
+     "name": "η Cep",
+     "raDeg": 311.3224,
+     "decDeg": 61.8388
     },
     {
-     "name": "Sheliak",
-     "raDeg": 282.52,
-     "decDeg": 33.3628
+     "name": "Alderamin",
+     "raDeg": 319.6449,
+     "decDeg": 62.5856
     },
     {
-     "name": "Sulafat",
-     "raDeg": 284.7358,
-     "decDeg": 32.6894
+     "name": "Garnet Star",
+     "raDeg": 325.8769,
+     "decDeg": 58.78
     },
     {
-     "name": "Delta2 Lyr",
-     "raDeg": 283.6262,
-     "decDeg": 36.8986
+     "name": "ε Cep",
+     "raDeg": 333.7591,
+     "decDeg": 57.0436
+    },
+    {
+     "name": "ζ Cep",
+     "raDeg": 332.7137,
+     "decDeg": 58.2013
+    },
+    {
+     "name": "δ Cep",
+     "raDeg": 337.2928,
+     "decDeg": 58.4152
+    },
+    {
+     "name": "ι Cep",
+     "raDeg": 342.4201,
+     "decDeg": 66.2004
+    },
+    {
+     "name": "Errai",
+     "raDeg": 354.8369,
+     "decDeg": 77.6323
+    },
+    {
+     "name": "Alfirk",
+     "raDeg": 322.165,
+     "decDeg": 70.5607
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     5,
+     6
+    ],
+    [
+     6,
+     7
+    ],
+    [
+     7,
+     8
+    ],
+    [
+     8,
+     9
+    ],
+    [
+     9,
+     2
+    ],
+    [
+     9,
+     7
+    ]
+   ]
+  },
+  {
+   "id": "Cet",
+   "name": "Walfisch",
+   "stars": [
+    {
+     "name": "Kaffaljidhma",
+     "raDeg": 40.8252,
+     "decDeg": 3.2358
+    },
+    {
+     "name": "ν Cet",
+     "raDeg": 38.9686,
+     "decDeg": 5.5932
+    },
+    {
+     "name": "ξ² Cet",
+     "raDeg": 37.0398,
+     "decDeg": 8.4601
+    },
+    {
+     "name": "μ Cet",
+     "raDeg": 41.2356,
+     "decDeg": 10.1141
+    },
+    {
+     "name": "λ Cet",
+     "raDeg": 44.9288,
+     "decDeg": 8.9074
+    },
+    {
+     "name": "Menkar",
+     "raDeg": 45.5699,
+     "decDeg": 4.0897
+    },
+    {
+     "name": "δ Cet",
+     "raDeg": 39.8707,
+     "decDeg": 0.3285
+    },
+    {
+     "name": "Mira",
+     "raDeg": 34.8366,
+     "decDeg": -2.9776
+    },
+    {
+     "name": "Baten Kaitos",
+     "raDeg": 27.8651,
+     "decDeg": -10.335
+    },
+    {
+     "name": "τ Cet",
+     "raDeg": 26.017,
+     "decDeg": -15.9375
+    },
+    {
+     "name": "Diphda",
+     "raDeg": 10.8974,
+     "decDeg": -17.9866
+    },
+    {
+     "name": "Deneb Kaitos Schemali",
+     "raDeg": 4.857,
+     "decDeg": -8.8239
+    },
+    {
+     "name": "Dheneb",
+     "raDeg": 17.1475,
+     "decDeg": -10.1823
+    },
+    {
+     "name": "θ Cet",
+     "raDeg": 21.0059,
+     "decDeg": -8.1833
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     5,
+     0
+    ],
+    [
+     0,
+     6
+    ],
+    [
+     6,
+     7
+    ],
+    [
+     7,
+     8
+    ],
+    [
+     8,
+     9
+    ],
+    [
+     9,
+     10
+    ],
+    [
+     10,
+     11
+    ],
+    [
+     11,
+     12
+    ],
+    [
+     12,
+     13
+    ],
+    [
+     13,
+     8
+    ]
+   ]
+  },
+  {
+   "id": "Cha",
+   "name": "Chamäleon",
+   "stars": [
+    {
+     "name": "α Cha",
+     "raDeg": 124.6315,
+     "decDeg": -76.9197
+    },
+    {
+     "name": "γ Cha",
+     "raDeg": 158.8671,
+     "decDeg": -78.6078
+    },
+    {
+     "name": "δ² Cha",
+     "raDeg": 161.318,
+     "decDeg": -80.4696
+    },
+    {
+     "name": "β Cha",
+     "raDeg": 184.5868,
+     "decDeg": -79.3122
+    },
+    {
+     "name": "ε Cha",
+     "raDeg": 179.9066,
+     "decDeg": -78.2218
     }
    ],
    "lines": [
@@ -368,52 +1845,2420 @@
    ]
   },
   {
-   "id": "Aql",
-   "name": "Adler",
+   "id": "Cir",
+   "name": "Zirkel",
    "stars": [
     {
-     "name": "Atair",
-     "raDeg": 297.6958,
-     "decDeg": 8.8683
+     "name": "β Cir",
+     "raDeg": 229.3785,
+     "decDeg": -58.8012
     },
     {
-     "name": "Alschain",
-     "raDeg": 298.8283,
-     "decDeg": 6.4081
+     "name": "α Cir",
+     "raDeg": 220.6267,
+     "decDeg": -64.9751
     },
     {
-     "name": "Tarazed",
-     "raDeg": 296.565,
-     "decDeg": 10.6133
-    },
-    {
-     "name": "Delta Aql",
-     "raDeg": 291.3746,
-     "decDeg": 3.1147
-    },
-    {
-     "name": "Zeta Aql",
-     "raDeg": 286.3525,
-     "decDeg": 13.8636
-    },
-    {
-     "name": "Lambda Aql",
-     "raDeg": 286.5621,
-     "decDeg": -4.8825
+     "name": "γ Cir",
+     "raDeg": 230.8444,
+     "decDeg": -59.3208
     }
    ],
    "lines": [
     [
-     1,
-     0
+     0,
+     1
     ],
     [
+     1,
+     2
+    ]
+   ]
+  },
+  {
+   "id": "Col",
+   "name": "Taube",
+   "stars": [
+    {
+     "name": "δ Col",
+     "raDeg": 95.5285,
+     "decDeg": -33.4364
+    },
+    {
+     "name": "Wazn",
+     "raDeg": 87.74,
+     "decDeg": -35.7683
+    },
+    {
+     "name": "Phact",
+     "raDeg": 84.9122,
+     "decDeg": -34.0741
+    },
+    {
+     "name": "ε Col",
+     "raDeg": 82.8031,
+     "decDeg": -35.4705
+    },
+    {
+     "name": "η Col",
+     "raDeg": 89.7867,
+     "decDeg": -42.8151
+    }
+   ],
+   "lines": [
+    [
      0,
+     1
+    ],
+    [
+     1,
      2
     ],
     [
      2,
+     3
+    ],
+    [
+     1,
      4
+    ]
+   ]
+  },
+  {
+   "id": "Com",
+   "name": "Haar der Berenike",
+   "stars": [
+    {
+     "name": "Diadem",
+     "raDeg": 197.497,
+     "decDeg": 17.5294
+    },
+    {
+     "name": "β Com",
+     "raDeg": 197.9683,
+     "decDeg": 27.8782
+    },
+    {
+     "name": "γ Com",
+     "raDeg": 186.7345,
+     "decDeg": 28.2684
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ]
+   ]
+  },
+  {
+   "id": "CrA",
+   "name": "Südliche Krone",
+   "stars": [
+    {
+     "name": "ε CrA",
+     "raDeg": 284.6807,
+     "decDeg": -37.1074
+    },
+    {
+     "name": "γ CrA",
+     "raDeg": 286.6046,
+     "decDeg": -37.0634
+    },
+    {
+     "name": "Meridiana",
+     "raDeg": 287.3681,
+     "decDeg": -37.9045
+    },
+    {
+     "name": "β CrA",
+     "raDeg": 287.5073,
+     "decDeg": -39.3408
+    },
+    {
+     "name": "δ CrA",
+     "raDeg": 287.0874,
+     "decDeg": -40.4967
+    },
+    {
+     "name": "ζ CrA",
+     "raDeg": 285.7787,
+     "decDeg": -42.0951
+    },
+    {
+     "name": "η² CrA",
+     "raDeg": 282.3958,
+     "decDeg": -43.4341
+    },
+    {
+     "name": "θ CrA",
+     "raDeg": 278.3758,
+     "decDeg": -42.3125
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     5,
+     6
+    ],
+    [
+     6,
+     7
+    ]
+   ]
+  },
+  {
+   "id": "CrB",
+   "name": "Nördliche Krone",
+   "stars": [
+    {
+     "name": "θ CrB",
+     "raDeg": 233.2324,
+     "decDeg": 31.3591
+    },
+    {
+     "name": "Nusakan",
+     "raDeg": 231.9572,
+     "decDeg": 29.1057
+    },
+    {
+     "name": "Alphekka",
+     "raDeg": 233.672,
+     "decDeg": 26.7147
+    },
+    {
+     "name": "γ CrB",
+     "raDeg": 235.6857,
+     "decDeg": 26.2956
+    },
+    {
+     "name": "δ CrB",
+     "raDeg": 237.3985,
+     "decDeg": 26.0684
+    },
+    {
+     "name": "ε CrB",
+     "raDeg": 239.3969,
+     "decDeg": 26.8779
+    },
+    {
+     "name": "ι CrB",
+     "raDeg": 240.3607,
+     "decDeg": 29.8511
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     5,
+     6
+    ]
+   ]
+  },
+  {
+   "id": "Crv",
+   "name": "Rabe",
+   "stars": [
+    {
+     "name": "Alchiba",
+     "raDeg": 182.1034,
+     "decDeg": -24.7289
+    },
+    {
+     "name": "Minkar",
+     "raDeg": 182.5312,
+     "decDeg": -22.6198
+    },
+    {
+     "name": "Gienah",
+     "raDeg": 183.9515,
+     "decDeg": -17.5419
+    },
+    {
+     "name": "Algorab",
+     "raDeg": 187.4661,
+     "decDeg": -16.5154
+    },
+    {
+     "name": "Kraz",
+     "raDeg": 188.5968,
+     "decDeg": -23.3968
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     1
+    ]
+   ]
+  },
+  {
+   "id": "Crt",
+   "name": "Becher",
+   "stars": [
+    {
+     "name": "θ Crt",
+     "raDeg": 174.1705,
+     "decDeg": -9.8022
+    },
+    {
+     "name": "ε Crt",
+     "raDeg": 171.1525,
+     "decDeg": -10.8593
+    },
+    {
+     "name": "δ Crt",
+     "raDeg": 169.8352,
+     "decDeg": -14.7785
+    },
+    {
+     "name": "Alkes",
+     "raDeg": 164.9436,
+     "decDeg": -18.2988
+    },
+    {
+     "name": "β Crt",
+     "raDeg": 167.9145,
+     "decDeg": -22.8258
+    },
+    {
+     "name": "λ Crt",
+     "raDeg": 170.8412,
+     "decDeg": -18.78
+    },
+    {
+     "name": "γ Crt",
+     "raDeg": 171.2205,
+     "decDeg": -17.684
+    },
+    {
+     "name": "ζ Crt",
+     "raDeg": 176.1907,
+     "decDeg": -18.3507
+    },
+    {
+     "name": "η Crt",
+     "raDeg": 179.004,
+     "decDeg": -17.1508
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     5,
+     6
+    ],
+    [
+     6,
+     7
+    ],
+    [
+     7,
+     8
+    ],
+    [
+     2,
+     6
+    ]
+   ]
+  },
+  {
+   "id": "Cru",
+   "name": "Kreuz des Südens",
+   "stars": [
+    {
+     "name": "Mimosa",
+     "raDeg": 191.9303,
+     "decDeg": -59.6888
+    },
+    {
+     "name": "Imai",
+     "raDeg": 183.7863,
+     "decDeg": -58.7489
+    },
+    {
+     "name": "Acrux",
+     "raDeg": 186.6496,
+     "decDeg": -63.0991
+    },
+    {
+     "name": "Gacrux",
+     "raDeg": 187.7915,
+     "decDeg": -57.1132
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     2,
+     3
+    ]
+   ]
+  },
+  {
+   "id": "Cyg",
+   "name": "Schwan",
+   "stars": [
+    {
+     "name": "ζ Cyg",
+     "raDeg": 318.2341,
+     "decDeg": 30.2269
+    },
+    {
+     "name": "Aljanah",
+     "raDeg": 311.5528,
+     "decDeg": 33.9703
+    },
+    {
+     "name": "Sadr",
+     "raDeg": 305.5571,
+     "decDeg": 40.2567
+    },
+    {
+     "name": "Fawaris",
+     "raDeg": 296.2437,
+     "decDeg": 45.1308
+    },
+    {
+     "name": "ι² Cyg",
+     "raDeg": 292.4265,
+     "decDeg": 51.7298
+    },
+    {
+     "name": "κ Cyg",
+     "raDeg": 289.2757,
+     "decDeg": 53.3685
+    },
+    {
+     "name": "Deneb",
+     "raDeg": 310.358,
+     "decDeg": 45.2803
+    },
+    {
+     "name": "η Cyg",
+     "raDeg": 299.0765,
+     "decDeg": 35.0834
+    },
+    {
+     "name": "Albireo",
+     "raDeg": 292.6803,
+     "decDeg": 27.9597
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     6,
+     2
+    ],
+    [
+     2,
+     7
+    ],
+    [
+     7,
+     8
+    ]
+   ]
+  },
+  {
+   "id": "Del",
+   "name": "Delphin",
+   "stars": [
+    {
+     "name": "Aldulfin",
+     "raDeg": 308.3032,
+     "decDeg": 11.3033
+    },
+    {
+     "name": "Rotanev",
+     "raDeg": 309.3873,
+     "decDeg": 14.5951
+    },
+    {
+     "name": "Sualocin",
+     "raDeg": 309.9095,
+     "decDeg": 15.9121
+    },
+    {
+     "name": "γ² Del",
+     "raDeg": 311.6619,
+     "decDeg": 16.1241
+    },
+    {
+     "name": "δ Del",
+     "raDeg": 310.8647,
+     "decDeg": 15.0746
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     1
+    ]
+   ]
+  },
+  {
+   "id": "Dor",
+   "name": "Goldfisch",
+   "stars": [
+    {
+     "name": "γ Dor",
+     "raDeg": 64.0066,
+     "decDeg": -51.4866
+    },
+    {
+     "name": "α Dor",
+     "raDeg": 68.4991,
+     "decDeg": -55.045
+    },
+    {
+     "name": "β Dor",
+     "raDeg": 83.4063,
+     "decDeg": -62.4898
+    },
+    {
+     "name": "δ Dor",
+     "raDeg": 86.1932,
+     "decDeg": -65.7355
+    },
+    {
+     "name": "HR 2102",
+     "raDeg": 88.5252,
+     "decDeg": -63.0896
+    },
+    {
+     "name": "ζ Dor",
+     "raDeg": 76.3777,
+     "decDeg": -57.4727
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     2
+    ],
+    [
+     2,
+     5
+    ],
+    [
+     5,
+     1
+    ]
+   ]
+  },
+  {
+   "id": "Dra",
+   "name": "Drache",
+   "stars": [
+    {
+     "name": "Grumium",
+     "raDeg": 268.3822,
+     "decDeg": 56.8726
+    },
+    {
+     "name": "Etamin",
+     "raDeg": 269.1515,
+     "decDeg": 51.4889
+    },
+    {
+     "name": "Rastaban",
+     "raDeg": 262.6082,
+     "decDeg": 52.3014
+    },
+    {
+     "name": "Kuma",
+     "raDeg": 263.0668,
+     "decDeg": 55.173
+    },
+    {
+     "name": "Altais",
+     "raDeg": 288.1388,
+     "decDeg": 67.6615
+    },
+    {
+     "name": "φ Dra",
+     "raDeg": 275.1893,
+     "decDeg": 71.3378
+    },
+    {
+     "name": "Aldhibah",
+     "raDeg": 257.1966,
+     "decDeg": 65.7147
+    },
+    {
+     "name": "Athebyne",
+     "raDeg": 245.9979,
+     "decDeg": 61.5142
+    },
+    {
+     "name": "θ Dra",
+     "raDeg": 240.4723,
+     "decDeg": 58.5653
+    },
+    {
+     "name": "Edasich",
+     "raDeg": 231.2324,
+     "decDeg": 58.9661
+    },
+    {
+     "name": "Thuban",
+     "raDeg": 211.0973,
+     "decDeg": 64.3759
+    },
+    {
+     "name": "κ Dra",
+     "raDeg": 188.3706,
+     "decDeg": 69.7882
+    },
+    {
+     "name": "Giausar",
+     "raDeg": 172.8509,
+     "decDeg": 69.3311
+    },
+    {
+     "name": "χ Dra",
+     "raDeg": 275.2641,
+     "decDeg": 72.7328
+    },
+    {
+     "name": "Tyl",
+     "raDeg": 297.0431,
+     "decDeg": 70.2679
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     0
+    ],
+    [
+     0,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     5,
+     6
+    ],
+    [
+     6,
+     7
+    ],
+    [
+     7,
+     8
+    ],
+    [
+     8,
+     9
+    ],
+    [
+     9,
+     10
+    ],
+    [
+     10,
+     11
+    ],
+    [
+     11,
+     12
+    ],
+    [
+     5,
+     13
+    ],
+    [
+     4,
+     14
+    ]
+   ]
+  },
+  {
+   "id": "Equ",
+   "name": "Füllen",
+   "stars": [
+    {
+     "name": "Kitalpha",
+     "raDeg": 318.956,
+     "decDeg": 5.2478
+    },
+    {
+     "name": "δ Equ",
+     "raDeg": 318.6201,
+     "decDeg": 10.007
+    },
+    {
+     "name": "γ Equ",
+     "raDeg": 317.5854,
+     "decDeg": 10.1316
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ]
+   ]
+  },
+  {
+   "id": "Eri",
+   "name": "Eridanus",
+   "stars": [
+    {
+     "name": "Cursa",
+     "raDeg": 76.9624,
+     "decDeg": -5.0864
+    },
+    {
+     "name": "μ Eri",
+     "raDeg": 71.3756,
+     "decDeg": -3.2547
+    },
+    {
+     "name": "ν Eri",
+     "raDeg": 69.0798,
+     "decDeg": -3.3525
+    },
+    {
+     "name": "Beid",
+     "raDeg": 62.9664,
+     "decDeg": -6.8376
+    },
+    {
+     "name": "Zaurak",
+     "raDeg": 59.5074,
+     "decDeg": -13.5085
+    },
+    {
+     "name": "π Eri",
+     "raDeg": 56.5356,
+     "decDeg": -12.1016
+    },
+    {
+     "name": "Rana",
+     "raDeg": 55.8121,
+     "decDeg": -9.7634
+    },
+    {
+     "name": "Ran",
+     "raDeg": 53.2327,
+     "decDeg": -9.4583
+    },
+    {
+     "name": "Azha",
+     "raDeg": 44.1069,
+     "decDeg": -8.8981
+    },
+    {
+     "name": "π Cet",
+     "raDeg": 41.0306,
+     "decDeg": -13.8587
+    },
+    {
+     "name": "τ¹ Eri",
+     "raDeg": 41.2758,
+     "decDeg": -18.5726
+    },
+    {
+     "name": "τ³ Eri",
+     "raDeg": 45.5979,
+     "decDeg": -23.6245
+    },
+    {
+     "name": "τ⁴ Eri",
+     "raDeg": 49.8792,
+     "decDeg": -21.7579
+    },
+    {
+     "name": "τ⁵ Eri",
+     "raDeg": 53.447,
+     "decDeg": -21.6329
+    },
+    {
+     "name": "τ⁶ Eri",
+     "raDeg": 56.712,
+     "decDeg": -23.2497
+    },
+    {
+     "name": "Theemin",
+     "raDeg": 68.8877,
+     "decDeg": -30.5623
+    },
+    {
+     "name": "Beemim",
+     "raDeg": 66.0092,
+     "decDeg": -34.0168
+    },
+    {
+     "name": "υ⁴ Eri",
+     "raDeg": 64.4736,
+     "decDeg": -33.7983
+    },
+    {
+     "name": "HR 1195",
+     "raDeg": 57.3635,
+     "decDeg": -36.2003
+    },
+    {
+     "name": "HR 1106",
+     "raDeg": 54.2737,
+     "decDeg": -40.2745
+    },
+    {
+     "name": "HR 1008",
+     "raDeg": 49.9819,
+     "decDeg": -43.0698
+    },
+    {
+     "name": "Acamar",
+     "raDeg": 44.5653,
+     "decDeg": -40.3047
+    },
+    {
+     "name": "ι Eri",
+     "raDeg": 40.1668,
+     "decDeg": -39.8554
+    },
+    {
+     "name": "κ Eri",
+     "raDeg": 36.7463,
+     "decDeg": -47.7038
+    },
+    {
+     "name": "φ Eri",
+     "raDeg": 34.1274,
+     "decDeg": -51.5122
+    },
+    {
+     "name": "χ Eri",
+     "raDeg": 28.9895,
+     "decDeg": -51.6089
+    },
+    {
+     "name": "Achernar",
+     "raDeg": 24.4285,
+     "decDeg": -57.2368
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     5,
+     6
+    ],
+    [
+     6,
+     7
+    ],
+    [
+     7,
+     8
+    ],
+    [
+     8,
+     9
+    ],
+    [
+     9,
+     10
+    ],
+    [
+     10,
+     11
+    ],
+    [
+     11,
+     12
+    ],
+    [
+     12,
+     13
+    ],
+    [
+     13,
+     14
+    ],
+    [
+     14,
+     15
+    ],
+    [
+     15,
+     16
+    ],
+    [
+     16,
+     17
+    ],
+    [
+     17,
+     18
+    ],
+    [
+     18,
+     19
+    ],
+    [
+     19,
+     20
+    ],
+    [
+     20,
+     21
+    ],
+    [
+     21,
+     22
+    ],
+    [
+     22,
+     23
+    ],
+    [
+     23,
+     24
+    ],
+    [
+     24,
+     25
+    ],
+    [
+     25,
+     26
+    ]
+   ]
+  },
+  {
+   "id": "For",
+   "name": "Chemischer Ofen",
+   "stars": [
+    {
+     "name": "Dalim",
+     "raDeg": 48.0189,
+     "decDeg": -28.9876
+    },
+    {
+     "name": "β For",
+     "raDeg": 42.2726,
+     "decDeg": -32.4059
+    },
+    {
+     "name": "ν For",
+     "raDeg": 31.1227,
+     "decDeg": -29.2968
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ]
+   ]
+  },
+  {
+   "id": "Gem",
+   "name": "Zwillinge",
+   "stars": [
+    {
+     "name": "Propus",
+     "raDeg": 93.7194,
+     "decDeg": 22.5068
+    },
+    {
+     "name": "Tejat",
+     "raDeg": 95.7401,
+     "decDeg": 22.5136
+    },
+    {
+     "name": "Mebsuta",
+     "raDeg": 100.983,
+     "decDeg": 25.1311
+    },
+    {
+     "name": "τ Gem",
+     "raDeg": 107.7849,
+     "decDeg": 30.2452
+    },
+    {
+     "name": "Kastor",
+     "raDeg": 113.6494,
+     "decDeg": 31.8883
+    },
+    {
+     "name": "Pollux",
+     "raDeg": 116.329,
+     "decDeg": 28.0262
+    },
+    {
+     "name": "υ Gem",
+     "raDeg": 113.9806,
+     "decDeg": 26.8957
+    },
+    {
+     "name": "Wasat",
+     "raDeg": 110.0307,
+     "decDeg": 21.9823
+    },
+    {
+     "name": "Mekbuda",
+     "raDeg": 106.0272,
+     "decDeg": 20.5703
+    },
+    {
+     "name": "Alhena",
+     "raDeg": 99.4279,
+     "decDeg": 16.3993
+    },
+    {
+     "name": "Alzirr",
+     "raDeg": 101.3224,
+     "decDeg": 12.8956
+    },
+    {
+     "name": "λ Gem",
+     "raDeg": 109.5232,
+     "decDeg": 16.5404
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     5,
+     6
+    ],
+    [
+     6,
+     7
+    ],
+    [
+     7,
+     8
+    ],
+    [
+     8,
+     9
+    ],
+    [
+     9,
+     10
+    ],
+    [
+     7,
+     11
+    ]
+   ]
+  },
+  {
+   "id": "Gru",
+   "name": "Kranich",
+   "stars": [
+    {
+     "name": "ζ Gru",
+     "raDeg": 345.22,
+     "decDeg": -52.7541
+    },
+    {
+     "name": "ε Gru",
+     "raDeg": 342.1387,
+     "decDeg": -51.3169
+    },
+    {
+     "name": "Tiaki",
+     "raDeg": 340.6669,
+     "decDeg": -46.8846
+    },
+    {
+     "name": "δ² Gru",
+     "raDeg": 337.4393,
+     "decDeg": -43.7492
+    },
+    {
+     "name": "Alnair",
+     "raDeg": 332.0583,
+     "decDeg": -46.961
+    },
+    {
+     "name": "δ¹ Gru",
+     "raDeg": 337.3174,
+     "decDeg": -43.4956
+    },
+    {
+     "name": "μ¹ Gru",
+     "raDeg": 333.9038,
+     "decDeg": -41.3467
+    },
+    {
+     "name": "λ Gru",
+     "raDeg": 331.5287,
+     "decDeg": -39.5434
+    },
+    {
+     "name": "Aldhanab",
+     "raDeg": 328.4822,
+     "decDeg": -37.3649
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     2
+    ],
+    [
+     5,
+     6
+    ],
+    [
+     6,
+     7
+    ],
+    [
+     7,
+     8
+    ]
+   ]
+  },
+  {
+   "id": "Her",
+   "name": "Herkules",
+   "stars": [
+    {
+     "name": "γ Her",
+     "raDeg": 245.4801,
+     "decDeg": 19.1531
+    },
+    {
+     "name": "Kornephoros",
+     "raDeg": 247.555,
+     "decDeg": 21.4896
+    },
+    {
+     "name": "ζ Her",
+     "raDeg": 250.3215,
+     "decDeg": 31.6027
+    },
+    {
+     "name": "η Her",
+     "raDeg": 250.724,
+     "decDeg": 38.9223
+    },
+    {
+     "name": "σ Her",
+     "raDeg": 248.5258,
+     "decDeg": 42.437
+    },
+    {
+     "name": "τ Her",
+     "raDeg": 244.9352,
+     "decDeg": 46.3134
+    },
+    {
+     "name": "φ Her",
+     "raDeg": 242.1924,
+     "decDeg": 44.9349
+    },
+    {
+     "name": "χ Her",
+     "raDeg": 238.1689,
+     "decDeg": 42.4515
+    },
+    {
+     "name": "ε Her",
+     "raDeg": 255.0724,
+     "decDeg": 30.9264
+    },
+    {
+     "name": "π Her",
+     "raDeg": 258.7618,
+     "decDeg": 36.8092
+    },
+    {
+     "name": "θ Her",
+     "raDeg": 269.0633,
+     "decDeg": 37.2505
+    },
+    {
+     "name": "ρ Her",
+     "raDeg": 260.9206,
+     "decDeg": 37.1459
+    },
+    {
+     "name": "Sarin",
+     "raDeg": 258.758,
+     "decDeg": 24.8392
+    },
+    {
+     "name": "μ Her",
+     "raDeg": 266.6147,
+     "decDeg": 27.7207
+    },
+    {
+     "name": "ξ Her",
+     "raDeg": 269.4412,
+     "decDeg": 29.2479
+    },
+    {
+     "name": "ο Her",
+     "raDeg": 271.8856,
+     "decDeg": 28.7625
+    },
+    {
+     "name": "Rasalgethi",
+     "raDeg": 258.6619,
+     "decDeg": 14.3903
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     5,
+     6
+    ],
+    [
+     6,
+     7
+    ],
+    [
+     2,
+     8
+    ],
+    [
+     3,
+     9
+    ],
+    [
+     10,
+     11
+    ],
+    [
+     11,
+     9
+    ],
+    [
+     9,
+     8
+    ],
+    [
+     8,
+     12
+    ],
+    [
+     12,
+     13
+    ],
+    [
+     13,
+     14
+    ],
+    [
+     14,
+     15
+    ],
+    [
+     16,
+     1
+    ]
+   ]
+  },
+  {
+   "id": "Hor",
+   "name": "Pendeluhr",
+   "stars": [
+    {
+     "name": "α Hor",
+     "raDeg": 63.5005,
+     "decDeg": -42.2944
+    },
+    {
+     "name": "ι Hor",
+     "raDeg": 40.6394,
+     "decDeg": -50.8003
+    },
+    {
+     "name": "η Hor",
+     "raDeg": 39.3515,
+     "decDeg": -52.5431
+    },
+    {
+     "name": "ζ Hor",
+     "raDeg": 40.1651,
+     "decDeg": -54.5499
+    },
+    {
+     "name": "μ Hor",
+     "raDeg": 45.9034,
+     "decDeg": -59.7378
+    },
+    {
+     "name": "β Hor",
+     "raDeg": 44.6992,
+     "decDeg": -64.0713
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     5
+    ]
+   ]
+  },
+  {
+   "id": "Hya",
+   "name": "Wasserschlange",
+   "stars": [
+    {
+     "name": "Ashlesha",
+     "raDeg": 131.6938,
+     "decDeg": 6.4188
+    },
+    {
+     "name": "ρ Hya",
+     "raDeg": 132.1082,
+     "decDeg": 5.8378
+    },
+    {
+     "name": "η Hya",
+     "raDeg": 130.8061,
+     "decDeg": 3.3987
+    },
+    {
+     "name": "Minchir",
+     "raDeg": 129.6893,
+     "decDeg": 3.3414
+    },
+    {
+     "name": "δ Hya",
+     "raDeg": 129.414,
+     "decDeg": 5.7038
+    },
+    {
+     "name": "Hydrobius",
+     "raDeg": 133.8484,
+     "decDeg": 5.9456
+    },
+    {
+     "name": "θ Hya",
+     "raDeg": 138.5911,
+     "decDeg": 2.3143
+    },
+    {
+     "name": "Ukdah",
+     "raDeg": 144.964,
+     "decDeg": -1.1428
+    },
+    {
+     "name": "Alphard",
+     "raDeg": 141.8968,
+     "decDeg": -8.6586
+    },
+    {
+     "name": "Zhang",
+     "raDeg": 147.8696,
+     "decDeg": -14.8466
+    },
+    {
+     "name": "λ Hya",
+     "raDeg": 152.647,
+     "decDeg": -12.3541
+    },
+    {
+     "name": "μ Hya",
+     "raDeg": 156.5226,
+     "decDeg": -16.8363
+    },
+    {
+     "name": "ν Hya",
+     "raDeg": 162.4062,
+     "decDeg": -16.1936
+    },
+    {
+     "name": "ξ Hya",
+     "raDeg": 173.2505,
+     "decDeg": -31.8576
+    },
+    {
+     "name": "β Hya",
+     "raDeg": 178.2272,
+     "decDeg": -33.9081
+    },
+    {
+     "name": "γ Hya",
+     "raDeg": 199.7304,
+     "decDeg": -23.1715
+    },
+    {
+     "name": "π Hya",
+     "raDeg": 211.5929,
+     "decDeg": -26.6824
+    },
+    {
+     "name": "HR 5526",
+     "raDeg": 222.5721,
+     "decDeg": -27.9604
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     0
+    ],
+    [
+     0,
+     5
+    ],
+    [
+     5,
+     6
+    ],
+    [
+     6,
+     7
+    ],
+    [
+     7,
+     8
+    ],
+    [
+     8,
+     9
+    ],
+    [
+     9,
+     10
+    ],
+    [
+     10,
+     11
+    ],
+    [
+     11,
+     12
+    ],
+    [
+     12,
+     13
+    ],
+    [
+     13,
+     14
+    ],
+    [
+     14,
+     15
+    ],
+    [
+     15,
+     16
+    ],
+    [
+     16,
+     17
+    ]
+   ]
+  },
+  {
+   "id": "Hyi",
+   "name": "Kleine Männliche Wasserschlange",
+   "stars": [
+    {
+     "name": "β Hyi",
+     "raDeg": 6.4378,
+     "decDeg": -77.2542
+    },
+    {
+     "name": "γ Hyi",
+     "raDeg": 56.8098,
+     "decDeg": -74.239
+    },
+    {
+     "name": "ε Hyi",
+     "raDeg": 39.8973,
+     "decDeg": -68.2669
+    },
+    {
+     "name": "δ Hyi",
+     "raDeg": 35.4373,
+     "decDeg": -68.6594
+    },
+    {
+     "name": "η² Hyi",
+     "raDeg": 28.7339,
+     "decDeg": -67.6473
+    },
+    {
+     "name": "Head of Hydrus",
+     "raDeg": 29.6925,
+     "decDeg": -61.5699
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     5
+    ]
+   ]
+  },
+  {
+   "id": "Ind",
+   "name": "Inder",
+   "stars": [
+    {
+     "name": "α Ind",
+     "raDeg": 309.3918,
+     "decDeg": -47.2915
+    },
+    {
+     "name": "η Ind",
+     "raDeg": 311.0097,
+     "decDeg": -51.921
+    },
+    {
+     "name": "β Ind",
+     "raDeg": 313.7025,
+     "decDeg": -58.4542
+    },
+    {
+     "name": "δ Ind",
+     "raDeg": 329.4795,
+     "decDeg": -54.9926
+    },
+    {
+     "name": "θ Ind",
+     "raDeg": 319.9666,
+     "decDeg": -53.4494
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "Lac",
+   "name": "Eidechse",
+   "stars": [
+    {
+     "name": "β Lac",
+     "raDeg": 335.8901,
+     "decDeg": 52.229
+    },
+    {
+     "name": "α Lac",
+     "raDeg": 337.8229,
+     "decDeg": 50.2825
+    },
+    {
+     "name": "HR 8572",
+     "raDeg": 337.3826,
+     "decDeg": 47.7069
+    },
+    {
+     "name": "HR 8523",
+     "raDeg": 335.2564,
+     "decDeg": 46.5366
+    },
+    {
+     "name": "HR 8579",
+     "raDeg": 337.6219,
+     "decDeg": 43.1234
+    },
+    {
+     "name": "HR 8632",
+     "raDeg": 340.1286,
+     "decDeg": 44.2763
+    },
+    {
+     "name": "HR 8541",
+     "raDeg": 336.1291,
+     "decDeg": 49.4764
+    },
+    {
+     "name": "HR 8485",
+     "raDeg": 333.4697,
+     "decDeg": 39.7149
+    },
+    {
+     "name": "HR 8498",
+     "raDeg": 333.9924,
+     "decDeg": 37.7487
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     5,
+     2
+    ],
+    [
+     2,
+     6
+    ],
+    [
+     6,
+     0
+    ],
+    [
+     4,
+     7
+    ],
+    [
+     7,
+     8
+    ]
+   ]
+  },
+  {
+   "id": "Leo",
+   "name": "Löwe",
+   "stars": [
+    {
+     "name": "Regulus",
+     "raDeg": 152.093,
+     "decDeg": 11.9672
+    },
+    {
+     "name": "η Leo",
+     "raDeg": 151.8331,
+     "decDeg": 16.7627
+    },
+    {
+     "name": "Algieba",
+     "raDeg": 154.9931,
+     "decDeg": 19.8415
+    },
+    {
+     "name": "Zosma",
+     "raDeg": 168.5271,
+     "decDeg": 20.5237
+    },
+    {
+     "name": "Denebola",
+     "raDeg": 177.2649,
+     "decDeg": 14.5721
+    },
+    {
+     "name": "Chertan",
+     "raDeg": 168.56,
+     "decDeg": 15.4296
+    },
+    {
+     "name": "Adhafera",
+     "raDeg": 154.1726,
+     "decDeg": 23.4173
+    },
+    {
+     "name": "Rasalas",
+     "raDeg": 148.1909,
+     "decDeg": 26.007
+    },
+    {
+     "name": "Ras Elased Australis",
+     "raDeg": 146.4628,
+     "decDeg": 23.7743
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     5,
+     0
+    ],
+    [
+     2,
+     6
+    ],
+    [
+     6,
+     7
+    ],
+    [
+     7,
+     8
+    ]
+   ]
+  },
+  {
+   "id": "LMi",
+   "name": "Kleiner Löwe",
+   "stars": [
+    {
+     "name": "HR 3974",
+     "raDeg": 151.8573,
+     "decDeg": 35.2447
+    },
+    {
+     "name": "HR 4090",
+     "raDeg": 156.4784,
+     "decDeg": 33.7961
+    },
+    {
+     "name": "Praecipua",
+     "raDeg": 163.3279,
+     "decDeg": 34.2149
+    },
+    {
+     "name": "β LMi",
+     "raDeg": 156.9708,
+     "decDeg": 36.7072
+    },
+    {
+     "name": "HR 3800",
+     "raDeg": 143.5558,
+     "decDeg": 36.3976
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     0
+    ],
+    [
+     0,
+     4
+    ]
+   ]
+  },
+  {
+   "id": "Lep",
+   "name": "Hase",
+   "stars": [
+    {
+     "name": "θ Lep",
+     "raDeg": 91.5388,
+     "decDeg": -14.9353
+    },
+    {
+     "name": "η Lep",
+     "raDeg": 89.1012,
+     "decDeg": -14.1677
+    },
+    {
+     "name": "ζ Lep",
+     "raDeg": 86.7389,
+     "decDeg": -14.822
+    },
+    {
+     "name": "Arneb",
+     "raDeg": 83.1826,
+     "decDeg": -17.8223
+    },
+    {
+     "name": "μ Lep",
+     "raDeg": 78.2329,
+     "decDeg": -16.2055
+    },
+    {
+     "name": "ε Lep",
+     "raDeg": 76.3653,
+     "decDeg": -22.371
+    },
+    {
+     "name": "Nihal",
+     "raDeg": 82.0613,
+     "decDeg": -20.7594
+    },
+    {
+     "name": "γ Lep",
+     "raDeg": 86.1158,
+     "decDeg": -22.4484
+    },
+    {
+     "name": "δ Lep",
+     "raDeg": 87.8304,
+     "decDeg": -20.8791
+    },
+    {
+     "name": "κ Lep",
+     "raDeg": 78.3078,
+     "decDeg": -12.9413
+    },
+    {
+     "name": "λ Lep",
+     "raDeg": 79.8939,
+     "decDeg": -13.1768
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     5,
+     6
+    ],
+    [
+     6,
+     7
+    ],
+    [
+     7,
+     8
+    ],
+    [
+     9,
+     4
+    ],
+    [
+     4,
+     10
+    ]
+   ]
+  },
+  {
+   "id": "Lib",
+   "name": "Waage",
+   "stars": [
+    {
+     "name": "Brachium",
+     "raDeg": 226.0176,
+     "decDeg": -25.282
+    },
+    {
+     "name": "Zubenelgenubi",
+     "raDeg": 222.7196,
+     "decDeg": -16.0418
+    },
+    {
+     "name": "Zubeneschamali",
+     "raDeg": 229.2517,
+     "decDeg": -9.3829
+    },
+    {
+     "name": "Zubenelhakrabi",
+     "raDeg": 233.8816,
+     "decDeg": -14.7895
+    },
+    {
+     "name": "υ Lib",
+     "raDeg": 234.256,
+     "decDeg": -28.1351
+    },
+    {
+     "name": "τ Lib",
+     "raDeg": 234.664,
+     "decDeg": -29.7778
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     1,
+     3
+    ]
+   ]
+  },
+  {
+   "id": "Lup",
+   "name": "Wolf",
+   "stars": [
+    {
+     "name": "χ Lup",
+     "raDeg": 237.7397,
+     "decDeg": -33.6272
+    },
+    {
+     "name": "ψ¹ Lup",
+     "raDeg": 234.9416,
+     "decDeg": -34.4119
+    },
+    {
+     "name": "φ¹ Lup",
+     "raDeg": 230.4515,
+     "decDeg": -36.2614
+    },
+    {
+     "name": "δ Lup",
+     "raDeg": 230.343,
+     "decDeg": -40.6475
+    },
+    {
+     "name": "β Lup",
+     "raDeg": 224.633,
+     "decDeg": -43.134
+    },
+    {
+     "name": "α Lup",
+     "raDeg": 220.4823,
+     "decDeg": -47.3882
+    },
+    {
+     "name": "ζ Lup",
+     "raDeg": 228.0712,
+     "decDeg": -52.0992
+    },
+    {
+     "name": "μ Lup",
+     "raDeg": 229.6334,
+     "decDeg": -47.8753
+    },
+    {
+     "name": "ε Lup",
+     "raDeg": 230.6703,
+     "decDeg": -44.6896
+    },
+    {
+     "name": "γ Lup",
+     "raDeg": 233.7852,
+     "decDeg": -41.1668
+    },
+    {
+     "name": "η Lup",
+     "raDeg": 240.0305,
+     "decDeg": -38.3967
+    },
+    {
+     "name": "θ Lup",
+     "raDeg": 241.6481,
+     "decDeg": -36.8023
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     5,
+     6
+    ],
+    [
+     6,
+     7
+    ],
+    [
+     7,
+     8
+    ],
+    [
+     8,
+     9
+    ],
+    [
+     9,
+     10
+    ],
+    [
+     10,
+     11
+    ],
+    [
+     3,
+     9
+    ]
+   ]
+  },
+  {
+   "id": "Lyn",
+   "name": "Luchs",
+   "stars": [
+    {
+     "name": "UZ Lyn",
+     "raDeg": 94.9058,
+     "decDeg": 59.011
+    },
+    {
+     "name": "HR 2560",
+     "raDeg": 104.3192,
+     "decDeg": 58.4228
+    },
+    {
+     "name": "HR 2818",
+     "raDeg": 111.6785,
+     "decDeg": 49.2115
+    },
+    {
+     "name": "Alsciaukat",
+     "raDeg": 125.7088,
+     "decDeg": 43.1881
+    },
+    {
+     "name": "HR 3579",
+     "raDeg": 135.1599,
+     "decDeg": 41.7829
+    },
+    {
+     "name": "HR 3690",
+     "raDeg": 139.711,
+     "decDeg": 36.8026
+    },
+    {
+     "name": "α Lyn",
+     "raDeg": 140.2638,
+     "decDeg": 34.3926
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     5,
+     6
+    ]
+   ]
+  },
+  {
+   "id": "Lyr",
+   "name": "Leier",
+   "stars": [
+    {
+     "name": "ζ¹ Lyr",
+     "raDeg": 281.1932,
+     "decDeg": 37.6051
+    },
+    {
+     "name": "ε¹ Lyr",
+     "raDeg": 281.0949,
+     "decDeg": 39.6127
+    },
+    {
+     "name": "Wega",
+     "raDeg": 279.2347,
+     "decDeg": 38.7837
+    },
+    {
+     "name": "δ² Lyr",
+     "raDeg": 283.6262,
+     "decDeg": 36.8986
+    },
+    {
+     "name": "Sulafat",
+     "raDeg": 284.7359,
+     "decDeg": 32.6896
+    },
+    {
+     "name": "Sheliak",
+     "raDeg": 282.52,
+     "decDeg": 33.3627
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     0
     ],
     [
      0,
@@ -421,7 +4266,2027 @@
     ],
     [
      3,
+     4
+    ],
+    [
+     4,
      5
+    ],
+    [
+     5,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "Men",
+   "name": "Tafelberg",
+   "stars": [
+    {
+     "name": "α Men",
+     "raDeg": 92.5603,
+     "decDeg": -74.753
+    },
+    {
+     "name": "γ Men",
+     "raDeg": 82.9709,
+     "decDeg": -76.341
+    },
+    {
+     "name": "η Men",
+     "raDeg": 73.7967,
+     "decDeg": -74.9369
+    },
+    {
+     "name": "β Men",
+     "raDeg": 75.6792,
+     "decDeg": -71.3143
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ]
+   ]
+  },
+  {
+   "id": "Mic",
+   "name": "Mikroskop",
+   "stars": [
+    {
+     "name": "α Mic",
+     "raDeg": 312.492,
+     "decDeg": -33.7797
+    },
+    {
+     "name": "ι Mic",
+     "raDeg": 312.1214,
+     "decDeg": -43.9885
+    },
+    {
+     "name": "θ¹ Mic",
+     "raDeg": 320.1902,
+     "decDeg": -40.8095
+    },
+    {
+     "name": "ε Mic",
+     "raDeg": 319.4845,
+     "decDeg": -32.1725
+    },
+    {
+     "name": "γ Mic",
+     "raDeg": 315.3228,
+     "decDeg": -32.2578
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "Mon",
+   "name": "Einhorn",
+   "stars": [
+    {
+     "name": "α Mon",
+     "raDeg": 115.3118,
+     "decDeg": -9.5511
+    },
+    {
+     "name": "ζ Mon",
+     "raDeg": 122.1485,
+     "decDeg": -2.9838
+    },
+    {
+     "name": "δ Mon",
+     "raDeg": 107.9661,
+     "decDeg": -0.4928
+    },
+    {
+     "name": "β Mon",
+     "raDeg": 97.2045,
+     "decDeg": -7.0331
+    },
+    {
+     "name": "γ Mon",
+     "raDeg": 93.7139,
+     "decDeg": -6.2748
+    },
+    {
+     "name": "HR 2506",
+     "raDeg": 101.9652,
+     "decDeg": 2.4122
+    },
+    {
+     "name": "ε Mon",
+     "raDeg": 95.942,
+     "decDeg": 4.5929
+    },
+    {
+     "name": "HR 2385",
+     "raDeg": 98.2259,
+     "decDeg": 7.333
+    },
+    {
+     "name": "HR 2456",
+     "raDeg": 100.2444,
+     "decDeg": 9.8958
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     2,
+     5
+    ],
+    [
+     5,
+     6
+    ],
+    [
+     6,
+     7
+    ],
+    [
+     7,
+     8
+    ]
+   ]
+  },
+  {
+   "id": "Mus",
+   "name": "Fliege",
+   "stars": [
+    {
+     "name": "λ Mus",
+     "raDeg": 176.4017,
+     "decDeg": -66.7288
+    },
+    {
+     "name": "ε Mus",
+     "raDeg": 184.3928,
+     "decDeg": -67.9607
+    },
+    {
+     "name": "α Mus",
+     "raDeg": 189.2959,
+     "decDeg": -69.1356
+    },
+    {
+     "name": "β Mus",
+     "raDeg": 191.57,
+     "decDeg": -68.1081
+    },
+    {
+     "name": "δ Mus",
+     "raDeg": 195.5678,
+     "decDeg": -71.5489
+    },
+    {
+     "name": "γ Mus",
+     "raDeg": 188.1167,
+     "decDeg": -72.133
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     5,
+     2
+    ]
+   ]
+  },
+  {
+   "id": "Nor",
+   "name": "Winkelmaß",
+   "stars": [
+    {
+     "name": "δ Nor",
+     "raDeg": 241.6227,
+     "decDeg": -45.1732
+    },
+    {
+     "name": "ε Nor",
+     "raDeg": 246.796,
+     "decDeg": -47.5548
+    },
+    {
+     "name": "γ² Nor",
+     "raDeg": 244.9601,
+     "decDeg": -50.1555
+    },
+    {
+     "name": "η Nor",
+     "raDeg": 240.8037,
+     "decDeg": -49.2297
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "Oct",
+   "name": "Oktant",
+   "stars": [
+    {
+     "name": "δ Oct",
+     "raDeg": 216.7301,
+     "decDeg": -83.6679
+    },
+    {
+     "name": "β Oct",
+     "raDeg": 341.5146,
+     "decDeg": -81.3816
+    },
+    {
+     "name": "ν Oct",
+     "raDeg": 325.3694,
+     "decDeg": -77.39
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "Oph",
+   "name": "Schlangenträger",
+   "stars": [
+    {
+     "name": "Sinistra",
+     "raDeg": 269.7566,
+     "decDeg": -9.7736
+    },
+    {
+     "name": "γ Oph",
+     "raDeg": 266.9732,
+     "decDeg": 2.7073
+    },
+    {
+     "name": "Cebalrai",
+     "raDeg": 265.8681,
+     "decDeg": 4.5673
+    },
+    {
+     "name": "Rasalhague",
+     "raDeg": 263.7336,
+     "decDeg": 12.56
+    },
+    {
+     "name": "κ Oph",
+     "raDeg": 254.4171,
+     "decDeg": 9.375
+    },
+    {
+     "name": "Marfik",
+     "raDeg": 247.7284,
+     "decDeg": 1.9839
+    },
+    {
+     "name": "Yed Prior",
+     "raDeg": 243.5864,
+     "decDeg": -3.6943
+    },
+    {
+     "name": "Yed Posterior",
+     "raDeg": 244.5804,
+     "decDeg": -4.6925
+    },
+    {
+     "name": "ζ Oph",
+     "raDeg": 249.2897,
+     "decDeg": -10.5671
+    },
+    {
+     "name": "Sabik",
+     "raDeg": 257.5945,
+     "decDeg": -15.7249
+    },
+    {
+     "name": "φ Oph",
+     "raDeg": 247.7849,
+     "decDeg": -16.6127
+    },
+    {
+     "name": "χ Oph",
+     "raDeg": 246.756,
+     "decDeg": -18.4563
+    },
+    {
+     "name": "ψ Oph",
+     "raDeg": 246.0258,
+     "decDeg": -20.0373
+    },
+    {
+     "name": "ρ Oph",
+     "raDeg": 246.3963,
+     "decDeg": -23.4472
+    },
+    {
+     "name": "θ Oph",
+     "raDeg": 260.5024,
+     "decDeg": -24.9995
+    },
+    {
+     "name": "HR 6492",
+     "raDeg": 261.8386,
+     "decDeg": -29.867
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     5,
+     6
+    ],
+    [
+     6,
+     7
+    ],
+    [
+     7,
+     8
+    ],
+    [
+     8,
+     9
+    ],
+    [
+     4,
+     8
+    ],
+    [
+     8,
+     10
+    ],
+    [
+     10,
+     11
+    ],
+    [
+     11,
+     12
+    ],
+    [
+     12,
+     13
+    ],
+    [
+     2,
+     9
+    ],
+    [
+     9,
+     14
+    ],
+    [
+     14,
+     15
+    ]
+   ]
+  },
+  {
+   "id": "Ori",
+   "name": "Orion",
+   "stars": [
+    {
+     "name": "ν Ori",
+     "raDeg": 91.893,
+     "decDeg": 14.7685
+    },
+    {
+     "name": "χ¹ Ori",
+     "raDeg": 88.5958,
+     "decDeg": 20.2762
+    },
+    {
+     "name": "χ² Ori",
+     "raDeg": 90.9799,
+     "decDeg": 20.1385
+    },
+    {
+     "name": "ξ Ori",
+     "raDeg": 92.985,
+     "decDeg": 14.2088
+    },
+    {
+     "name": "μ Ori",
+     "raDeg": 90.5958,
+     "decDeg": 9.6473
+    },
+    {
+     "name": "Beteigeuze",
+     "raDeg": 88.7929,
+     "decDeg": 7.4071
+    },
+    {
+     "name": "Bellatrix",
+     "raDeg": 81.2828,
+     "decDeg": 6.3497
+    },
+    {
+     "name": "π¹ Ori",
+     "raDeg": 73.7239,
+     "decDeg": 10.1508
+    },
+    {
+     "name": "π⁶ Ori",
+     "raDeg": 74.6371,
+     "decDeg": 1.714
+    },
+    {
+     "name": "π⁵ Ori",
+     "raDeg": 73.5629,
+     "decDeg": 2.4407
+    },
+    {
+     "name": "π⁴ Ori",
+     "raDeg": 72.8015,
+     "decDeg": 5.6051
+    },
+    {
+     "name": "Tabit",
+     "raDeg": 72.46,
+     "decDeg": 6.9613
+    },
+    {
+     "name": "π² Ori",
+     "raDeg": 72.653,
+     "decDeg": 8.9002
+    },
+    {
+     "name": "ο² Ori",
+     "raDeg": 74.0928,
+     "decDeg": 13.5145
+    },
+    {
+     "name": "V1032 Ori",
+     "raDeg": 76.1423,
+     "decDeg": 15.4041
+    },
+    {
+     "name": "HR 1676",
+     "raDeg": 77.4248,
+     "decDeg": 15.5972
+    },
+    {
+     "name": "Rigel",
+     "raDeg": 78.6345,
+     "decDeg": -8.2016
+    },
+    {
+     "name": "η Ori",
+     "raDeg": 81.1192,
+     "decDeg": -2.3971
+    },
+    {
+     "name": "Mintaka",
+     "raDeg": 83.0017,
+     "decDeg": -0.2991
+    },
+    {
+     "name": "Meissa",
+     "raDeg": 83.7845,
+     "decDeg": 9.9342
+    },
+    {
+     "name": "Alnitak",
+     "raDeg": 85.1897,
+     "decDeg": -1.9426
+    },
+    {
+     "name": "Saiph",
+     "raDeg": 86.9391,
+     "decDeg": -9.6696
+    },
+    {
+     "name": "Alnilam",
+     "raDeg": 84.0534,
+     "decDeg": -1.2019
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     5,
+     6
+    ],
+    [
+     6,
+     7
+    ],
+    [
+     8,
+     9
+    ],
+    [
+     9,
+     10
+    ],
+    [
+     10,
+     11
+    ],
+    [
+     11,
+     12
+    ],
+    [
+     12,
+     7
+    ],
+    [
+     7,
+     13
+    ],
+    [
+     13,
+     14
+    ],
+    [
+     14,
+     15
+    ],
+    [
+     16,
+     17
+    ],
+    [
+     17,
+     18
+    ],
+    [
+     18,
+     6
+    ],
+    [
+     6,
+     19
+    ],
+    [
+     19,
+     5
+    ],
+    [
+     5,
+     20
+    ],
+    [
+     20,
+     21
+    ],
+    [
+     20,
+     22
+    ],
+    [
+     22,
+     18
+    ]
+   ]
+  },
+  {
+   "id": "Pav",
+   "name": "Pfau",
+   "stars": [
+    {
+     "name": "Peacock",
+     "raDeg": 306.4119,
+     "decDeg": -56.7351
+    },
+    {
+     "name": "β Pav",
+     "raDeg": 311.2396,
+     "decDeg": -66.2032
+    },
+    {
+     "name": "δ Pav",
+     "raDeg": 302.1817,
+     "decDeg": -66.1821
+    },
+    {
+     "name": "λ Pav",
+     "raDeg": 283.0543,
+     "decDeg": -62.1876
+    },
+    {
+     "name": "ξ Pav",
+     "raDeg": 275.8068,
+     "decDeg": -61.4939
+    },
+    {
+     "name": "π Pav",
+     "raDeg": 272.1451,
+     "decDeg": -63.6686
+    },
+    {
+     "name": "η Pav",
+     "raDeg": 266.4333,
+     "decDeg": -64.7239
+    },
+    {
+     "name": "ζ Pav",
+     "raDeg": 280.7589,
+     "decDeg": -71.4281
+    },
+    {
+     "name": "ε Pav",
+     "raDeg": 300.1481,
+     "decDeg": -72.9105
+    },
+    {
+     "name": "γ Pav",
+     "raDeg": 321.6109,
+     "decDeg": -65.3662
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     5,
+     6
+    ],
+    [
+     6,
+     7
+    ],
+    [
+     7,
+     8
+    ],
+    [
+     8,
+     1
+    ],
+    [
+     1,
+     9
+    ]
+   ]
+  },
+  {
+   "id": "Peg",
+   "name": "Pegasus",
+   "stars": [
+    {
+     "name": "π² Peg",
+     "raDeg": 332.4969,
+     "decDeg": 33.1782
+    },
+    {
+     "name": "Matar",
+     "raDeg": 340.7506,
+     "decDeg": 30.2212
+    },
+    {
+     "name": "Scheat",
+     "raDeg": 345.9436,
+     "decDeg": 28.0828
+    },
+    {
+     "name": "Alpheratz",
+     "raDeg": 2.0969,
+     "decDeg": 29.0904
+    },
+    {
+     "name": "Algenib",
+     "raDeg": 3.309,
+     "decDeg": 15.1836
+    },
+    {
+     "name": "Markab",
+     "raDeg": 346.1902,
+     "decDeg": 15.2053
+    },
+    {
+     "name": "ξ Peg",
+     "raDeg": 341.6733,
+     "decDeg": 12.1729
+    },
+    {
+     "name": "Homam",
+     "raDeg": 340.3655,
+     "decDeg": 10.8314
+    },
+    {
+     "name": "Biham",
+     "raDeg": 332.5499,
+     "decDeg": 6.1979
+    },
+    {
+     "name": "Enif",
+     "raDeg": 326.0465,
+     "decDeg": 9.875
+    },
+    {
+     "name": "Sadalbari",
+     "raDeg": 342.5008,
+     "decDeg": 24.6016
+    },
+    {
+     "name": "λ Peg",
+     "raDeg": 341.6328,
+     "decDeg": 23.5657
+    },
+    {
+     "name": "ι Peg",
+     "raDeg": 331.7528,
+     "decDeg": 25.3451
+    },
+    {
+     "name": "κ Peg",
+     "raDeg": 326.1614,
+     "decDeg": 25.645
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     5,
+     6
+    ],
+    [
+     6,
+     7
+    ],
+    [
+     7,
+     8
+    ],
+    [
+     8,
+     9
+    ],
+    [
+     5,
+     2
+    ],
+    [
+     2,
+     10
+    ],
+    [
+     10,
+     11
+    ],
+    [
+     11,
+     12
+    ],
+    [
+     12,
+     13
+    ]
+   ]
+  },
+  {
+   "id": "Per",
+   "name": "Perseus",
+   "stars": [
+    {
+     "name": "Atik",
+     "raDeg": 56.0797,
+     "decDeg": 32.2882
+    },
+    {
+     "name": "ζ Per",
+     "raDeg": 58.533,
+     "decDeg": 31.8836
+    },
+    {
+     "name": "Menkib",
+     "raDeg": 59.7413,
+     "decDeg": 35.791
+    },
+    {
+     "name": "ε Per",
+     "raDeg": 59.4635,
+     "decDeg": 40.0102
+    },
+    {
+     "name": "ν Per",
+     "raDeg": 56.2985,
+     "decDeg": 42.5785
+    },
+    {
+     "name": "δ Per",
+     "raDeg": 55.7313,
+     "decDeg": 47.7876
+    },
+    {
+     "name": "ψ Per",
+     "raDeg": 54.1224,
+     "decDeg": 48.1926
+    },
+    {
+     "name": "Mirfak",
+     "raDeg": 51.0807,
+     "decDeg": 49.8612
+    },
+    {
+     "name": "γ Per",
+     "raDeg": 46.1991,
+     "decDeg": 53.5064
+    },
+    {
+     "name": "Miram",
+     "raDeg": 42.6742,
+     "decDeg": 55.8955
+    },
+    {
+     "name": "τ Per",
+     "raDeg": 43.5644,
+     "decDeg": 52.7625
+    },
+    {
+     "name": "ι Per",
+     "raDeg": 47.2667,
+     "decDeg": 49.6133
+    },
+    {
+     "name": "Misam",
+     "raDeg": 47.374,
+     "decDeg": 44.8575
+    },
+    {
+     "name": "Algol",
+     "raDeg": 47.0422,
+     "decDeg": 40.9556
+    },
+    {
+     "name": "ω Per",
+     "raDeg": 47.8224,
+     "decDeg": 39.6116
+    },
+    {
+     "name": "Gorgonea Tertia",
+     "raDeg": 46.2941,
+     "decDeg": 38.8403
+    },
+    {
+     "name": "π Per",
+     "raDeg": 44.6903,
+     "decDeg": 39.6627
+    },
+    {
+     "name": "HR 886",
+     "raDeg": 44.9162,
+     "decDeg": 41.0329
+    },
+    {
+     "name": "λ Per",
+     "raDeg": 61.646,
+     "decDeg": 50.3513
+    },
+    {
+     "name": "μ Per",
+     "raDeg": 63.7244,
+     "decDeg": 48.4093
+    },
+    {
+     "name": "MX Per",
+     "raDeg": 62.1654,
+     "decDeg": 47.7125
+    },
+    {
+     "name": "θ Per",
+     "raDeg": 41.0499,
+     "decDeg": 49.2284
+    },
+    {
+     "name": "φ Per",
+     "raDeg": 25.9152,
+     "decDeg": 50.6887
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     5,
+     6
+    ],
+    [
+     6,
+     7
+    ],
+    [
+     7,
+     8
+    ],
+    [
+     8,
+     9
+    ],
+    [
+     9,
+     10
+    ],
+    [
+     10,
+     11
+    ],
+    [
+     11,
+     12
+    ],
+    [
+     12,
+     13
+    ],
+    [
+     13,
+     14
+    ],
+    [
+     14,
+     15
+    ],
+    [
+     15,
+     16
+    ],
+    [
+     16,
+     17
+    ],
+    [
+     17,
+     13
+    ],
+    [
+     18,
+     19
+    ],
+    [
+     19,
+     20
+    ],
+    [
+     20,
+     5
+    ],
+    [
+     11,
+     21
+    ],
+    [
+     21,
+     22
+    ]
+   ]
+  },
+  {
+   "id": "Phe",
+   "name": "Phoenix",
+   "stars": [
+    {
+     "name": "Ankaa",
+     "raDeg": 6.571,
+     "decDeg": -42.306
+    },
+    {
+     "name": "β Phe",
+     "raDeg": 16.521,
+     "decDeg": -46.7184
+    },
+    {
+     "name": "γ Phe",
+     "raDeg": 22.0914,
+     "decDeg": -43.3182
+    },
+    {
+     "name": "δ Phe",
+     "raDeg": 22.8129,
+     "decDeg": -49.0727
+    },
+    {
+     "name": "Wurren",
+     "raDeg": 17.0962,
+     "decDeg": -55.2458
+    },
+    {
+     "name": "ε Phe",
+     "raDeg": 2.3527,
+     "decDeg": -45.7474
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     1
+    ],
+    [
+     1,
+     5
+    ],
+    [
+     5,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "Pic",
+   "name": "Maler",
+   "stars": [
+    {
+     "name": "α Pic",
+     "raDeg": 102.0477,
+     "decDeg": -61.9414
+    },
+    {
+     "name": "γ Pic",
+     "raDeg": 87.4569,
+     "decDeg": -56.1667
+    },
+    {
+     "name": "β Pic",
+     "raDeg": 86.8212,
+     "decDeg": -51.0665
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ]
+   ]
+  },
+  {
+   "id": "Psc",
+   "name": "Fische",
+   "stars": [
+    {
+     "name": "φ Psc",
+     "raDeg": 18.4373,
+     "decDeg": 24.5837
+    },
+    {
+     "name": "τ Psc",
+     "raDeg": 17.9152,
+     "decDeg": 30.0896
+    },
+    {
+     "name": "υ Psc",
+     "raDeg": 19.8666,
+     "decDeg": 27.2641
+    },
+    {
+     "name": "χ Psc",
+     "raDeg": 17.8634,
+     "decDeg": 21.0347
+    },
+    {
+     "name": "Alpherg",
+     "raDeg": 22.8709,
+     "decDeg": 15.3458
+    },
+    {
+     "name": "Torcular",
+     "raDeg": 26.3485,
+     "decDeg": 9.1577
+    },
+    {
+     "name": "Alrescha",
+     "raDeg": 30.5118,
+     "decDeg": 2.7638
+    },
+    {
+     "name": "ξ Psc",
+     "raDeg": 28.389,
+     "decDeg": 3.1875
+    },
+    {
+     "name": "ν Psc",
+     "raDeg": 25.3579,
+     "decDeg": 5.4876
+    },
+    {
+     "name": "μ Psc",
+     "raDeg": 22.5463,
+     "decDeg": 6.1438
+    },
+    {
+     "name": "Revati",
+     "raDeg": 18.4329,
+     "decDeg": 7.5754
+    },
+    {
+     "name": "ε Psc",
+     "raDeg": 15.7359,
+     "decDeg": 7.8901
+    },
+    {
+     "name": "δ Psc",
+     "raDeg": 12.1706,
+     "decDeg": 7.5851
+    },
+    {
+     "name": "ω Psc",
+     "raDeg": 359.8279,
+     "decDeg": 6.8633
+    },
+    {
+     "name": "ι Psc",
+     "raDeg": 354.9877,
+     "decDeg": 5.6263
+    },
+    {
+     "name": "θ Psc",
+     "raDeg": 351.9921,
+     "decDeg": 6.379
+    },
+    {
+     "name": "HR 8878",
+     "raDeg": 350.0858,
+     "decDeg": 5.3813
+    },
+    {
+     "name": "γ Psc",
+     "raDeg": 349.2914,
+     "decDeg": 3.2823
+    },
+    {
+     "name": "κ Psc",
+     "raDeg": 351.7331,
+     "decDeg": 1.2556
+    },
+    {
+     "name": "λ Psc",
+     "raDeg": 355.5117,
+     "decDeg": 1.78
+    },
+    {
+     "name": "TX Psc",
+     "raDeg": 356.598,
+     "decDeg": 3.4868
+    },
+    {
+     "name": "Fumalsamakah",
+     "raDeg": 345.9692,
+     "decDeg": 3.82
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     0
+    ],
+    [
+     0,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     5,
+     6
+    ],
+    [
+     6,
+     7
+    ],
+    [
+     7,
+     8
+    ],
+    [
+     8,
+     9
+    ],
+    [
+     9,
+     10
+    ],
+    [
+     10,
+     11
+    ],
+    [
+     11,
+     12
+    ],
+    [
+     12,
+     13
+    ],
+    [
+     13,
+     14
+    ],
+    [
+     14,
+     15
+    ],
+    [
+     15,
+     16
+    ],
+    [
+     16,
+     17
+    ],
+    [
+     17,
+     18
+    ],
+    [
+     18,
+     19
+    ],
+    [
+     19,
+     20
+    ],
+    [
+     20,
+     14
+    ],
+    [
+     17,
+     21
+    ]
+   ]
+  },
+  {
+   "id": "PsA",
+   "name": "Südlicher Fisch",
+   "stars": [
+    {
+     "name": "ε PsA",
+     "raDeg": 340.1639,
+     "decDeg": -27.0436
+    },
+    {
+     "name": "Fomalhaut",
+     "raDeg": 344.4127,
+     "decDeg": -29.6222
+    },
+    {
+     "name": "δ PsA",
+     "raDeg": 343.9871,
+     "decDeg": -32.5396
+    },
+    {
+     "name": "γ PsA",
+     "raDeg": 343.1314,
+     "decDeg": -32.8755
+    },
+    {
+     "name": "β PsA",
+     "raDeg": 337.8764,
+     "decDeg": -32.3461
+    },
+    {
+     "name": "μ PsA",
+     "raDeg": 332.0959,
+     "decDeg": -32.9885
+    },
+    {
+     "name": "ι PsA",
+     "raDeg": 326.2367,
+     "decDeg": -33.0258
+    },
+    {
+     "name": "θ PsA",
+     "raDeg": 326.934,
+     "decDeg": -30.8983
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     5,
+     6
+    ],
+    [
+     6,
+     7
+    ],
+    [
+     7,
+     5
+    ],
+    [
+     5,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "Pup",
+   "name": "Achterdeck",
+   "stars": [
+    {
+     "name": "ν Pup",
+     "raDeg": 99.4403,
+     "decDeg": -43.1959
+    },
+    {
+     "name": "π Pup",
+     "raDeg": 109.2857,
+     "decDeg": -37.0975
+    },
+    {
+     "name": "HR 2922",
+     "raDeg": 113.8454,
+     "decDeg": -28.3693
+    },
+    {
+     "name": "Markab",
+     "raDeg": 114.7078,
+     "decDeg": -26.8038
+    },
+    {
+     "name": "Azmidi",
+     "raDeg": 117.3236,
+     "decDeg": -24.8598
+    },
+    {
+     "name": "HR 3102",
+     "raDeg": 119.2147,
+     "decDeg": -22.8801
+    },
+    {
+     "name": "Tureis",
+     "raDeg": 121.886,
+     "decDeg": -24.3043
+    },
+    {
+     "name": "Naos",
+     "raDeg": 120.896,
+     "decDeg": -40.0031
+    },
+    {
+     "name": "γ² Vel",
+     "raDeg": 122.3831,
+     "decDeg": -47.3366
+    },
+    {
+     "name": "ο Pup",
+     "raDeg": 117.0215,
+     "decDeg": -25.9372
+    },
+    {
+     "name": "HR 2996",
+     "raDeg": 115.952,
+     "decDeg": -28.9548
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     5,
+     6
+    ],
+    [
+     6,
+     7
+    ],
+    [
+     7,
+     8
+    ],
+    [
+     4,
+     9
+    ],
+    [
+     9,
+     10
+    ],
+    [
+     10,
+     2
+    ]
+   ]
+  },
+  {
+   "id": "Pyx",
+   "name": "Schiffskompass",
+   "stars": [
+    {
+     "name": "Naos",
+     "raDeg": 120.896,
+     "decDeg": -40.0031
+    },
+    {
+     "name": "β Pyx",
+     "raDeg": 130.0256,
+     "decDeg": -35.3084
+    },
+    {
+     "name": "α Pyx",
+     "raDeg": 130.8981,
+     "decDeg": -33.1864
+    },
+    {
+     "name": "γ Pyx",
+     "raDeg": 132.633,
+     "decDeg": -27.7098
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ]
+   ]
+  },
+  {
+   "id": "Ret",
+   "name": "Netz",
+   "stars": [
+    {
+     "name": "α Ret",
+     "raDeg": 63.6062,
+     "decDeg": -62.4739
+    },
+    {
+     "name": "ε Ret",
+     "raDeg": 64.121,
+     "decDeg": -59.3022
+    },
+    {
+     "name": "δ Ret",
+     "raDeg": 59.6865,
+     "decDeg": -61.4002
+    },
+    {
+     "name": "β Ret",
+     "raDeg": 56.0499,
+     "decDeg": -64.8069
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "Sge",
+   "name": "Pfeil",
+   "stars": [
+    {
+     "name": "Sham",
+     "raDeg": 295.0241,
+     "decDeg": 18.0139
+    },
+    {
+     "name": "δ Sge",
+     "raDeg": 296.8469,
+     "decDeg": 18.5343
+    },
+    {
+     "name": "γ Sge",
+     "raDeg": 299.6893,
+     "decDeg": 19.4921
+    },
+    {
+     "name": "β Sge",
+     "raDeg": 295.2622,
+     "decDeg": 17.476
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     3,
+     1
+    ]
+   ]
+  },
+  {
+   "id": "Sgr",
+   "name": "Schütze",
+   "stars": [
+    {
+     "name": "η Sgr",
+     "raDeg": 274.4068,
+     "decDeg": -36.7617
+    },
+    {
+     "name": "Kaus Australis",
+     "raDeg": 276.043,
+     "decDeg": -34.3846
+    },
+    {
+     "name": "Kaus Media",
+     "raDeg": 275.2485,
+     "decDeg": -29.8281
+    },
+    {
+     "name": "Kaus Borealis",
+     "raDeg": 276.9927,
+     "decDeg": -25.4217
+    },
+    {
+     "name": "Polis",
+     "raDeg": 273.4409,
+     "decDeg": -21.0588
+    },
+    {
+     "name": "Arkab Prior",
+     "raDeg": 290.6596,
+     "decDeg": -44.459
+    },
+    {
+     "name": "Rukbat",
+     "raDeg": 290.9716,
+     "decDeg": -40.6159
+    },
+    {
+     "name": "Ascella",
+     "raDeg": 285.653,
+     "decDeg": -29.8801
+    },
+    {
+     "name": "φ Sgr",
+     "raDeg": 281.4141,
+     "decDeg": -26.9908
+    },
+    {
+     "name": "ι Sgr",
+     "raDeg": 298.8154,
+     "decDeg": -41.8683
+    },
+    {
+     "name": "θ¹ Sgr",
+     "raDeg": 299.9341,
+     "decDeg": -35.2763
+    },
+    {
+     "name": "Terebellum",
+     "raDeg": 298.9598,
+     "decDeg": -26.2995
+    },
+    {
+     "name": "HR 7440",
+     "raDeg": 294.1768,
+     "decDeg": -24.8836
+    },
+    {
+     "name": "χ¹ Sgr",
+     "raDeg": 291.3187,
+     "decDeg": -24.5086
+    },
+    {
+     "name": "ψ Sgr",
+     "raDeg": 288.8851,
+     "decDeg": -25.2567
+    },
+    {
+     "name": "Nunki",
+     "raDeg": 283.8164,
+     "decDeg": -26.2967
+    },
+    {
+     "name": "Alnasl",
+     "raDeg": 271.452,
+     "decDeg": -30.4241
+    },
+    {
+     "name": "τ Sgr",
+     "raDeg": 286.735,
+     "decDeg": -27.6704
+    },
+    {
+     "name": "ο Sgr",
+     "raDeg": 286.1708,
+     "decDeg": -21.7415
+    },
+    {
+     "name": "Albaldah",
+     "raDeg": 287.441,
+     "decDeg": -21.0236
+    },
+    {
+     "name": "HR 7304",
+     "raDeg": 289.4087,
+     "decDeg": -18.9529
+    },
+    {
+     "name": "ρ¹ Sgr",
+     "raDeg": 290.4182,
+     "decDeg": -17.8472
+    },
+    {
+     "name": "υ Sgr",
+     "raDeg": 290.4318,
+     "decDeg": -15.955
+    },
+    {
+     "name": "ξ² Sgr",
+     "raDeg": 284.4325,
+     "decDeg": -21.1067
+    },
+    {
+     "name": "Ainalrami",
+     "raDeg": 283.5424,
+     "decDeg": -22.7448
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     5,
+     6
+    ],
+    [
+     6,
+     7
+    ],
+    [
+     7,
+     8
+    ],
+    [
+     8,
+     3
+    ],
+    [
+     9,
+     10
+    ],
+    [
+     10,
+     11
+    ],
+    [
+     11,
+     12
+    ],
+    [
+     12,
+     13
+    ],
+    [
+     13,
+     14
+    ],
+    [
+     14,
+     15
+    ],
+    [
+     15,
+     8
+    ],
+    [
+     8,
+     2
+    ],
+    [
+     2,
+     16
+    ],
+    [
+     16,
+     1
+    ],
+    [
+     1,
+     7
+    ],
+    [
+     7,
+     17
+    ],
+    [
+     17,
+     15
+    ],
+    [
+     15,
+     18
+    ],
+    [
+     18,
+     19
+    ],
+    [
+     19,
+     20
+    ],
+    [
+     20,
+     21
+    ],
+    [
+     21,
+     22
+    ],
+    [
+     18,
+     23
+    ],
+    [
+     23,
+     24
+    ],
+    [
+     24,
+     15
     ]
    ]
   },
@@ -430,79 +6295,74 @@
    "name": "Skorpion",
    "stars": [
     {
-     "name": "Akrab",
-     "raDeg": 241.3592,
-     "decDeg": -19.8053
+     "name": "Fang",
+     "raDeg": 239.713,
+     "decDeg": -26.1141
     },
     {
      "name": "Dschubba",
-     "raDeg": 240.0833,
+     "raDeg": 240.0834,
      "decDeg": -22.6217
     },
     {
-     "name": "Pi Sco",
-     "raDeg": 239.7129,
-     "decDeg": -26.1139
+     "name": "Acrab",
+     "raDeg": 241.3593,
+     "decDeg": -19.8055
     },
     {
-     "name": "Sigma Sco",
-     "raDeg": 245.2971,
+     "name": "Alniyat",
+     "raDeg": 245.2972,
      "decDeg": -25.5928
     },
     {
      "name": "Antares",
-     "raDeg": 247.3517,
-     "decDeg": -26.4319
+     "raDeg": 247.3519,
+     "decDeg": -26.432
     },
     {
-     "name": "Tau Sco",
-     "raDeg": 248.9708,
-     "decDeg": -28.2161
+     "name": "Paikauhale",
+     "raDeg": 248.9706,
+     "decDeg": -28.216
     },
     {
-     "name": "Epsilon Sco",
-     "raDeg": 252.5425,
-     "decDeg": -34.2933
+     "name": "Larawag",
+     "raDeg": 252.5409,
+     "decDeg": -34.2932
     },
     {
-     "name": "My Sco",
-     "raDeg": 252.9675,
-     "decDeg": -38.0475
+     "name": "Xamidimura",
+     "raDeg": 252.9676,
+     "decDeg": -38.0474
     },
     {
-     "name": "Zeta Sco",
-     "raDeg": 253.6458,
-     "decDeg": -42.3614
+     "name": "ζ² Sco",
+     "raDeg": 253.6459,
+     "decDeg": -42.3613
     },
     {
-     "name": "Eta Sco",
+     "name": "η Sco",
      "raDeg": 258.0383,
      "decDeg": -43.2392
     },
     {
      "name": "Sargas",
-     "raDeg": 264.3296,
+     "raDeg": 264.3297,
      "decDeg": -42.9978
     },
     {
-     "name": "Iota Sco",
-     "raDeg": 266.8963,
-     "decDeg": -40.1269
+     "name": "ι¹ Sco",
+     "raDeg": 266.8962,
+     "decDeg": -40.127
     },
     {
-     "name": "Kappa Sco",
-     "raDeg": 265.6221,
+     "name": "Girtab",
+     "raDeg": 265.622,
      "decDeg": -39.03
     },
     {
      "name": "Shaula",
-     "raDeg": 263.4021,
-     "decDeg": -37.1039
-    },
-    {
-     "name": "Lesath",
-     "raDeg": 262.6908,
-     "decDeg": -37.2958
+     "raDeg": 263.4022,
+     "decDeg": -37.1038
     }
    ],
    "lines": [
@@ -557,56 +6417,72 @@
     [
      12,
      13
-    ],
-    [
-     13,
-     14
     ]
    ]
   },
   {
-   "id": "Sgr",
-   "name": "Schütze",
+   "id": "Scl",
+   "name": "Bildhauer",
    "stars": [
     {
-     "name": "Alnasl",
-     "raDeg": 271.4521,
-     "decDeg": -30.4242
+     "name": "α Scl",
+     "raDeg": 14.6515,
+     "decDeg": -29.3574
     },
     {
-     "name": "Kaus Media",
-     "raDeg": 275.2483,
-     "decDeg": -29.8281
+     "name": "δ Scl",
+     "raDeg": 357.2314,
+     "decDeg": -28.1303
     },
     {
-     "name": "Kaus Australis",
-     "raDeg": 276.0429,
-     "decDeg": -34.3847
+     "name": "γ Scl",
+     "raDeg": 349.706,
+     "decDeg": -32.532
     },
     {
-     "name": "Askella",
-     "raDeg": 285.6529,
-     "decDeg": -29.8803
+     "name": "β Scl",
+     "raDeg": 353.2427,
+     "decDeg": -37.8183
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ]
+   ]
+  },
+  {
+   "id": "Sct",
+   "name": "Schild",
+   "stars": [
+    {
+     "name": "α Sct",
+     "raDeg": 278.8018,
+     "decDeg": -8.2441
     },
     {
-     "name": "Kaus Borealis",
-     "raDeg": 276.9925,
-     "decDeg": -25.4217
+     "name": "β Sct",
+     "raDeg": 281.7936,
+     "decDeg": -4.7479
     },
     {
-     "name": "Nunki",
-     "raDeg": 283.8163,
-     "decDeg": -26.2967
+     "name": "δ Sct",
+     "raDeg": 280.5684,
+     "decDeg": -9.0525
     },
     {
-     "name": "Phi Sgr",
-     "raDeg": 281.4142,
-     "decDeg": -26.9908
-    },
-    {
-     "name": "Tau Sgr",
-     "raDeg": 286.735,
-     "decDeg": -27.6706
+     "name": "γ Sct",
+     "raDeg": 277.2994,
+     "decDeg": -14.5658
     }
    ],
    "lines": [
@@ -624,6 +6500,108 @@
     ],
     [
      3,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "Ser",
+   "name": "Schlange",
+   "stars": [
+    {
+     "name": "Chow",
+     "raDeg": 236.5469,
+     "decDeg": 15.4218
+    },
+    {
+     "name": "ι Ser",
+     "raDeg": 235.3877,
+     "decDeg": 19.6704
+    },
+    {
+     "name": "Gudja",
+     "raDeg": 237.1849,
+     "decDeg": 18.1416
+    },
+    {
+     "name": "γ Ser",
+     "raDeg": 239.1133,
+     "decDeg": 15.6616
+    },
+    {
+     "name": "δ Ser",
+     "raDeg": 233.7006,
+     "decDeg": 10.5389
+    },
+    {
+     "name": "Unukalhai",
+     "raDeg": 236.067,
+     "decDeg": 6.4256
+    },
+    {
+     "name": "ε Ser",
+     "raDeg": 237.704,
+     "decDeg": 4.4777
+    },
+    {
+     "name": "Yed Prior",
+     "raDeg": 243.5864,
+     "decDeg": -3.6943
+    },
+    {
+     "name": "Sabik",
+     "raDeg": 257.5945,
+     "decDeg": -15.7249
+    },
+    {
+     "name": "ξ Ser",
+     "raDeg": 264.3967,
+     "decDeg": -15.3986
+    },
+    {
+     "name": "Sinistra",
+     "raDeg": 269.7566,
+     "decDeg": -9.7736
+    },
+    {
+     "name": "τ Oph",
+     "raDeg": 270.7705,
+     "decDeg": -8.1803
+    },
+    {
+     "name": "η Ser",
+     "raDeg": 275.3275,
+     "decDeg": -2.8988
+    },
+    {
+     "name": "Alya",
+     "raDeg": 284.0549,
+     "decDeg": 4.2036
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     0
+    ],
+    [
+     0,
+     4
+    ],
+    [
+     4,
      5
     ],
     [
@@ -632,74 +6610,53 @@
     ],
     [
      6,
-     1
-    ],
-    [
-     6,
-     4
-    ],
-    [
-     4,
-     1
-    ],
-    [
-     3,
      7
     ],
     [
-     7,
-     5
+     8,
+     9
+    ],
+    [
+     9,
+     10
+    ],
+    [
+     10,
+     11
+    ],
+    [
+     11,
+     12
+    ],
+    [
+     12,
+     13
     ]
    ]
   },
   {
-   "id": "Leo",
-   "name": "Löwe",
+   "id": "Sex",
+   "name": "Sextant",
    "stars": [
     {
-     "name": "Regulus",
-     "raDeg": 152.0929,
-     "decDeg": 11.9672
+     "name": "α Sex",
+     "raDeg": 151.9845,
+     "decDeg": -0.3716
     },
     {
-     "name": "Eta Leo",
-     "raDeg": 151.8329,
-     "decDeg": 16.7628
+     "name": "γ Sex",
+     "raDeg": 148.1268,
+     "decDeg": -8.105
     },
     {
-     "name": "Algieba",
-     "raDeg": 154.9933,
-     "decDeg": 19.8414
+     "name": "δ Sex",
+     "raDeg": 157.3696,
+     "decDeg": -2.7391
     },
     {
-     "name": "Adhafera",
-     "raDeg": 154.1725,
-     "decDeg": 23.4172
-    },
-    {
-     "name": "Rasalas",
-     "raDeg": 148.1908,
-     "decDeg": 26.0069
-    },
-    {
-     "name": "Epsilon Leo",
-     "raDeg": 146.4629,
-     "decDeg": 23.7742
-    },
-    {
-     "name": "Chertan",
-     "raDeg": 168.56,
-     "decDeg": 15.4297
-    },
-    {
-     "name": "Zosma",
-     "raDeg": 168.5271,
-     "decDeg": 20.5236
-    },
-    {
-     "name": "Denebola",
-     "raDeg": 177.265,
-     "decDeg": 14.5719
+     "name": "β Sex",
+     "raDeg": 157.5728,
+     "decDeg": -0.637
     }
    ],
    "lines": [
@@ -714,34 +6671,6 @@
     [
      2,
      3
-    ],
-    [
-     3,
-     4
-    ],
-    [
-     4,
-     5
-    ],
-    [
-     0,
-     6
-    ],
-    [
-     6,
-     7
-    ],
-    [
-     2,
-     7
-    ],
-    [
-     7,
-     8
-    ],
-    [
-     8,
-     6
     ]
    ]
   },
@@ -750,515 +6679,64 @@
    "name": "Stier",
    "stars": [
     {
-     "name": "Aldebaran",
-     "raDeg": 68.98,
-     "decDeg": 16.5092
-    },
-    {
-     "name": "Elnath",
-     "raDeg": 81.5729,
-     "decDeg": 28.6075
-    },
-    {
-     "name": "Zeta Tau",
-     "raDeg": 84.4113,
+     "name": "Tianguan",
+     "raDeg": 84.4112,
      "decDeg": 21.1425
     },
     {
-     "name": "Theta Tau",
-     "raDeg": 67.1654,
-     "decDeg": 15.8708
+     "name": "Aldebaran",
+     "raDeg": 68.9802,
+     "decDeg": 16.5093
     },
     {
-     "name": "Gamma Tau",
+     "name": "Chamukuy",
+     "raDeg": 67.1656,
+     "decDeg": 15.8709
+    },
+    {
+     "name": "Prima Hyadum",
      "raDeg": 64.9483,
-     "decDeg": 15.6278
+     "decDeg": 15.6276
     },
     {
-     "name": "Delta Tau",
-     "raDeg": 65.7338,
+     "name": "Secunda Hyadum",
+     "raDeg": 65.7337,
      "decDeg": 17.5425
     },
     {
-     "name": "Epsilon Tau",
+     "name": "Ain",
      "raDeg": 67.1542,
-     "decDeg": 19.1806
-    },
-    {
-     "name": "Lambda Tau",
-     "raDeg": 60.17,
-     "decDeg": 12.4903
-    }
-   ],
-   "lines": [
-    [
-     0,
-     6
-    ],
-    [
-     6,
-     5
-    ],
-    [
-     5,
-     4
-    ],
-    [
-     0,
-     3
-    ],
-    [
-     3,
-     4
-    ],
-    [
-     0,
-     2
-    ],
-    [
-     6,
-     1
-    ],
-    [
-     4,
-     7
-    ]
-   ]
-  },
-  {
-   "id": "Gem",
-   "name": "Zwillinge",
-   "stars": [
-    {
-     "name": "Kastor",
-     "raDeg": 113.65,
-     "decDeg": 31.8883
-    },
-    {
-     "name": "Pollux",
-     "raDeg": 116.3287,
-     "decDeg": 28.0261
-    },
-    {
-     "name": "Alhena",
-     "raDeg": 99.4279,
-     "decDeg": 16.3992
-    },
-    {
-     "name": "Delta Gem",
-     "raDeg": 110.0308,
-     "decDeg": 21.9822
-    },
-    {
-     "name": "Mebsuta",
-     "raDeg": 100.9829,
-     "decDeg": 25.1311
-    },
-    {
-     "name": "Tejat",
-     "raDeg": 95.74,
-     "decDeg": 22.5136
-    },
-    {
-     "name": "Zeta Gem",
-     "raDeg": 106.0271,
-     "decDeg": 20.5703
-    },
-    {
-     "name": "Propus",
-     "raDeg": 93.7196,
-     "decDeg": 22.5067
-    },
-    {
-     "name": "Xi Gem",
-     "raDeg": 101.3225,
-     "decDeg": 12.8956
-    }
-   ],
-   "lines": [
-    [
-     0,
-     4
-    ],
-    [
-     4,
-     5
-    ],
-    [
-     5,
-     7
-    ],
-    [
-     1,
-     3
-    ],
-    [
-     3,
-     6
-    ],
-    [
-     6,
-     2
-    ],
-    [
-     0,
-     1
-    ],
-    [
-     3,
-     8
-    ]
-   ]
-  },
-  {
-   "id": "Aur",
-   "name": "Fuhrmann",
-   "stars": [
-    {
-     "name": "Capella",
-     "raDeg": 79.1725,
-     "decDeg": 45.9981
-    },
-    {
-     "name": "Menkalinan",
-     "raDeg": 89.8821,
-     "decDeg": 44.9475
-    },
-    {
-     "name": "Theta Aur",
-     "raDeg": 89.9304,
-     "decDeg": 37.2125
-    },
-    {
-     "name": "Iota Aur",
-     "raDeg": 74.2483,
-     "decDeg": 33.1667
+     "decDeg": 19.1804
     },
     {
      "name": "Elnath",
-     "raDeg": 81.5729,
+     "raDeg": 81.573,
      "decDeg": 28.6075
     },
     {
-     "name": "Epsilon Aur",
-     "raDeg": 75.4921,
-     "decDeg": 43.8233
-    }
-   ],
-   "lines": [
-    [
-     0,
-     1
-    ],
-    [
-     1,
-     2
-    ],
-    [
-     2,
-     4
-    ],
-    [
-     4,
-     3
-    ],
-    [
-     3,
-     0
-    ],
-    [
-     0,
-     5
-    ]
-   ]
-  },
-  {
-   "id": "Per",
-   "name": "Perseus",
-   "stars": [
-    {
-     "name": "Mirfak",
-     "raDeg": 51.0808,
-     "decDeg": 49.8611
+     "name": "λ Tau",
+     "raDeg": 60.1701,
+     "decDeg": 12.4903
     },
     {
-     "name": "Algol",
-     "raDeg": 47.0421,
-     "decDeg": 40.9556
+     "name": "ξ Tau",
+     "raDeg": 51.7923,
+     "decDeg": 9.7327
     },
     {
-     "name": "Gamma Per",
-     "raDeg": 46.1992,
-     "decDeg": 53.5064
+     "name": "ν Tau",
+     "raDeg": 60.7891,
+     "decDeg": 5.9893
     },
     {
-     "name": "Delta Per",
-     "raDeg": 55.7313,
-     "decDeg": 47.7875
+     "name": "ο Tau",
+     "raDeg": 51.2033,
+     "decDeg": 9.0289
     },
     {
-     "name": "Epsilon Per",
-     "raDeg": 59.4633,
-     "decDeg": 40.0103
-    },
-    {
-     "name": "Zeta Per",
-     "raDeg": 58.5329,
-     "decDeg": 31.8836
-    },
-    {
-     "name": "Rho Per",
-     "raDeg": 46.2942,
-     "decDeg": 38.8403
-    }
-   ],
-   "lines": [
-    [
-     2,
-     0
-    ],
-    [
-     0,
-     3
-    ],
-    [
-     3,
-     4
-    ],
-    [
-     4,
-     5
-    ],
-    [
-     0,
-     1
-    ],
-    [
-     1,
-     6
-    ]
-   ]
-  },
-  {
-   "id": "And",
-   "name": "Andromeda",
-   "stars": [
-    {
-     "name": "Alpheratz",
-     "raDeg": 2.0971,
-     "decDeg": 29.0906
-    },
-    {
-     "name": "Delta And",
-     "raDeg": 9.8321,
-     "decDeg": 30.8611
-    },
-    {
-     "name": "Mirach",
-     "raDeg": 17.4329,
-     "decDeg": 35.6206
-    },
-    {
-     "name": "Almach",
-     "raDeg": 30.975,
-     "decDeg": 42.3297
-    }
-   ],
-   "lines": [
-    [
-     0,
-     1
-    ],
-    [
-     1,
-     2
-    ],
-    [
-     2,
-     3
-    ]
-   ]
-  },
-  {
-   "id": "Peg",
-   "name": "Pegasus",
-   "stars": [
-    {
-     "name": "Markab",
-     "raDeg": 346.1904,
-     "decDeg": 15.2053
-    },
-    {
-     "name": "Scheat",
-     "raDeg": 345.9438,
-     "decDeg": 28.0828
-    },
-    {
-     "name": "Algenib",
-     "raDeg": 3.3092,
-     "decDeg": 15.1836
-    },
-    {
-     "name": "Alpheratz",
-     "raDeg": 2.0971,
-     "decDeg": 29.0906
-    },
-    {
-     "name": "Enif",
-     "raDeg": 326.0467,
-     "decDeg": 9.875
-    },
-    {
-     "name": "Matar",
-     "raDeg": 340.7504,
-     "decDeg": 30.2214
-    },
-    {
-     "name": "Homam",
-     "raDeg": 340.3654,
-     "decDeg": 10.8314
-    }
-   ],
-   "lines": [
-    [
-     0,
-     1
-    ],
-    [
-     1,
-     3
-    ],
-    [
-     3,
-     2
-    ],
-    [
-     2,
-     0
-    ],
-    [
-     1,
-     5
-    ],
-    [
-     0,
-     6
-    ],
-    [
-     6,
-     4
-    ]
-   ]
-  },
-  {
-   "id": "Boo",
-   "name": "Bootes",
-   "stars": [
-    {
-     "name": "Arktur",
-     "raDeg": 213.9154,
-     "decDeg": 19.1822
-    },
-    {
-     "name": "Izar",
-     "raDeg": 221.2467,
-     "decDeg": 27.0742
-    },
-    {
-     "name": "Seginus",
-     "raDeg": 218.0196,
-     "decDeg": 38.3083
-    },
-    {
-     "name": "Delta Boo",
-     "raDeg": 228.8758,
-     "decDeg": 33.3147
-    },
-    {
-     "name": "Nekkar",
-     "raDeg": 225.4867,
-     "decDeg": 40.3906
-    },
-    {
-     "name": "Rho Boo",
-     "raDeg": 217.9575,
-     "decDeg": 30.3714
-    },
-    {
-     "name": "Muphrid",
-     "raDeg": 208.6713,
-     "decDeg": 18.3978
-    }
-   ],
-   "lines": [
-    [
-     0,
-     1
-    ],
-    [
-     1,
-     3
-    ],
-    [
-     3,
-     4
-    ],
-    [
-     4,
-     2
-    ],
-    [
-     2,
-     5
-    ],
-    [
-     5,
-     0
-    ],
-    [
-     0,
-     6
-    ]
-   ]
-  },
-  {
-   "id": "CrB",
-   "name": "Nördliche Krone",
-   "stars": [
-    {
-     "name": "Theta CrB",
-     "raDeg": 233.2325,
-     "decDeg": 31.3592
-    },
-    {
-     "name": "Beta CrB",
-     "raDeg": 231.9571,
-     "decDeg": 29.1058
-    },
-    {
-     "name": "Alphekka",
-     "raDeg": 233.6721,
-     "decDeg": 26.7147
-    },
-    {
-     "name": "Gamma CrB",
-     "raDeg": 235.6858,
-     "decDeg": 26.2956
-    },
-    {
-     "name": "Delta CrB",
-     "raDeg": 237.3983,
-     "decDeg": 26.0683
-    },
-    {
-     "name": "Epsilon CrB",
-     "raDeg": 239.3967,
-     "decDeg": 26.8778
-    },
-    {
-     "name": "Iota CrB",
-     "raDeg": 240.3608,
-     "decDeg": 29.8511
+     "name": "HR 1101",
+     "raDeg": 54.2183,
+     "decDeg": 0.4017
     }
    ],
    "lines": [
@@ -1285,233 +6763,9 @@
     [
      5,
      6
-    ]
-   ]
-  },
-  {
-   "id": "CMa",
-   "name": "Großer Hund",
-   "stars": [
-    {
-     "name": "Sirius",
-     "raDeg": 101.2871,
-     "decDeg": -16.7161
-    },
-    {
-     "name": "Mirzam",
-     "raDeg": 95.675,
-     "decDeg": -17.9558
-    },
-    {
-     "name": "Wezen",
-     "raDeg": 107.0979,
-     "decDeg": -26.3933
-    },
-    {
-     "name": "Adhara",
-     "raDeg": 104.6562,
-     "decDeg": -28.9722
-    },
-    {
-     "name": "Aludra",
-     "raDeg": 111.0238,
-     "decDeg": -29.3031
-    },
-    {
-     "name": "Furud",
-     "raDeg": 95.0783,
-     "decDeg": -30.0633
-    },
-    {
-     "name": "Omikron2 CMa",
-     "raDeg": 105.7562,
-     "decDeg": -23.8331
-    }
-   ],
-   "lines": [
-    [
-     1,
-     0
-    ],
-    [
-     0,
-     6
-    ],
-    [
-     6,
-     2
-    ],
-    [
-     2,
-     4
-    ],
-    [
-     2,
-     3
     ],
     [
      3,
-     5
-    ]
-   ]
-  },
-  {
-   "id": "Cep",
-   "name": "Kepheus",
-   "stars": [
-    {
-     "name": "Alderamin",
-     "raDeg": 319.645,
-     "decDeg": 62.5856
-    },
-    {
-     "name": "Alfirk",
-     "raDeg": 322.165,
-     "decDeg": 70.5608
-    },
-    {
-     "name": "Errai",
-     "raDeg": 354.8367,
-     "decDeg": 77.6325
-    },
-    {
-     "name": "Delta Cep",
-     "raDeg": 337.2929,
-     "decDeg": 58.4153
-    },
-    {
-     "name": "Zeta Cep",
-     "raDeg": 332.7138,
-     "decDeg": 58.2014
-    },
-    {
-     "name": "Iota Cep",
-     "raDeg": 342.42,
-     "decDeg": 66.2003
-    }
-   ],
-   "lines": [
-    [
-     0,
-     1
-    ],
-    [
-     1,
-     2
-    ],
-    [
-     2,
-     5
-    ],
-    [
-     5,
-     0
-    ],
-    [
-     0,
-     4
-    ],
-    [
-     4,
-     3
-    ],
-    [
-     3,
-     5
-    ]
-   ]
-  },
-  {
-   "id": "Dra",
-   "name": "Drache",
-   "stars": [
-    {
-     "name": "Etamin",
-     "raDeg": 269.1517,
-     "decDeg": 51.4889
-    },
-    {
-     "name": "Rastaban",
-     "raDeg": 262.6079,
-     "decDeg": 52.3014
-    },
-    {
-     "name": "Grumium",
-     "raDeg": 268.3821,
-     "decDeg": 56.8728
-    },
-    {
-     "name": "Ny Dra",
-     "raDeg": 263.0442,
-     "decDeg": 55.1731
-    },
-    {
-     "name": "Delta Dra",
-     "raDeg": 288.1388,
-     "decDeg": 67.6617
-    },
-    {
-     "name": "Zeta Dra",
-     "raDeg": 257.1967,
-     "decDeg": 65.7147
-    },
-    {
-     "name": "Eta Dra",
-     "raDeg": 245.9979,
-     "decDeg": 61.5142
-    },
-    {
-     "name": "Edasich",
-     "raDeg": 231.2325,
-     "decDeg": 58.9661
-    },
-    {
-     "name": "Thuban",
-     "raDeg": 211.0971,
-     "decDeg": 64.3758
-    },
-    {
-     "name": "Kappa Dra",
-     "raDeg": 188.3708,
-     "decDeg": 69.7883
-    },
-    {
-     "name": "Lambda Dra",
-     "raDeg": 172.8508,
-     "decDeg": 69.3311
-    }
-   ],
-   "lines": [
-    [
-     0,
-     1
-    ],
-    [
-     1,
-     3
-    ],
-    [
-     3,
-     2
-    ],
-    [
-     2,
-     0
-    ],
-    [
-     2,
-     4
-    ],
-    [
-     4,
-     5
-    ],
-    [
-     5,
-     6
-    ],
-    [
-     6,
      7
     ],
     [
@@ -1523,34 +6777,149 @@
      9
     ],
     [
-     9,
+     8,
      10
+    ],
+    [
+     10,
+     11
     ]
    ]
   },
   {
-   "id": "Ari",
-   "name": "Widder",
+   "id": "Tel",
+   "name": "Teleskop",
    "stars": [
     {
-     "name": "41 Ari",
-     "raDeg": 42.4958,
-     "decDeg": 27.2606
+     "name": "ε Tel",
+     "raDeg": 272.8073,
+     "decDeg": -45.9544
     },
     {
-     "name": "Hamal",
-     "raDeg": 31.7933,
-     "decDeg": 23.4625
+     "name": "α Tel",
+     "raDeg": 276.7434,
+     "decDeg": -45.9685
     },
     {
-     "name": "Sheratan",
-     "raDeg": 28.66,
-     "decDeg": 20.8081
+     "name": "ζ Tel",
+     "raDeg": 277.2077,
+     "decDeg": -49.0706
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ]
+   ]
+  },
+  {
+   "id": "Tri",
+   "name": "Dreieck",
+   "stars": [
+    {
+     "name": "Mothallah",
+     "raDeg": 28.2704,
+     "decDeg": 29.5788
     },
     {
-     "name": "Mesarthim",
-     "raDeg": 28.3825,
-     "decDeg": 19.2939
+     "name": "β Tri",
+     "raDeg": 32.3859,
+     "decDeg": 34.9873
+    },
+    {
+     "name": "γ Tri",
+     "raDeg": 34.3286,
+     "decDeg": 33.8472
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "TrA",
+   "name": "Südliches Dreieck",
+   "stars": [
+    {
+     "name": "Atria",
+     "raDeg": 252.1662,
+     "decDeg": -69.0277
+    },
+    {
+     "name": "Betria",
+     "raDeg": 238.7857,
+     "decDeg": -63.4307
+    },
+    {
+     "name": "Gatria",
+     "raDeg": 229.7274,
+     "decDeg": -68.6795
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "Tuc",
+   "name": "Tukan",
+   "stars": [
+    {
+     "name": "α Tuc",
+     "raDeg": 334.6254,
+     "decDeg": -60.2596
+    },
+    {
+     "name": "γ Tuc",
+     "raDeg": 349.3574,
+     "decDeg": -58.2357
+    },
+    {
+     "name": "β¹ Tuc",
+     "raDeg": 7.8861,
+     "decDeg": -62.9582
+    },
+    {
+     "name": "ζ Tuc",
+     "raDeg": 5.0178,
+     "decDeg": -64.8748
+    },
+    {
+     "name": "ε Tuc",
+     "raDeg": 359.9791,
+     "decDeg": -65.5771
+    },
+    {
+     "name": "δ Tuc",
+     "raDeg": 336.8332,
+     "decDeg": -64.9664
     }
    ],
    "lines": [
@@ -1565,6 +6934,357 @@
     [
      2,
      3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     5,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "UMa",
+   "name": "Großer Bär",
+   "stars": [
+    {
+     "name": "Megrez",
+     "raDeg": 183.8565,
+     "decDeg": 57.0326
+    },
+    {
+     "name": "Dubhe",
+     "raDeg": 165.932,
+     "decDeg": 61.751
+    },
+    {
+     "name": "Merak",
+     "raDeg": 165.4603,
+     "decDeg": 56.3824
+    },
+    {
+     "name": "Phecda",
+     "raDeg": 178.4577,
+     "decDeg": 53.6948
+    },
+    {
+     "name": "Alioth",
+     "raDeg": 193.5073,
+     "decDeg": 55.9598
+    },
+    {
+     "name": "Mizar",
+     "raDeg": 200.9814,
+     "decDeg": 54.9254
+    },
+    {
+     "name": "Alkaid",
+     "raDeg": 206.8852,
+     "decDeg": 49.3133
+    },
+    {
+     "name": "Taiyangshou",
+     "raDeg": 176.5126,
+     "decDeg": 47.7794
+    },
+    {
+     "name": "Alula Borealis",
+     "raDeg": 169.6197,
+     "decDeg": 33.0943
+    },
+    {
+     "name": "Alula Australis",
+     "raDeg": 169.5468,
+     "decDeg": 31.5308
+    },
+    {
+     "name": "ψ UMa",
+     "raDeg": 167.4159,
+     "decDeg": 44.4985
+    },
+    {
+     "name": "Tania Australis",
+     "raDeg": 155.5823,
+     "decDeg": 41.4995
+    },
+    {
+     "name": "Tania Borealis",
+     "raDeg": 154.2741,
+     "decDeg": 42.9144
+    },
+    {
+     "name": "HR 3757",
+     "raDeg": 142.8821,
+     "decDeg": 63.0619
+    },
+    {
+     "name": "Muscida",
+     "raDeg": 127.5661,
+     "decDeg": 60.7182
+    },
+    {
+     "name": "υ UMa",
+     "raDeg": 147.7473,
+     "decDeg": 59.0387
+    },
+    {
+     "name": "φ UMa",
+     "raDeg": 148.0265,
+     "decDeg": 54.0643
+    },
+    {
+     "name": "Sarir",
+     "raDeg": 143.2143,
+     "decDeg": 51.6773
+    },
+    {
+     "name": "Talitha",
+     "raDeg": 134.8019,
+     "decDeg": 48.0418
+    },
+    {
+     "name": "Alkaphrah",
+     "raDeg": 135.9064,
+     "decDeg": 47.1565
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     0
+    ],
+    [
+     0,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     5,
+     6
+    ],
+    [
+     3,
+     7
+    ],
+    [
+     7,
+     8
+    ],
+    [
+     8,
+     9
+    ],
+    [
+     7,
+     10
+    ],
+    [
+     10,
+     11
+    ],
+    [
+     10,
+     12
+    ],
+    [
+     1,
+     13
+    ],
+    [
+     13,
+     14
+    ],
+    [
+     14,
+     15
+    ],
+    [
+     15,
+     2
+    ],
+    [
+     2,
+     16
+    ],
+    [
+     16,
+     17
+    ],
+    [
+     17,
+     18
+    ],
+    [
+     19,
+     17
+    ]
+   ]
+  },
+  {
+   "id": "UMi",
+   "name": "Kleiner Bär",
+   "stars": [
+    {
+     "name": "ζ UMi",
+     "raDeg": 236.0147,
+     "decDeg": 77.7945
+    },
+    {
+     "name": "η UMi",
+     "raDeg": 244.3762,
+     "decDeg": 75.7553
+    },
+    {
+     "name": "Pherkad",
+     "raDeg": 230.1821,
+     "decDeg": 71.834
+    },
+    {
+     "name": "Kochab",
+     "raDeg": 222.6764,
+     "decDeg": 74.1555
+    },
+    {
+     "name": "ε UMi",
+     "raDeg": 251.4927,
+     "decDeg": 82.0373
+    },
+    {
+     "name": "Yildun",
+     "raDeg": 263.0542,
+     "decDeg": 86.5865
+    },
+    {
+     "name": "Polaris",
+     "raDeg": 37.9545,
+     "decDeg": 89.2641
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     0
+    ],
+    [
+     0,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     5,
+     6
+    ]
+   ]
+  },
+  {
+   "id": "Vel",
+   "name": "Segel",
+   "stars": [
+    {
+     "name": "Alsephina",
+     "raDeg": 131.1759,
+     "decDeg": -54.7088
+    },
+    {
+     "name": "Markeb",
+     "raDeg": 140.5284,
+     "decDeg": -55.0107
+    },
+    {
+     "name": "φ Vel",
+     "raDeg": 149.2156,
+     "decDeg": -54.5678
+    },
+    {
+     "name": "μ Vel",
+     "raDeg": 161.6924,
+     "decDeg": -49.4203
+    },
+    {
+     "name": "HR 4023",
+     "raDeg": 153.684,
+     "decDeg": -42.1219
+    },
+    {
+     "name": "ψ Vel",
+     "raDeg": 142.675,
+     "decDeg": -40.4668
+    },
+    {
+     "name": "Suhail",
+     "raDeg": 136.999,
+     "decDeg": -43.4326
+    },
+    {
+     "name": "γ² Vel",
+     "raDeg": 122.3831,
+     "decDeg": -47.3366
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     5,
+     6
+    ],
+    [
+     6,
+     7
     ]
    ]
   },
@@ -1573,34 +7293,9 @@
    "name": "Jungfrau",
    "stars": [
     {
-     "name": "Spica",
-     "raDeg": 201.2983,
-     "decDeg": -11.1614
-    },
-    {
-     "name": "Porrima",
-     "raDeg": 190.415,
-     "decDeg": -1.4494
-    },
-    {
-     "name": "Vindemiatrix",
-     "raDeg": 195.5442,
-     "decDeg": 10.9592
-    },
-    {
-     "name": "Delta Vir",
-     "raDeg": 193.9008,
-     "decDeg": 3.3975
-    },
-    {
-     "name": "Zeta Vir",
-     "raDeg": 203.6733,
-     "decDeg": -0.5961
-    },
-    {
-     "name": "Zaniah",
-     "raDeg": 184.9767,
-     "decDeg": -0.6667
+     "name": "ν Vir",
+     "raDeg": 176.4648,
+     "decDeg": 6.5294
     },
     {
      "name": "Zavijava",
@@ -1608,129 +7303,59 @@
      "decDeg": 1.7647
     },
     {
-     "name": "Iota Vir",
-     "raDeg": 214.0037,
-     "decDeg": -6.0006
+     "name": "Zaniah",
+     "raDeg": 184.9765,
+     "decDeg": -0.6668
     },
     {
-     "name": "My Vir",
-     "raDeg": 220.765,
-     "decDeg": -5.6583
-    }
-   ],
-   "lines": [
-    [
-     6,
-     5
-    ],
-    [
-     5,
-     1
-    ],
-    [
-     1,
-     3
-    ],
-    [
-     3,
-     2
-    ],
-    [
-     1,
-     0
-    ],
-    [
-     0,
-     4
-    ],
-    [
-     4,
-     7
-    ],
-    [
-     7,
-     8
-    ],
-    [
-     4,
-     3
-    ]
-   ]
-  },
-  {
-   "id": "Cru",
-   "name": "Kreuz des Südens",
-   "stars": [
-    {
-     "name": "Acrux",
-     "raDeg": 186.6496,
-     "decDeg": -63.0992
+     "name": "Porrima",
+     "raDeg": 190.4152,
+     "decDeg": -1.4494
     },
     {
-     "name": "Mimosa",
-     "raDeg": 191.9304,
-     "decDeg": -59.6886
+     "name": "θ Vir",
+     "raDeg": 197.4875,
+     "decDeg": -5.539
     },
     {
-     "name": "Gacrux",
-     "raDeg": 187.7917,
-     "decDeg": -57.1133
+     "name": "Spica",
+     "raDeg": 201.2982,
+     "decDeg": -11.1613
     },
     {
-     "name": "Delta Cru",
-     "raDeg": 183.7862,
-     "decDeg": -58.7489
-    }
-   ],
-   "lines": [
-    [
-     0,
-     2
-    ],
-    [
-     1,
-     3
-    ]
-   ]
-  },
-  {
-   "id": "Cen",
-   "name": "Zentaur",
-   "stars": [
-    {
-     "name": "Toliman",
-     "raDeg": 219.9021,
-     "decDeg": -60.8339
+     "name": "Syrma",
+     "raDeg": 214.0036,
+     "decDeg": -6.0005
     },
     {
-     "name": "Hadar",
-     "raDeg": 210.9558,
-     "decDeg": -60.3731
+     "name": "Rijl al Awwa",
+     "raDeg": 220.7651,
+     "decDeg": -5.6582
     },
     {
-     "name": "Menkent",
-     "raDeg": 211.6721,
-     "decDeg": -36.3697
+     "name": "Vindemiatrix",
+     "raDeg": 195.5442,
+     "decDeg": 10.9592
     },
     {
-     "name": "Epsilon Cen",
-     "raDeg": 204.9721,
-     "decDeg": -53.4664
+     "name": "Minelauva",
+     "raDeg": 193.9009,
+     "decDeg": 3.3975
     },
     {
-     "name": "Zeta Cen",
-     "raDeg": 208.885,
-     "decDeg": -47.2883
+     "name": "Heze",
+     "raDeg": 203.6733,
+     "decDeg": -0.5958
     },
     {
-     "name": "Eta Cen",
-     "raDeg": 218.8767,
-     "decDeg": -42.1578
+     "name": "τ Vir",
+     "raDeg": 210.4116,
+     "decDeg": 1.5445
     },
     {
-     "name": "Gamma Cen",
-     "raDeg": 190.3792,
-     "decDeg": -48.9597
+     "name": "HR 5511",
+     "raDeg": 221.5622,
+     "decDeg": 1.8929
     }
    ],
    "lines": [
@@ -1740,11 +7365,11 @@
     ],
     [
      1,
-     3
+     2
     ],
     [
-     3,
-     6
+     2,
+     3
     ],
     [
      3,
@@ -1756,191 +7381,6 @@
     ],
     [
      5,
-     2
-    ]
-   ]
-  },
-  {
-   "id": "Del",
-   "name": "Delphin",
-   "stars": [
-    {
-     "name": "Sualocin",
-     "raDeg": 309.9096,
-     "decDeg": 15.9119
-    },
-    {
-     "name": "Rotanev",
-     "raDeg": 309.3871,
-     "decDeg": 14.595
-    },
-    {
-     "name": "Gamma Del",
-     "raDeg": 311.6646,
-     "decDeg": 16.1242
-    },
-    {
-     "name": "Delta Del",
-     "raDeg": 310.865,
-     "decDeg": 15.0744
-    },
-    {
-     "name": "Deneb Dulfim",
-     "raDeg": 308.3033,
-     "decDeg": 11.3033
-    }
-   ],
-   "lines": [
-    [
-     0,
-     2
-    ],
-    [
-     2,
-     3
-    ],
-    [
-     3,
-     1
-    ],
-    [
-     1,
-     0
-    ],
-    [
-     1,
-     4
-    ]
-   ]
-  },
-  {
-   "id": "Her",
-   "name": "Herkules",
-   "stars": [
-    {
-     "name": "Kornephoros",
-     "raDeg": 247.555,
-     "decDeg": 21.4897
-    },
-    {
-     "name": "Zeta Her",
-     "raDeg": 250.3217,
-     "decDeg": 31.6028
-    },
-    {
-     "name": "Epsilon Her",
-     "raDeg": 255.0721,
-     "decDeg": 30.9264
-    },
-    {
-     "name": "Pi Her",
-     "raDeg": 258.7617,
-     "decDeg": 36.8092
-    },
-    {
-     "name": "Eta Her",
-     "raDeg": 250.7242,
-     "decDeg": 38.9222
-    },
-    {
-     "name": "Delta Her",
-     "raDeg": 258.7579,
-     "decDeg": 24.8392
-    },
-    {
-     "name": "Rasalgethi",
-     "raDeg": 258.6621,
-     "decDeg": 14.3903
-    },
-    {
-     "name": "My Her",
-     "raDeg": 266.6146,
-     "decDeg": 27.7208
-    }
-   ],
-   "lines": [
-    [
-     1,
-     4
-    ],
-    [
-     4,
-     3
-    ],
-    [
-     3,
-     2
-    ],
-    [
-     2,
-     1
-    ],
-    [
-     1,
-     0
-    ],
-    [
-     2,
-     5
-    ],
-    [
-     5,
-     6
-    ],
-    [
-     3,
-     7
-    ]
-   ]
-  },
-  {
-   "id": "Oph",
-   "name": "Schlangenträger",
-   "stars": [
-    {
-     "name": "Rasalhague",
-     "raDeg": 263.7337,
-     "decDeg": 12.56
-    },
-    {
-     "name": "Cebalrai",
-     "raDeg": 265.8683,
-     "decDeg": 4.5672
-    },
-    {
-     "name": "Yed Prior",
-     "raDeg": 243.5863,
-     "decDeg": -3.6944
-    },
-    {
-     "name": "Yed Posterior",
-     "raDeg": 244.5804,
-     "decDeg": -4.6925
-    },
-    {
-     "name": "Zeta Oph",
-     "raDeg": 249.2896,
-     "decDeg": -10.5672
-    },
-    {
-     "name": "Sabik",
-     "raDeg": 257.5946,
-     "decDeg": -15.725
-    },
-    {
-     "name": "Kappa Oph",
-     "raDeg": 254.4171,
-     "decDeg": 9.375
-    },
-    {
-     "name": "Lambda Oph",
-     "raDeg": 247.7283,
-     "decDeg": 1.9839
-    }
-   ],
-   "lines": [
-    [
-     0,
      6
     ],
     [
@@ -1948,59 +7388,55 @@
      7
     ],
     [
-     7,
-     2
+     8,
+     9
     ],
     [
-     2,
+     9,
      3
     ],
     [
-     3,
-     4
-    ],
-    [
      4,
-     5
+     10
     ],
     [
-     5,
-     1
+     10,
+     11
     ],
     [
-     1,
-     0
+     11,
+     12
     ]
    ]
   },
   {
-   "id": "Cnc",
-   "name": "Krebs",
+   "id": "Vol",
+   "name": "Fliegender Fisch",
    "stars": [
     {
-     "name": "Altarf",
-     "raDeg": 124.1288,
-     "decDeg": 9.1856
+     "name": "α Vol",
+     "raDeg": 135.6116,
+     "decDeg": -66.3961
     },
     {
-     "name": "Asellus Australis",
-     "raDeg": 131.1712,
-     "decDeg": 18.1544
+     "name": "β Vol",
+     "raDeg": 126.4341,
+     "decDeg": -66.1369
     },
     {
-     "name": "Asellus Borealis",
-     "raDeg": 130.8212,
-     "decDeg": 21.4686
+     "name": "ε Vol",
+     "raDeg": 121.9825,
+     "decDeg": -68.6171
     },
     {
-     "name": "Acubens",
-     "raDeg": 134.6217,
-     "decDeg": 11.8578
+     "name": "δ Vol",
+     "raDeg": 109.2076,
+     "decDeg": -67.9572
     },
     {
-     "name": "Iota Cnc",
-     "raDeg": 131.6742,
-     "decDeg": 28.76
+     "name": "γ² Vol",
+     "raDeg": 107.1869,
+     "decDeg": -70.4989
     }
    ],
    "lines": [
@@ -2014,11 +7450,68 @@
     ],
     [
      2,
+     3
+    ],
+    [
+     3,
      4
     ],
     [
+     4,
+     2
+    ],
+    [
+     2,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "Vul",
+   "name": "Fuchs",
+   "stars": [
+    {
+     "name": "HR 7306",
+     "raDeg": 289.0543,
+     "decDeg": 21.3904
+    },
+    {
+     "name": "Anser",
+     "raDeg": 292.1764,
+     "decDeg": 24.6649
+    },
+    {
+     "name": "HR 7592",
+     "raDeg": 298.3654,
+     "decDeg": 24.0796
+    },
+    {
+     "name": "NT Vul",
+     "raDeg": 300.2752,
+     "decDeg": 27.7536
+    },
+    {
+     "name": "HR 7744",
+     "raDeg": 303.9422,
+     "decDeg": 27.8142
+    }
+   ],
+   "lines": [
+    [
+     0,
+     1
+    ],
+    [
      1,
+     2
+    ],
+    [
+     2,
      3
+    ],
+    [
+     3,
+     4
     ]
    ]
   }

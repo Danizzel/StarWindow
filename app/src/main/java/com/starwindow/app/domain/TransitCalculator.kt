@@ -8,7 +8,13 @@ import com.starwindow.app.core.astro.Horizontal
 import com.starwindow.app.core.geometry.SkyWindow
 import com.starwindow.app.data.catalog.SkyObject
 import kotlin.math.abs
+import kotlin.math.asin
+import kotlin.math.cos
+import kotlin.math.sin
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 
 /** One continuous stretch during which an object sits inside the window. */
@@ -76,14 +82,24 @@ class TransitCalculator(
         val inside = window.shape.membershipTest()
         val bounds = window.altitudeBounds()
 
-        val candidates = objects.filter { it.canReach(bounds, latitude) }
+        // Two rejections before any object is scanned over time, because the scan is what costs:
+        // each survivor is sampled several hundred times, each non-survivor not at all.
+        val windowDec = declinationOfDirection(window.shape.center(), latitude)
+        val reach = window.shape.angularRadiusDeg() + DECLINATION_MARGIN_DEG
+        val candidates = objects.filter {
+            it.canReachDeclination(windowDec, reach) && it.canReach(bounds, latitude)
+        }
 
         // Precession is computed once for the whole search and each object is brought to date once,
         // rather than inside the scan: it shifts by 0.0001 arcseconds over a night, so recomputing
         // it per sample would cost thousands of trigonometric calls for no change in the answer.
         val precession = Precession.forEpoch(fromMillis)
 
-        val transits = candidates.mapNotNull { obj ->
+        // Every object is scanned independently of every other, so the work splits across cores
+        // without any coordination. `inside` is a pure closure over immutable geometry and is
+        // shared deliberately: building one tangent plane per chunk would undo the point of
+        // `membershipTest` existing.
+        val transits = scanInParallel(candidates) { obj ->
             val position = obj.positionAt(precession)
             val intervals = intervalsFor(position, inside, latitude, longitude, fromMillis, toMillis)
             if (intervals.isEmpty()) null else ObjectTransit(obj, intervals)
@@ -153,6 +169,34 @@ class TransitCalculator(
         latitudeDeg,
         AstroTime.lstDeg(millis, longitudeDeg),
     )
+
+    /**
+     * Runs [scan] over every candidate, spread across the available cores.
+     *
+     * Below [PARALLEL_THRESHOLD] candidates it stays on one thread: splitting a list of eighty
+     * costs more in coroutine setup than the scan itself takes, and the whole point of the
+     * declination filter above is that most searches now land in exactly that range.
+     */
+    private suspend fun <T : Any> scanInParallel(
+        candidates: List<SkyObject>,
+        scan: (SkyObject) -> T?,
+    ): List<T> {
+        if (candidates.size < PARALLEL_THRESHOLD) return candidates.mapNotNull(scan)
+
+        val workers = Runtime.getRuntime().availableProcessors().coerceIn(2, 8)
+        val chunkSize = (candidates.size + workers - 1) / workers
+        return coroutineScope {
+            candidates.chunked(chunkSize)
+                .map { chunk -> async { chunk.mapNotNull(scan) } }
+                .awaitAll()
+                .flatten()
+        }
+    }
+
+    private companion object {
+        /** Below this many candidates the split costs more than it saves. */
+        const val PARALLEL_THRESHOLD = 200
+    }
 }
 
 /**
@@ -168,3 +212,43 @@ private fun SkyObject.canReach(
     val minAltitude = abs(latitudeDeg + decDeg) - 90.0
     return maxAltitude >= altitudeBounds.start && minAltitude <= altitudeBounds.endInclusive
 }
+
+/**
+ * The declination a horizon-fixed direction sits at.
+ *
+ * This is the observation that makes the whole search cheap, and it is worth stating plainly: a
+ * window is nailed to the horizon, so as the sky turns underneath it, its **right ascension drifts
+ * but its declination never changes**. A gap over the garage looks out at one fixed band of
+ * declination for as long as it exists.
+ *
+ * From the standard transformation, with the hour angle eliminated:
+ *
+ *     sin δ = sin φ · sin h + cos φ · cos h · cos A
+ */
+internal fun declinationOfDirection(direction: Horizontal, latitudeDeg: Double): Double {
+    val lat = Math.toRadians(latitudeDeg)
+    val altitude = Math.toRadians(direction.altitudeDeg)
+    val azimuth = Math.toRadians(direction.azimuthDeg)
+    val sinDec = sin(lat) * sin(altitude) + cos(lat) * cos(altitude) * cos(azimuth)
+    return Math.toDegrees(asin(sinDec.coerceIn(-1.0, 1.0)))
+}
+
+/**
+ * Whether the object's declination band can reach the window's at all.
+ *
+ * Far sharper than the altitude test on its own, and it is the difference between a search that
+ * takes a second and one that takes a moment. The altitude test only asks whether the object ever
+ * climbs to the right *height*; it says nothing about direction, so from Berlin a circumpolar
+ * object at +80° passes it for a window facing south at 45° — it does reach that altitude, just
+ * never anywhere near that azimuth. Comparing declinations rejects it immediately, because the two
+ * declinations are both constants.
+ *
+ * The margin covers what the comparison glosses over: refraction lifts an object by up to half a
+ * degree near the horizon, catalogue positions are J2000 while the window is of date (0.4° of
+ * precession), and a polygon's angular radius is measured to its furthest corner.
+ */
+private fun SkyObject.canReachDeclination(windowDecDeg: Double, reachDeg: Double): Boolean =
+    abs(decDeg - windowDecDeg) <= reachDeg
+
+/** Refraction, precession and a little room to spare. */
+private const val DECLINATION_MARGIN_DEG = 1.5

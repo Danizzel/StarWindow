@@ -24,6 +24,8 @@ import com.starwindow.app.domain.ResultFilter
 import com.starwindow.app.domain.SkyTrack
 import com.starwindow.app.domain.SkyTrackBuilder
 import com.starwindow.app.domain.TransitCalculator
+import com.starwindow.app.domain.TransitListView
+import com.starwindow.app.domain.TransitSort
 import com.starwindow.app.domain.TransitSearchResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -38,6 +40,9 @@ data class WindowDetailUiState(
     val hoursAhead: Int = 24,
     val magnitudeLimit: Double = 8.0,
     val filter: ResultFilter = ResultFilter.ALL,
+    /** Free text over the result list; the whole catalogue is not searched here, only the hits. */
+    val query: String = "",
+    val sort: TransitSort = TransitSort.INTEREST,
     /**
      * Catalogue and constellation ids whose paths the chart shows.
      *
@@ -57,16 +62,25 @@ data class WindowDetailUiState(
     val error: String? = null,
 ) {
     val visibleObjects: List<ObjectTransit>
-        get() = if (!filter.showsObjects) {
-            emptyList()
-        } else {
-            result?.transits.orEmpty().filter { filter.matches(it.obj) }
-        }
+        get() = TransitListView.build(result?.transits.orEmpty(), filter, query, sort)
 
     val visibleConstellations: List<ConstellationTransit>
-        get() = if (filter.showsConstellations) constellations else emptyList()
+        get() = if (filter.showsConstellations && query.isBlank()) constellations else emptyList()
 
     val isEmpty: Boolean get() = visibleObjects.isEmpty() && visibleConstellations.isEmpty()
+
+    val hasQuery: Boolean get() = query.isNotBlank()
+
+    /** How many the filter and the query took out, for the header line. */
+    val totalObjects: Int get() = result?.transits?.size ?: 0
+
+    /** The best few of each kind, shown above the list while nothing is filtered or typed. */
+    val highlights: Map<ResultFilter, List<ObjectTransit>>
+        get() = if (filter == ResultFilter.ALL && !hasQuery) {
+            TransitListView.highlightsByKind(result?.transits.orEmpty())
+        } else {
+            emptyMap()
+        }
 }
 
 class WindowDetailViewModel(
@@ -109,6 +123,23 @@ class WindowDetailViewModel(
     fun setFilter(filter: ResultFilter) {
         _uiState.update { it.copy(filter = filter) }
         rebuildTracks()
+    }
+
+    /**
+     * Filters the result list by name or designation.
+     *
+     * No debounce and no coroutine: this searches the few hundred results already in hand, not the
+     * catalogue, so it is a list filter and can run straight through on the keystroke.
+     */
+    fun setQuery(query: String) {
+        _uiState.update { it.copy(query = query) }
+        rebuildTracks()
+    }
+
+    fun clearQuery() = setQuery("")
+
+    fun setSort(sort: TransitSort) {
+        _uiState.update { it.copy(sort = sort) }
     }
 
     /** Adds an entry to the chart, or takes it out again when it is tapped a second time. */

@@ -10,3 +10,6 @@
 .cxx
 local.properties
 *.hprof
+
+# Python-Importskripte
+scripts/__pycache__/

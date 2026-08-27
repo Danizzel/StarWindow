@@ -90,15 +90,18 @@ class SerializationTest {
         val catalog = Json { ignoreUnknownKeys = true }.decodeFromString<CatalogFile>(text)
 
         assertEquals("J2000", catalog.epoch)
-        // Deep sky moved to its own asset; what remains here are the bright stars, which OpenNGC
-        // does not carry at all.
-        assertTrue(catalog.objects.size >= 50, "expected the bright stars, got ${catalog.objects.size}")
+        // Deep sky moved to its own asset; what remains here are the stars the naked eye can
+        // reach, which OpenNGC does not carry at all.
+        assertTrue(catalog.objects.size > 8000, "expected the whole BSC, got ${catalog.objects.size}")
         assertEquals(catalog.objects.size, catalog.objects.map { it.id }.toSet().size, "duplicate ids")
 
         for (obj in catalog.objects) {
             assertTrue(obj.raDeg in 0.0..360.0, "${obj.id} has RA ${obj.raDeg}")
             assertTrue(obj.decDeg in -90.0..90.0, "${obj.id} has Dec ${obj.decDeg}")
             assertTrue(obj.id.isNotBlank())
+            assertTrue(obj.type.isStar, "${obj.id} is not a star in the star catalogue")
+            // The whole point of this catalogue is that it stops at the naked-eye limit.
+            obj.magnitude?.let { assertTrue(it < 8.0, "${obj.id}: mag $it is past the BSC limit") }
         }
 
         // Spot checks against published J2000 positions.
@@ -109,6 +112,63 @@ class SerializationTest {
 
         val polaris = catalog.objects.single { it.name == "Polaris" }
         assertTrue(polaris.decDeg > 89.0, "Polaris should sit next to the pole")
+    }
+
+    /**
+     * The German names are the part of the import that is maintained by hand, and the part a
+     * re-import can silently drop: the raw catalogue only knows `Vega`.
+     */
+    @Test
+    fun `the hand written German names survive the import`() {
+        val byName = Json { ignoreUnknownKeys = true }
+            .decodeFromString<CatalogFile>(catalogFile().readText())
+            .objects.filter { it.name.isNotBlank() }.associateBy { it.name }
+
+        for (name in listOf("Wega", "Arktur", "Beteigeuze", "Prokyon", "Atair", "Kastor")) {
+            assertTrue(byName.containsKey(name), "German name $name is gone")
+        }
+        // …and the English form stays searchable, or every foreign chart becomes useless.
+        assertTrue(byName.getValue("Wega").alternativeNames.contains("Vega"))
+    }
+
+    /** A star answers to its Bayer letter as often as to its name — in four spellings. */
+    @Test
+    fun `stars carry their Bayer and Flamsteed designations`() {
+        val stars = Json { ignoreUnknownKeys = true }
+            .decodeFromString<CatalogFile>(catalogFile().readText()).objects
+
+        val betelgeuse = stars.single { it.name == "Beteigeuze" }
+        assertTrue(betelgeuse.allIdentifiers.contains("α Ori"))
+        assertTrue(betelgeuse.allIdentifiers.contains("Alpha Ori"), "the typeable spelling is missing")
+        assertTrue(betelgeuse.alternativeNames.contains("Alpha Orionis"))
+        assertEquals("Ori", betelgeuse.constellation)
+        assertTrue(betelgeuse.spectralType?.startsWith("M") == true, "a red supergiant")
+
+        // Every entry gets a constellation, including the six thousand without a Bayer letter.
+        assertTrue(stars.all { !it.constellation.isNullOrBlank() }, "a star without a constellation")
+    }
+
+    /**
+     * A double star is only worth the label if it can actually be seen as a pair. Sirius has a
+     * companion at eleven arcseconds and ten magnitudes down — famous for being hard to see, and
+     * the exact thing this must not advertise.
+     */
+    @Test
+    fun `only separable pairs count as double stars`() {
+        val stars = Json { ignoreUnknownKeys = true }
+            .decodeFromString<CatalogFile>(catalogFile().readText()).objects
+
+        assertEquals(ObjectType.STAR, stars.single { it.name == "Sirius" }.type)
+        assertEquals(ObjectType.STAR, stars.single { it.name == "Wega" }.type)
+
+        val albireo = stars.single { it.name == "Albireo" }
+        assertEquals(ObjectType.DOUBLE_STAR, albireo.type)
+        assertEquals(34.7, albireo.separationArcsec ?: 0.0, 0.5)
+
+        for (star in stars.filter { it.type == ObjectType.DOUBLE_STAR }) {
+            val separation = star.separationArcsec
+            assertTrue(separation != null && separation >= 1.0, "${star.id} is not separable")
+        }
     }
 
     /**
@@ -125,7 +185,7 @@ class SerializationTest {
     }
 
     companion object {
-        const val CATALOG_ASSET = "catalog/starwindow_core.json"
+        const val CATALOG_ASSET = "catalog/stars.json"
     }
 }
 
@@ -203,7 +263,7 @@ class ConstellationDataTest {
     fun `the figure file parses and every index is valid`() {
         val data = load()
         assertEquals("J2000", data.epoch)
-        assertTrue(data.constellations.size >= 25, "got ${data.constellations.size} constellations")
+        assertEquals(88, data.constellations.size, "all 88 IAU constellations are expected")
 
         val ids = data.constellations.map { it.id }
         assertEquals(ids.size, ids.toSet().size, "duplicate constellation ids")
@@ -228,9 +288,11 @@ class ConstellationDataTest {
 
     @Test
     fun `no figure segment spans an implausible distance`() {
-        // The real check on 200 hand-entered coordinates: a typo in an hour or a degree throws a
-        // star far away, and the segment it belongs to becomes absurdly long. Real figures stay
-        // well under twenty degrees per segment.
+        // The real check on 767 imported coordinates: a wrong hour or a flipped declination sign
+        // throws a star far away, and the segment it belongs to becomes absurdly long. The median
+        // segment is under five degrees; the ceiling has to clear the few genuinely huge
+        // constellations — Carina spans 25° from Canopus to Miaplacidus — while still catching a
+        // one-hour slip (15°) on any normal figure and any sign error at all.
         val data = load()
         var worst = 0.0
         var worstLabel = ""
@@ -247,24 +309,36 @@ class ConstellationDataTest {
                 }
             }
         }
-        assertTrue(worst < 25.0, "longest segment was %.1f° ($worstLabel)".format(worst))
+        assertTrue(worst < 30.0, "longest segment was %.1f° ($worstLabel)".format(worst))
     }
 
     @Test
     fun `spot checks against published positions`() {
         val byId = load().constellations.associateBy { it.id }
 
+        assertEquals(88, byId.size, "all 88 IAU constellations should be present")
+
         val orion = byId.getValue("Ori")
         val betelgeuse = orion.stars.single { it.name == "Beteigeuze" }
         assertEquals(88.793, betelgeuse.raDeg, 0.01)
         assertEquals(7.407, betelgeuse.decDeg, 0.01)
-        assertEquals(7, orion.stars.size)
+        // The belt is the part of Orion anyone points at, and all three have to be in the figure.
+        for (belt in listOf("Mintaka", "Alnilam", "Alnitak")) {
+            assertTrue(orion.stars.any { it.name == belt }, "Orion is missing $belt")
+        }
 
-        val bigDipper = byId.getValue("UMa")
-        assertEquals(7, bigDipper.stars.size, "the Wagen has seven stars")
-        val dubhe = bigDipper.stars.single { it.name == "Dubhe" }
+        // The Great Bear is the whole animal, and the Wagen is the seven stars inside it.
+        val greatBear = byId.getValue("UMa")
+        val wagen = listOf("Dubhe", "Merak", "Phecda", "Megrez", "Alioth", "Mizar", "Alkaid")
+        for (star in wagen) {
+            assertTrue(greatBear.stars.any { it.name == star }, "the Wagen is missing $star")
+        }
+        val dubhe = greatBear.stars.single { it.name == "Dubhe" }
         assertEquals(165.932, dubhe.raDeg, 0.01)
         assertEquals(61.751, dubhe.decDeg, 0.01)
+
+        // Serpens is one constellation in two separate pieces; it must not become two entries.
+        assertTrue(byId.getValue("Ser").stars.size > 10, "Serpens lost one of its halves")
 
         val polaris = byId.getValue("UMi").stars.single { it.name == "Polaris" }
         assertTrue(polaris.decDeg > 89.0, "Polaris should sit next to the pole")
@@ -317,7 +391,10 @@ class DeepSkyCatalogTest {
             assertTrue(obj.id.isNotBlank())
             assertTrue(!obj.type.isStar, "${obj.id} is a star in the deep sky catalogue")
             obj.magnitude?.let { assertTrue(it > -30 && it < 25, "${obj.id}: mag $it") }
-            obj.sizeArcmin?.let { assertTrue(it > 0 && it < 1000, "${obj.id}: size $it") }
+            // Thirty degrees. The ceiling is this high because a handful of entries really are
+            // that big: Sh2-276 is Barnard's Loop, a 20° arc around Orion, and the Sharpless and
+            // Lynds catalogues measure such complexes at their full extent rather than at a core.
+            obj.sizeArcmin?.let { assertTrue(it > 0 && it < 1800, "${obj.id}: size $it") }
         }
     }
 
@@ -325,8 +402,8 @@ class DeepSkyCatalogTest {
     fun `the two bundled sources do not overlap`() {
         val deep = load().objects.map { it.id }.toSet()
         val starFile = listOf(
-            "src/main/assets/catalog/starwindow_core.json",
-            "app/src/main/assets/catalog/starwindow_core.json",
+            "src/main/assets/catalog/stars.json",
+            "app/src/main/assets/catalog/stars.json",
         ).map { File(it) }.first { it.exists() }
         val stars = Json { ignoreUnknownKeys = true }
             .decodeFromString<CatalogFile>(starFile.readText()).objects
