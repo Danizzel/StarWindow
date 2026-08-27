@@ -3,6 +3,8 @@ package com.starwindow.app.ui.nav
 import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -18,6 +20,11 @@ import com.starwindow.app.ui.calibration.CalibrationScreen
 import com.starwindow.app.ui.calibration.CalibrationViewModel
 import com.starwindow.app.ui.capture.CaptureScreen
 import com.starwindow.app.ui.capture.CaptureViewModel
+import com.starwindow.app.data.planning.PlannedPath
+import com.starwindow.app.ui.planning.CalendarScreen
+import com.starwindow.app.ui.planning.CalendarViewModel
+import com.starwindow.app.ui.planning.PlanningScreen
+import com.starwindow.app.ui.planning.PlanningViewModel
 import com.starwindow.app.ui.search.ObjectDetailScreen
 import com.starwindow.app.ui.search.ObjectDetailViewModel
 import com.starwindow.app.ui.search.ObjectSearchScreen
@@ -37,11 +44,15 @@ object Routes {
     const val SEARCH = "search"
     const val WEATHER = "weather"
     const val OBJECT_DETAIL = "objects/{objectId}"
+    const val CALENDAR = "calendar"
+    const val PLANNING = "planning/{objectId}"
 
     fun windowDetail(windowId: String) = "windows/$windowId"
 
     /** Designations contain spaces and slashes ("NGC 292"), so they have to be encoded. */
     fun objectDetail(objectId: String) = "objects/${Uri.encode(objectId)}"
+
+    fun planning(objectId: String) = "planning/${Uri.encode(objectId)}"
 }
 
 @Composable
@@ -64,6 +75,7 @@ fun StarWindowNavHost(
                 onOpenCalibration = { navController.navigate(Routes.CALIBRATION) },
                 onOpenSearch = { navController.navigate(Routes.SEARCH) },
                 onOpenWeather = { navController.navigate(Routes.WEATHER) },
+                onOpenCalendar = { navController.navigate(Routes.CALENDAR) },
                 onOpenTrackedObject = { navController.navigate(Routes.objectDetail(it)) },
             )
         }
@@ -104,6 +116,42 @@ fun StarWindowNavHost(
                 onStartTracking = {
                     navController.popBackStack(Routes.CAPTURE, inclusive = false)
                 },
+                onOpenPlanning = { navController.navigate(Routes.planning(objectId)) },
+            )
+        }
+
+        composable(Routes.CALENDAR) {
+            val viewModel: CalendarViewModel =
+                viewModel(factory = CalendarViewModel.factory(container))
+            val scope = rememberCoroutineScope()
+            CalendarScreen(
+                viewModel = viewModel,
+                onOpenObject = { navController.navigate(Routes.objectDetail(it)) },
+                // "Pfad zeigen" resolves the planned night into a tracking target carrying the
+                // night's time span, then goes all the way back to the viewfinder — the same route
+                // "Track" takes, because it answers the same question with more of an answer.
+                onShowPath = { session ->
+                    scope.launch {
+                        PlannedPath.track(container, session)
+                        navController.popBackStack(Routes.CAPTURE, inclusive = false)
+                    }
+                },
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(
+            route = Routes.PLANNING,
+            arguments = listOf(navArgument("objectId") { type = NavType.StringType }),
+        ) { entry ->
+            val objectId = entry.arguments?.getString("objectId").orEmpty()
+            val viewModel: PlanningViewModel = viewModel(
+                factory = PlanningViewModel.factory(container, objectId),
+                key = objectId,
+            )
+            PlanningScreen(
+                viewModel = viewModel,
+                onBack = { navController.popBackStack() },
             )
         }
 

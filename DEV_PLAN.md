@@ -53,8 +53,9 @@ app/src/main/java/com/starwindow/app/
 ├── data/
 │   ├── catalog/      Katalogquellen, Objekte, Sternbilder
 │   ├── images/       Himmelsausschnitte über hips2fits
+│   ├── planning/     Vorgemerkte Beobachtungsnächte (JSON)
 │   └── windows/      Persistenz (JSON) und Einstellungen
-├── domain/           Durchgangsberechnung, Sternbilder, Laufbahnen
+├── domain/           Durchgangsberechnung, Sternbilder, Laufbahnen, Jahresplanung
 └── ui/               Compose-Oberfläche
 ```
 

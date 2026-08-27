@@ -55,6 +55,19 @@ data class SkyTarget(
     val type: ObjectType? = null,
     /** Set for a saved window, so the overlay can draw the outline the user is walking back to. */
     val shape: WindowShape? = null,
+    /**
+     * The object's path across the sky over a planned night, already resolved to directions.
+     *
+     * Resolved outside the overlay for the same reason the direction is: it takes sidereal time and
+     * precession, and a draw lambda that runs fifty times a second has no business doing astronomy.
+     * The path is fixed to the sky and turns with it, but over the minutes someone spends looking
+     * for it that motion is invisible, so recomputing it once a second is far more than enough.
+     */
+    val path: List<Horizontal> = emptyList(),
+    /** Hour marks along [path], so the curve can be read as a timetable rather than a shape. */
+    val pathHourMarks: List<Horizontal> = emptyList(),
+    /** What the path is for — "Nacht auf Fr, 16. Okt". */
+    val pathLabel: String = "",
 )
 
 /**
@@ -121,6 +134,10 @@ fun SkyOverlay(
             // A tracked window gets its outline drawn as well: the arrow brings the user round, and
             // the outline is what tells them they have arrived.
             target.shape?.let { drawWindowShape(projection, it, StarWindowColors.TrackTarget) }
+            // The path goes underneath the marker, so the marker stays the brightest thing.
+            if (target.path.size >= 2) {
+                drawSkyTrack(projection, target.path, target.pathHourMarks, paints)
+            }
             drawTargetMarker(
                 projection = projection,
                 direction = target.direction,
@@ -474,6 +491,41 @@ private fun DrawScope.drawSkyPolyline(
 private fun ScreenPoint.withinLimit(limit: Float): Boolean = abs(x) < limit && abs(y) < limit
 
 /** Closed path through sky directions, or null when any part is behind the camera or way off. */
+/**
+ * The path a planned object takes across the sky, with its hour marks.
+ *
+ * Drawn as a line rather than as a series of markers because the shape *is* the information: an arc
+ * that climbs out of the trees and back down again tells you at a glance whether the roof is in the
+ * way, and where. The hour marks turn that shape into a timetable — the gap between two dots is an
+ * hour of sky rotation, so their spacing shows how fast the object crosses the frame.
+ */
+private fun DrawScope.drawSkyTrack(
+    projection: SkyProjection,
+    path: List<Horizontal>,
+    hourMarks: List<Horizontal>,
+    paints: OverlayPaints,
+) {
+    val unit = 1.dp.toPx()
+    drawSkyPolyline(
+        projection = projection,
+        points = path,
+        color = StarWindowColors.TrackTarget.copy(alpha = 0.75f),
+        strokeWidth = 2f * unit,
+        closed = false,
+    )
+
+    val limit = maxOf(size.width, size.height) * 4f
+    hourMarks.forEach { mark ->
+        val point = projection.skyToScreen(mark) ?: return@forEach
+        if (!point.withinLimit(limit)) return@forEach
+        drawCircle(
+            color = StarWindowColors.TrackTarget,
+            radius = 2.5f * unit,
+            center = Offset(point.x, point.y),
+        )
+    }
+}
+
 private fun DrawScope.skyPath(projection: SkyProjection, points: List<Horizontal>): Path? {
     val limit = maxOf(size.width, size.height) * 4f
     val screen = points.map { projection.skyToScreen(it) ?: return null }

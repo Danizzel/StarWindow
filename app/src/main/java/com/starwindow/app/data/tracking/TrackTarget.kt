@@ -28,10 +28,31 @@ sealed interface TrackTarget {
 /** A star, nebula or galaxy from the catalogue. */
 @Serializable
 @SerialName("object")
-data class TrackedObject(val obj: SkyObject) : TrackTarget {
+data class TrackedObject(
+    val obj: SkyObject,
+    /**
+     * When set, the viewfinder also draws the object's **path across the sky** over this stretch of
+     * time, not just its position now.
+     *
+     * This is what "Pfad zeigen" on a planned night turns into. A marker answers "where is it"; a
+     * path answers "where will it go", which is the question that decides whether a roof, a tree or
+     * a neighbour's floodlight is going to be in the way at two in the morning — and the one you
+     * cannot answer by standing outside for a minute.
+     *
+     * Kept as a time span rather than as a list of points on purpose: the path is *derived* from
+     * the object and the span, so storing it would be storing a cache, and a cache that goes stale
+     * the moment the observer moves.
+     */
+    val pathFromMillis: Long? = null,
+    val pathToMillis: Long? = null,
+    /** What the path is for — "Nacht auf Fr, 16. Okt", shown in the viewfinder's status bar. */
+    val pathLabel: String = "",
+) : TrackTarget {
     override val label: String get() = obj.name.ifBlank { obj.id }
     override val id: String get() = obj.id
     val type: ObjectType get() = obj.type
+
+    val hasPath: Boolean get() = pathFromMillis != null && pathToMillis != null
 }
 
 /**

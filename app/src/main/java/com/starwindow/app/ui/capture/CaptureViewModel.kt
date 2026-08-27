@@ -30,6 +30,7 @@ import com.starwindow.app.data.windows.Settings
 import com.starwindow.app.data.windows.SettingsStore
 import com.starwindow.app.data.windows.SkyWindowRepository
 import com.starwindow.app.domain.OverlaySelection
+import com.starwindow.app.domain.SkyTrackBuilder
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -144,14 +145,39 @@ class CaptureViewModel(
                 )
 
                 is TrackedObject -> observer?.let {
+                    // The path, when the user asked for one, is built here rather than in the
+                    // overlay: it needs sidereal time and precession for a few dozen samples, and
+                    // the draw lambda runs fifty times a second.
+                    val track = target.takeIf { t -> t.hasPath }?.let { t ->
+                        SkyTrackBuilder.overSpan(
+                            label = t.label,
+                            equatorial = t.obj.positionAt(Precession.forEpoch(now)),
+                            observer = it,
+                            fromMillis = requireNotNull(t.pathFromMillis),
+                            toMillis = requireNotNull(t.pathToMillis),
+                        )
+                    }
+                    val livePosition = CoordinateTransforms.apparentHorizontalAtLst(
+                        target.obj.positionAt(Precession.forEpoch(now)),
+                        it.latitudeDeg,
+                        AstroTime.lstDeg(now, it.longitudeDeg),
+                    )
                     SkyTarget(
                         label = target.label,
-                        direction = CoordinateTransforms.apparentHorizontalAtLst(
-                            target.obj.positionAt(Precession.forEpoch(now)),
-                            it.latitudeDeg,
-                            AstroTime.lstDeg(now, it.longitudeDeg),
-                        ),
+                        // With a path, the arrow leads to the path — **not** to where the object
+                        // happens to be right now. For a night three months out those are opposite
+                        // corners of the sky, and pointing at the live position would walk the user
+                        // away from the very arc they asked to see. The highest point of the arc is
+                        // the natural place to aim: it is what the night is about, and it is the
+                        // part most likely to clear a roofline.
+                        direction = track?.points
+                            ?.maxByOrNull { point -> point.position.altitudeDeg }
+                            ?.position
+                            ?: livePosition,
                         type = target.type,
+                        path = track?.points.orEmpty().map { point -> point.position },
+                        pathHourMarks = track?.hourMarks().orEmpty().map { point -> point.position },
+                        pathLabel = target.pathLabel,
                     )
                 }
             }

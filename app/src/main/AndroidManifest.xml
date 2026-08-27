@@ -7,6 +7,10 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- Erinnerungen an vorgemerkte Beobachtungsnaechte. Ab Android 13 zur Laufzeit erfragt. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Alarme ueberleben einen Neustart nicht von selbst; ohne das verstummt eine Planung still. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <uses-feature android:name="android.hardware.camera.any" android:required="true" />
     <!-- The compass is what turns the viewfinder into a sky map; without it the app has nothing. -->
@@ -37,6 +41,21 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Bewusst nicht exportiert: beide reagieren nur auf Absichten der App selbst
+             beziehungsweise des Systems. -->
+        <receiver
+            android:name=".data.planning.ReminderReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name=".data.planning.BootReceiver"
+            android:exported="true"
+            android:enabled="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

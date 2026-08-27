@@ -16,6 +16,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.VideocamOff
 import androidx.compose.material3.Button
@@ -44,15 +45,17 @@ import com.starwindow.app.ui.windows.ObjectInfoTitle
 /**
  * One object in full, with the button that turns it into a target.
  *
- * "Track" is deliberately the only thing at the bottom of the screen and the only filled button on
- * it: reading about an object is what the screen is for, but *finding it in the sky* is what the
- * app is for, and that action should never have to be hunted for in the dark.
+ * Two actions at the bottom, and they answer two different questions. **Track** answers "where is
+ * it right now" and is the filled button, because finding a thing in the sky is what the app is
+ * for. **Planung** answers "when is it worth going out for" — the seasonal question, which for a
+ * faint target is the one that actually decides whether the photograph ever happens.
  */
 @Composable
 fun ObjectDetailScreen(
     viewModel: ObjectDetailViewModel,
     onBack: () -> Unit,
     onStartTracking: () -> Unit,
+    onOpenPlanning: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -127,6 +130,7 @@ fun ObjectDetailScreen(
                     onStartTracking()
                 },
                 onUntrack = viewModel::untrack,
+                onPlan = onOpenPlanning,
             )
         }
     }
@@ -139,7 +143,12 @@ fun ObjectDetailScreen(
  * time should not have to guess that the app is about to jump back to the camera.
  */
 @Composable
-private fun TrackBar(isTracked: Boolean, onTrack: () -> Unit, onUntrack: () -> Unit) {
+private fun TrackBar(
+    isTracked: Boolean,
+    onTrack: () -> Unit,
+    onUntrack: () -> Unit,
+    onPlan: () -> Unit,
+) {
     Surface(color = StarWindowColors.NightSurface, shadowElevation = 8.dp) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
             Text(
@@ -169,6 +178,16 @@ private fun TrackBar(isTracked: Boolean, onTrack: () -> Unit, onUntrack: () -> U
                         Text("Beenden")
                     }
                 }
+            }
+            Spacer(Modifier.height(8.dp))
+            OutlinedButton(onClick = onPlan, modifier = Modifier.fillMaxWidth()) {
+                Icon(
+                    Icons.Filled.CalendarMonth,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(Modifier.size(8.dp))
+                Text("Planung")
             }
         }
     }
