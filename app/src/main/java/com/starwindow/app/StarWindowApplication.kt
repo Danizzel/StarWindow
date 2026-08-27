@@ -9,6 +9,7 @@ import com.starwindow.app.data.catalog.CatalogRepository
 import com.starwindow.app.data.catalog.ConstellationRepository
 import com.starwindow.app.data.catalog.ObjectNotesRepository
 import com.starwindow.app.data.images.SkyImageLoader
+import com.starwindow.app.data.planning.PlanRepository
 import com.starwindow.app.data.tracking.TrackingStore
 import com.starwindow.app.data.weather.PlaceLookup
 import com.starwindow.app.data.weather.WeatherRepository
@@ -35,6 +36,7 @@ class AppContainer(context: Context) {
     val objectNotesRepository = ObjectNotesRepository(context)
     val settingsStore = SettingsStore(context)
     val trackingStore = TrackingStore(context)
+    val planRepository = PlanRepository(context)
     val skyImageLoader = SkyImageLoader(context.cacheDir)
     val weatherRepository = WeatherRepository()
     val placeLookup = PlaceLookup(context, weatherRepository)

@@ -2,7 +2,7 @@
 
 Stand: Grundgerüst, Nachtsicht-Sucher, Kalibrierung, Sternbilder, Laufbahnen, Deep-Sky-Katalog,
 Objektsuche und Verfolgung im Sucher, Wettervorhersage für die Nacht. Die Rechenkette
-Bildschirm → Himmel steht und ist durch 339 Unit-Tests abgesichert; die App übersetzt und läuft auf
+Bildschirm → Himmel steht und ist durch 381 Unit-Tests abgesichert; die App übersetzt und läuft auf
 einem echten Gerät.
 
 Reihenfolge ist bewusst: Abschnitt 2 sind Stellen, die ich beim Nachlesen des eigenen Codes als
@@ -15,7 +15,7 @@ mehr Code, sondern **Gegenprüfung am Himmel** – siehe Abschnitt 1.
 
 - [x] ~~Projekt synchronisieren und kompilieren.~~ Werkzeugkette auf Gradle 9.4.1, AGP 9.2.1,
       Kotlin 2.3.21, SDK 36 angehoben.
-- [x] ~~`./gradlew :app:testDebugUnitTest`~~ – 339 Tests, grün.
+- [x] ~~`./gradlew :app:testDebugUnitTest`~~ – 381 Tests, grün.
 - [x] ~~Auf echtem Gerät starten.~~ Läuft auf einem Pixel 9.
 - [ ] **Feldabgleich am Himmel:** auf einen bekannten hellen Stern zielen und prüfen, ob dessen
       Katalogmarkierung darauf sitzt. Sitzt sie daneben → Kompass kalibrieren (Achterbewegung).
@@ -255,6 +255,36 @@ mehr Code, sondern **Gegenprüfung am Himmel** – siehe Abschnitt 1.
 
 ## 6. Bedienung
 
+- [x] ~~**Jahresplanung.**~~ Neuer Kalender-Tab in der Kameraansicht und ein Knopf **Planung** unten
+      im Info-Blatt jedes Objekts. `ObservationPlanner` rechnet für jede Nacht des kommenden Jahres
+      aus, wie lange das Objekt gleichzeitig über 30° steht **und** der Himmel dunkel ist – das ist
+      die Gesamtbelichtung, die eine Nacht hergibt, und damit die Zahl, nach der geplant wird. Die
+      Dämmerungsgrenzen werden analytisch gelöst statt abgetastet (ein Jahr in Millisekunden statt
+      zweihunderttausend Ephemeriden), gegengeprüft gegen `Twilight` auf unter sechs Minuten.
+      Vorgemerkte Nächte liegen in `PlanRepository`.
+- [ ] **Wetter mit der Planung verbinden.** Der Kalender kennt die Nächte, die Wetteransicht kennt
+      15 Tage Vorhersage – für die vorgemerkten Nächte in Reichweite ließe sich beides
+      zusammenbringen („Freitag geplant, Prognose sagt bedeckt").
+- [x] ~~**Erinnerung an eine geplante Nacht.**~~ Je Termin einstellbar: 1 Woche, 3 Tage, 1 Tag
+      vorher oder am Tag selbst, jeweils um 17 Uhr, mehrere gleichzeitig. Über `AlarmManager` als
+      **ungenaue** Alarme (`setAndAllowWhileIdle`) – Minutengenauigkeit ist eine Woche im Voraus
+      wertlos, und `SCHEDULE_EXACT_ALARM` dafür zu verlangen wäre ein schlechter Tausch. Ein
+      `BootReceiver` setzt sie nach einem Neustart neu auf. Dazu eine **Notiz** je Termin, die mit
+      in die Benachrichtigung wandert.
+- [x] ~~**Nächster Termin im Kalender.**~~ Eigene Kachel ganz oben mit Countdown, Eckdaten, Notiz
+      und der nächsten fälligen Erinnerung.
+- [x] ~~**Pfad am Himmel zeigen.**~~ „Pfad zeigen" am Termin öffnet die Kamera und zeichnet die
+      ganze Bahn der Nacht ein, mit Stundenpunkten; der Pfeil führt zum **höchsten Punkt der Bahn**
+      statt zur aktuellen Position – bei einer Nacht drei Monate im Voraus liegen die an
+      entgegengesetzten Enden des Himmels. Beantwortet die Frage, die man draußen nicht beantworten
+      kann: steht in sechs Wochen um zwei Uhr ein Dach im Weg?
+- [ ] **Erinnerung nur bei brauchbarem Wetter.** Die Benachrichtigung kommt heute unabhängig von der
+      Vorhersage. Für den 1-Tag- und den Am-Tag-Vorlauf ließe sich die Nachtbewertung nachschlagen
+      und „aber es ist bedeckt" dazuschreiben.
+- [ ] **Erinnerung an eine Nacht ohne Termin.** Nur vorgemerkte Nächte melden sich; „sag mir
+      Bescheid, wenn M31 wieder gut steht" gibt es nicht.
+- [ ] **Planung gegen ein Fenster rechnen.** Die Jahresplanung nimmt den freien Horizont an; wer ein
+      Fenster gespeichert hat, will die Nächte, in denen das Objekt *dort hindurch* zieht.
 - [ ] **Zeitpunkt wählen** in der Detailansicht (aktuell immer „ab jetzt"). Für Planung braucht man
       „nächste Woche Freitagnacht".
 - [x] ~~Laufbahn-Darstellung~~ – die Fensteransicht zeigt das stehende Fenster mit den Bahnen,

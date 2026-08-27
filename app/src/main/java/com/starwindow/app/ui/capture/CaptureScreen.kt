@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CloudQueue
 import androidx.compose.material.icons.filled.CropFree
 import androidx.compose.material.icons.filled.Delete
@@ -89,6 +90,7 @@ fun CaptureScreen(
     onOpenCalibration: () -> Unit,
     onOpenSearch: () -> Unit,
     onOpenWeather: () -> Unit,
+    onOpenCalendar: () -> Unit,
     onOpenTrackedObject: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -217,6 +219,7 @@ fun CaptureScreen(
                     nightMode = state.settings.exposure.mode == ExposureMode.NIGHT,
                     onOpenSearch = onOpenSearch,
                     onOpenWeather = onOpenWeather,
+                    onOpenCalendar = onOpenCalendar,
                     onOpenWindows = onOpenWindows,
                     onOpenSettings = { showSettings = true },
                     onOpenNightVision = { showNightVision = true },
@@ -345,6 +348,7 @@ private fun CaptureHud(
     nightMode: Boolean,
     onOpenSearch: () -> Unit,
     onOpenWeather: () -> Unit,
+    onOpenCalendar: () -> Unit,
     onOpenWindows: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenNightVision: () -> Unit,
@@ -357,6 +361,13 @@ private fun CaptureHud(
                     Icon(
                         Icons.Filled.CloudQueue,
                         contentDescription = "Wetter für die Nacht",
+                        tint = StarWindowColors.Starlight,
+                    )
+                }
+                IconButton(onClick = onOpenCalendar) {
+                    Icon(
+                        Icons.Filled.CalendarMonth,
+                        contentDescription = "Kalender und Planung",
                         tint = StarWindowColors.Starlight,
                     )
                 }
@@ -566,6 +577,7 @@ private fun TrackedTargetBar(
     onStop: () -> Unit,
 ) {
     val position = target?.direction
+    val pathLabel = target?.pathLabel.orEmpty()
     Surface(color = Color.Black.copy(alpha = 0.62f)) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(start = 14.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
@@ -594,6 +606,10 @@ private fun TrackedTargetBar(
                 Text(
                     text = when {
                         position == null -> "Ohne Position lässt sich die Richtung nicht berechnen"
+                        // With a path shown, the arrow points at the arc's high point rather than
+                        // at the object's live position — say so, or the bearing looks wrong to
+                        // anyone who knows where the object actually is tonight.
+                        pathLabel.isNotEmpty() -> "Bahn $pathLabel  ·  Pfeil zeigt zum höchsten Punkt"
                         position.altitudeDeg < 0.0 ->
                             "steht %.0f° unter dem Horizont – jetzt nicht zu sehen"
                                 .format(-position.altitudeDeg)

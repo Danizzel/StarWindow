@@ -24,7 +24,7 @@ Anforderungen: Android Studio Ladybug oder neuer, JDK 17, Android SDK 35, minSdk
 
 ```
 ./gradlew :app:assembleDebug     # APK bauen
-./gradlew :app:testDebugUnitTest # 339 Unit-Tests
+./gradlew :app:testDebugUnitTest # 381 Unit-Tests
 ```
 
 ---
@@ -449,6 +449,123 @@ Objekte aus der Nacht verschwinden.
 
 ---
 
+## Monate im Voraus planen
+
+Astrofotografie ist saisonal, und die naheliegende Frage ist die falsche. „Wann steht das Objekt am
+höchsten?" ist leicht zu beantworten und für sich genommen nutzlos: M31 erreicht von Berlin aus im
+Juni fast dieselbe Höhe wie im Oktober – nur wird es im Juni **überhaupt nicht dunkel**. Nördlich
+von etwa 49° gibt es um die Sommersonnenwende wochenlang keine astronomische Nacht.
+
+Was zählt, ist die **Überschneidung**: das Objekt hoch genug *und* der Himmel zugleich dunkel genug.
+Genau diese Größe rechnet die Planung – in Stunden, Nacht für Nacht, ein Jahr im Voraus.
+
+### Der Weg dahin
+
+1. Objekt über das Suchfeld heraussuchen und antippen.
+2. Unten im Info-Blatt auf **Planung**.
+3. Die Ansicht zeigt das Jahresdiagramm, die Saison und die besten Nächte. Ein Tipp auf eine Nacht
+   legt sie in den Kalender.
+4. Der **Kalender** oben in der Kameraansicht zeigt danach alle vorgemerkten Nächte als Jahresgitter
+   plus Liste.
+
+### Was gerechnet wird
+
+Für jede Nacht des kommenden Jahres:
+
+* **Dämmerung** – wann die Sonne 18° unter den Horizont sinkt und wann sie wieder heraufkommt.
+  Reicht es dafür nicht, greift die Ansicht auf die nautische Dämmerung zurück und **sagt es auch**;
+  bleibt die Sonne selbst dafür zu hoch, heißt die Nacht ehrlich „wird nicht dunkel".
+* **Kulmination** – wann das Objekt seinen höchsten Stand erreicht, und wie hoch der ist.
+* **Belichtbare Zeit** – die Schnittmenge aus „Objekt über 30°" und „Himmel dunkel". Das ist die
+  Zahl, nach der die besten Nächte sortiert werden, denn sie ist die Gesamtbelichtung, die eine
+  Nacht überhaupt hergibt.
+* **Mond** – Phase und Höhe zum besten Zeitpunkt. Er zieht Punkte ab, statt eine Nacht zu
+  streichen: ein voller Mond ruiniert einen schwachen Nebel und stört einen Kugelsternhaufen kaum.
+
+Gerechnet wird für den **Ort aus der Wetteransicht**, wenn einer gesetzt ist – wer im Oktober plant,
+sitzt meist zu Hause und denkt an den dunklen Platz, zu dem er fährt. Auch die Zeitzone ist die des
+Ortes, nicht die des Telefons.
+
+### Warum das schnell genug ist
+
+`Twilight` findet dieselben Grenzen durch Abtasten in Fünf-Minuten-Schritten und Bisektion. Für
+*eine* Nacht ist das richtig, für 365 wären es rund zweihunderttausend Sonnen- und Mondpositionen
+für einen einzigen Bildschirm. `ObservationPlanner` löst die Übergänge stattdessen: Ein Objekt der
+Deklination δ steht von der Breite φ aus genau bei den Stundenwinkeln auf der Höhe h, die
+
+```
+cos H = (sin h − sin φ · sin δ) / (cos φ · cos δ)
+```
+
+erfüllen – ein Arkuskosinus statt einer Suche. Da sich die Deklination der Sonne innerhalb einer
+Nacht kaum ändert, liefert dieselbe Formel auch Dämmerungsbeginn und -ende. Ein ganzes Jahr kostet
+damit ein paar hundert trigonometrische Auswertungen und ist fertig, während sich der Bildschirm
+öffnet. Gegengeprüft wird es trotzdem gegen die abtastende Fassung: die Tests verlangen weniger als
+sechs Minuten Abweichung.
+
+### Die Saison ist die längste zusammenhängende Strecke
+
+Nicht die erste und die letzte brauchbare Nacht: fast jedes Objekt hat eine tote Strecke, in der es
+am Taghimmel steht. M31 ist von Berlin aus von Ende August bis in den März brauchbar und im April
+und Mai aussichtslos – „erste bis letzte" hätte „ganzjährig" geantwortet und damit genau die zwei
+Monate verschwiegen, auf die es ankommt. Objekte ohne tote Strecke werden ausdrücklich als
+„ganzjährig erreichbar" ausgewiesen, weil „Saison: 3. Juli bis 28. Juni" eine seltsame Art wäre,
+das zu sagen.
+
+### Termin, Erinnerung, Notiz
+
+Ein Tipp auf eine vorgemerkte Nacht öffnet sie. Dort steht dreierlei, und es sind drei verschiedene
+Arten von Entscheidung:
+
+* **Erinnerungen** – 1 Woche, 3 Tage, 1 Tag vorher oder am Tag selbst, jeweils um 17 Uhr. Mehrere
+  gleichzeitig sind der Normalfall, denn sie beantworten Verschiedenes: eine Woche vorher hält man
+  sich den Abend frei, drei Tage vorher wird die Wettervorhersage belastbar, am Tag vorher lädt man
+  Akkus. Ein Vorlauf, dessen Zeitpunkt schon vorbei ist, wird ausgegraut statt angeboten – ein
+  Versprechen, das die App nicht halten kann, gibt sie nicht.
+* **Notiz** – das, was in drei Wochen vergessen ist: „Ha-Filter", „Zufahrt gesperrt, hinten parken".
+  Sie steht später mit in der Benachrichtigung.
+* **Pfad zeigen** – siehe unten.
+
+Ganz oben im Kalender steht der **nächste Termin** als eigene Kachel, mit Countdown („In 3 Tagen"),
+den Eckdaten, der Notiz und der nächsten fälligen Erinnerung. Ein Gitter zeigt gut eine Saison und
+schlecht, was als Nächstes kommt – und genau das wird am häufigsten gefragt.
+
+Die Erinnerungen laufen über den `AlarmManager`, bewusst als **ungenaue** Alarme: eine Erinnerung
+eine Woche vor einer Beobachtungsnacht braucht keine Minutengenauigkeit, und dafür die Berechtigung
+`SCHEDULE_EXACT_ALARM` zu verlangen wäre ein schlechter Tausch. `setAndAllowWhileIdle` weckt
+trotzdem aus dem Doze-Modus, worauf es bei einem Telefon ankommt, das tagelang liegt. Ein
+`BootReceiver` setzt alles nach einem Neustart neu auf – ohne das würde eine im September gemachte
+Planung beim ersten Neustart still verstummen. Sind Benachrichtigungen für die App abgeschaltet,
+sagt das Blatt es ausdrücklich, statt Erinnerungen anzunehmen, die nie ankommen.
+
+### Den Pfad am Himmel sehen
+
+**Pfad zeigen** öffnet die Kameraansicht und zeichnet die ganze Bahn ein, die das Objekt in dieser
+Nacht zieht – als Linie mit Stundenpunkten, dazu der Pfeil am Bildschirmrand, der dorthin führt.
+
+Der Sinn ist eine Frage, die man draußen in einer Minute *nicht* beantworten kann: **steht ein Dach
+oder ein Baum im Weg?** Nicht jetzt, sondern um zwei Uhr nachts in sechs Wochen. Mit der
+eingezeichneten Bahn lässt sich das am Nachmittag vom Balkon aus prüfen.
+
+Eine Feinheit, die zunächst falsch war: Der Pfeil zeigt bei gezeigtem Pfad **nicht** auf die
+aktuelle Position des Objekts, sondern auf den höchsten Punkt der Bahn. Bei einer Nacht drei Monate
+im Voraus liegen die beiden an entgegengesetzten Enden des Himmels, und der Pfeil hätte vom
+eigentlichen Ziel weggeführt. Die Statusleiste sagt deshalb ausdrücklich „Bahn Nacht auf … · Pfeil
+zeigt zum höchsten Punkt".
+
+Gespeichert wird dabei nur der Zeitraum, nicht die Bahn: die Punkte sind aus Objekt und Zeitspanne
+ableitbar, und eine gespeicherte Bahn wäre ein Zwischenspeicher, der veraltet, sobald der
+Beobachtungsort wechselt.
+
+### Was der Kalender speichert
+
+Eine vorgemerkte Nacht hält die Zahlen fest, mit denen sie vorgemerkt wurde – Stunden, Höhe,
+Mondphase. Sie später neu zu rechnen hieße, bei jedem Aufziehen des Kalenders ein Jahr Astronomie zu
+rechnen, und schlimmer: die Zahlen würden sich unter dem Nutzer ändern, sobald der Ort wechselt.
+Eine Planung ist die Notiz zu einer Entscheidung, und eine Notiz schreibt sich nicht selbst um.
+
+---
+
 ## Wetter für die Nacht
 
 Über das Wolkensymbol oben im Sucher öffnet sich die Wetteransicht – die einzige Stelle der App,
@@ -718,7 +835,7 @@ Abhängigkeit). Jede dieser Stellen ist eine einzelne Naht, die sich später aus
 
 ## Tests
 
-339 Unit-Tests in `app/src/test/`, alle grün. Sie prüfen nicht nur, dass Funktionen etwas
+381 Unit-Tests in `app/src/test/`, alle grün. Sie prüfen nicht nur, dass Funktionen etwas
 zurückgeben, sondern physikalische Invarianten:
 
 * GMST zur Epoche J2000 gegen die IAU-Konstante, siderischer Tag gegen Sonnentag,
