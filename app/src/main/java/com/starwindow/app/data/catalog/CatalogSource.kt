@@ -34,10 +34,10 @@ class AssetCatalogSource(
     }
 
     companion object {
-        /** Bright stars, hand curated with German names. */
-        const val STARS_ASSET = "catalog/starwindow_core.json"
+        /** Every star the naked eye can reach, from the Bright Star Catalogue — `import_bsc.py`. */
+        const val STARS_ASSET = "catalog/stars.json"
 
-        /** Deep sky, imported from OpenNGC — see `scripts/import_openngc.py`. */
+        /** Deep sky, from OpenNGC plus Sh2/Barnard/LBN — see `scripts/import_deepsky.py`. */
         const val DEEP_SKY_ASSET = "catalog/deepsky.json"
 
         const val DEFAULT_ASSET = STARS_ASSET

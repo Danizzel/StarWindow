@@ -189,3 +189,131 @@ class TransitCalculatorTest {
         assertTrue(SphericalGeometry.separationDeg(center, inside.first().second) < 0.6)
     }
 }
+
+/**
+ * The rejection that makes the search fast, and the risk that comes with it.
+ *
+ * A window is nailed to the horizon, so its **declination never changes** while the sky turns past
+ * it — only its right ascension drifts. Anything whose declination lies further from the window's
+ * than the window is wide can therefore never enter it, and can be discarded before it is scanned
+ * over time at all. That took the search from 785 ms to 164 ms on a real catalogue.
+ *
+ * It is also the one optimisation here that can silently produce a *wrong* answer: a filter that
+ * rejects too eagerly does not fail loudly, it just quietly leaves objects out of the night's list.
+ * These tests exist to make that failure loud.
+ */
+class TransitDeclinationFilterTest {
+
+    private val berlin = ObserverLocation(52.52, 13.405, 34.0)
+    private val calculator = TransitCalculator()
+
+    private fun window(shape: WindowShape) = SkyWindow(
+        id = "test", name = "Test", shape = shape, observer = berlin, capturedAtMillis = START_MILLIS,
+    )
+
+    private fun starAt(direction: Horizontal, id: String): SkyObject {
+        val equatorial = CoordinateTransforms.horizontalToEquatorial(direction, berlin, START_MILLIS)
+        return SkyObject(
+            id = id, name = id, type = ObjectType.STAR,
+            raDeg = equatorial.raDeg, decDeg = equatorial.decDeg, magnitude = 2.0,
+        )
+    }
+
+    /**
+     * The filter is only allowed to remove work, never results.
+     *
+     * A dense grid of objects is swept across the whole sky and every one that the full scan would
+     * have found has to survive the rejection. Sampling positions rather than reasoning about them
+     * is deliberate: the geometry is exactly what could be got subtly wrong.
+     */
+    @Test
+    fun `nothing that really crosses the window is rejected`() = runBlocking {
+        val center = Horizontal(150.0, 35.0)
+        val w = window(CircleWindow(center, 6.0))
+
+        // Objects on a grid over the sky, dense enough that dozens genuinely cross the window in
+        // twelve hours and hundreds do not.
+        val objects = buildList {
+            var azimuth = 0.0
+            while (azimuth < 360.0) {
+                var altitude = 5.0
+                while (altitude < 85.0) {
+                    add(starAt(Horizontal(azimuth, altitude), "S-$azimuth-$altitude"))
+                    altitude += 5.0
+                }
+                azimuth += 5.0
+            }
+        }
+
+        val found = calculator.search(w, objects, START_MILLIS, START_MILLIS + 12 * 3_600_000L)
+            .transits.map { it.obj.id }.toSet()
+
+        // The reference: step through time and note anything that is ever actually inside.
+        val inside = mutableSetOf<String>()
+        var time = START_MILLIS
+        while (time <= START_MILLIS + 12 * 3_600_000L) {
+            calculator.objectsInsideAt(w, objects, time).forEach { inside += it.first.id }
+            time += 60_000L
+        }
+
+        assertTrue(inside.isNotEmpty(), "the fixture never puts anything in the window")
+        val lost = inside - found
+        assertTrue(lost.isEmpty(), "the filter dropped ${lost.size} real transits: $lost")
+    }
+
+    /**
+     * What the altitude test alone could not reject, and why the declination test is worth having.
+     *
+     * From Berlin a circumpolar object at +80° declination does reach 45° altitude — so the
+     * altitude band test passes it — but only ever in the north. A window facing south at the same
+     * altitude can never contain it.
+     */
+    @Test
+    fun `an object that reaches the right altitude in the wrong direction is not a transit`() =
+        runBlocking {
+            val southern = window(CircleWindow(Horizontal(180.0, 45.0), 5.0))
+            val circumpolar = SkyObject(
+                id = "POLAR", name = "Polar", type = ObjectType.STAR,
+                raDeg = 200.0, decDeg = 80.0, magnitude = 2.0,
+            )
+
+            val result = calculator.search(
+                southern, listOf(circumpolar), START_MILLIS, START_MILLIS + 24 * 3_600_000L,
+            )
+
+            assertTrue(result.transits.isEmpty())
+            assertEquals(0, result.objectsConsidered, "it should not even have been scanned")
+        }
+
+    /** A window facing north, on the other hand, is exactly where that object belongs. */
+    @Test
+    fun `the same object is found by a window pointing where it actually goes`() = runBlocking {
+        val circumpolar = SkyObject(
+            id = "POLAR", name = "Polar", type = ObjectType.STAR,
+            raDeg = 200.0, decDeg = 80.0, magnitude = 2.0,
+        )
+        val northern = window(CircleWindow(Horizontal(0.0, 90.0 - berlin.latitudeDeg + 10.0), 12.0))
+
+        val result = calculator.search(
+            northern, listOf(circumpolar), START_MILLIS, START_MILLIS + 24 * 3_600_000L,
+        )
+
+        assertTrue(result.transits.isNotEmpty(), "a circumpolar object must cross a northern window")
+    }
+
+    /**
+     * The margin exists for refraction and for the J2000-to-date shift; an object sitting just
+     * outside the window's own radius still has to be considered, because it may drift in.
+     */
+    @Test
+    fun `an object just outside the window edge is still considered`() = runBlocking {
+        val center = Horizontal(180.0, 40.0)
+        val w = window(CircleWindow(center, 4.0))
+        // Placed a degree beyond the rim: not inside now, but the same declination band.
+        val edge = starAt(Horizontal(180.0, 44.5), "EDGE")
+
+        val result = calculator.search(w, listOf(edge), START_MILLIS, START_MILLIS + 3_600_000L)
+
+        assertEquals(1, result.objectsConsidered, "an object at the rim must not be pre-rejected")
+    }
+}

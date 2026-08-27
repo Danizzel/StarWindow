@@ -11,6 +11,8 @@ import com.starwindow.app.data.catalog.SkyObject
 enum class ObjectSort(val label: String) {
     /** Best match first — only meaningful while something is typed. */
     RELEVANCE("Treffer"),
+    /** Most doable tonight first. Needs the sky conditions to mean anything. */
+    FEASIBILITY("Machbar"),
     BRIGHTNESS("Hell"),
     ALTITUDE("Höhe jetzt"),
     SIZE("Größe"),
@@ -24,6 +26,14 @@ data class ObjectHit(
     val position: Horizontal?,
     /** Match quality; 0 when the list is not the answer to a query. */
     val score: Int = 0,
+    /** The verdict for tonight, or null when the sky conditions are not known. */
+    val feasibility: Feasibility? = null,
+    /**
+     * How long it still sits inside the selected window, in minutes.
+     *
+     * Only set while the window filter is on; the search itself knows nothing about windows.
+     */
+    val minutesLeftInWindow: Int? = null,
 ) {
     val altitudeDeg: Double? get() = position?.altitudeDeg
     val isUp: Boolean get() = (position?.altitudeDeg ?: -90.0) > 0.0
@@ -68,6 +78,8 @@ object ObjectSearch {
         nowMillis: Long = System.currentTimeMillis(),
         sort: ObjectSort = ObjectSort.RELEVANCE,
         limit: Int = 200,
+        /** When given, every hit carries a verdict for tonight and can be sorted by it. */
+        conditions: SkyConditions? = null,
     ): List<ObjectHit> {
         val needle = fold(query)
         val lst = observer?.let { AstroTime.lstDeg(nowMillis, it.longitudeDeg) }
@@ -77,31 +89,17 @@ object ObjectSearch {
         for (obj in objects) {
             val score = if (needle.isEmpty()) 0 else score(needle, obj)
             if (score == NO_MATCH) continue
-            hits += ObjectHit(obj, positionOf(obj, observer, lst, precession), score)
+            val position = positionOf(obj, observer, lst, precession)
+            hits += ObjectHit(
+                obj = obj,
+                position = position,
+                score = score,
+                feasibility = conditions?.let {
+                    Feasibility.assess(obj, position?.altitudeDeg, it)
+                },
+            )
         }
         return sorted(hits, sort, needle.isNotEmpty()).take(limit)
-    }
-
-    /**
-     * What is worth pointing at right now: up, reasonably high, and big or bright enough to be
-     * worth the trouble. This is what the search screen offers before anything is typed — an empty
-     * screen would waste the one moment the user has no idea what to look for.
-     */
-    fun visibleNow(
-        objects: List<SkyObject>,
-        observer: ObserverLocation?,
-        nowMillis: Long = System.currentTimeMillis(),
-        minAltitudeDeg: Double = 15.0,
-        limit: Int = 40,
-    ): List<ObjectHit> {
-        if (observer == null) return emptyList()
-        val lst = AstroTime.lstDeg(nowMillis, observer.longitudeDeg)
-        val precession = Precession.forEpoch(nowMillis)
-        return objects
-            .map { ObjectHit(it, positionOf(it, observer, lst, precession), 0) }
-            .filter { (it.altitudeDeg ?: -90.0) >= minAltitudeDeg }
-            .sortedByDescending { showpieceScore(it) }
-            .take(limit)
     }
 
     /**
@@ -149,16 +147,39 @@ object ObjectSearch {
         return best
     }
 
-    /** Lower case, umlauts folded, everything that is not a letter or digit dropped. */
+    /**
+     * Lower case, umlauts folded, everything that is not a letter or digit dropped — and leading
+     * zeros stripped from every run of digits.
+     *
+     * The zeros matter more than they look. Catalogues pad their numbers to a fixed width so they
+     * sort as text: OpenNGC carries Caldwell 20 as `C 020` and the Barnard nebulae as `B033`,
+     * while every chart and every person writes `C20` and `B33`. Without this, folding those to
+     * `c020` and `b033` means a search for `C20` finds nothing at all — not a worse match, no
+     * match — and the entry may as well not be in the catalogue.
+     */
     fun fold(text: String): String {
         val builder = StringBuilder(text.length)
+        var inDigitRun = false
         for (character in text.lowercase()) {
-            when (character) {
-                'ä' -> builder.append("ae")
-                'ö' -> builder.append("oe")
-                'ü' -> builder.append("ue")
-                'ß' -> builder.append("ss")
-                else -> if (character.isLetterOrDigit()) builder.append(character)
+            when {
+                character == 'ä' -> builder.append("ae")
+                character == 'ö' -> builder.append("oe")
+                character == 'ü' -> builder.append("ue")
+                character == 'ß' -> builder.append("ss")
+                character.isDigit() -> {
+                    // Drop zeros only while nothing else of the number has been written yet;
+                    // `NGC 100` must keep both of its own zeros.
+                    if (!(character == '0' && !inDigitRun)) {
+                        builder.append(character)
+                        inDigitRun = true
+                    }
+                }
+                character.isLetter() -> {
+                    builder.append(character)
+                    inDigitRun = false
+                }
+                // A separator ends the number, so `IC 405` and `IC405` still fold alike.
+                else -> inDigitRun = false
             }
         }
         return builder.toString()
@@ -199,6 +220,13 @@ object ObjectSearch {
                     hits.sortedBy { it.obj.magnitude ?: 99.0 }
                 }
 
+            // Most doable first, and within the same verdict the more rewarding target — otherwise
+            // a hundred rows all saying "leicht" would be in catalogue order, which is no order.
+            ObjectSort.FEASIBILITY -> hits.sortedWith(
+                compareBy<ObjectHit> { it.feasibility?.ordinal ?: Feasibility.BELOW.ordinal }
+                    .thenByDescending { PhotographicInterest.score(it.obj) }
+            )
+
             ObjectSort.BRIGHTNESS -> hits.sortedBy { it.obj.magnitude ?: 99.0 }
 
             // Below the horizon is below the horizon; entries without a position sort last.
@@ -209,15 +237,4 @@ object ObjectSearch {
             ObjectSort.NAME -> hits.sortedBy { fold(it.obj.name.ifBlank { it.obj.id }) }
         }
 
-    /**
-     * How much of a showpiece an entry is: high in the sky, bright, and large enough to see or
-     * photograph. Deliberately rough — it only has to order a suggestion list sensibly.
-     */
-    private fun showpieceScore(hit: ObjectHit): Double {
-        val altitude = hit.altitudeDeg ?: return -1.0
-        val magnitude = hit.obj.magnitude ?: 9.0
-        val size = hit.obj.sizeArcmin ?: 0.0
-        val named = if (hit.obj.name.isNotBlank()) 12.0 else 0.0
-        return altitude * 0.35 + (9.0 - magnitude) * 6.0 + kotlin.math.min(size, 120.0) * 0.12 + named
-    }
 }

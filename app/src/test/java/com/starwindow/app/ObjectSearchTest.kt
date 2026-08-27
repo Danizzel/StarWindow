@@ -3,8 +3,12 @@ package com.starwindow.app
 import com.starwindow.app.core.astro.ObserverLocation
 import com.starwindow.app.data.catalog.ObjectType
 import com.starwindow.app.data.catalog.SkyObject
+import com.starwindow.app.domain.Feasibility
 import com.starwindow.app.domain.ObjectSearch
 import com.starwindow.app.domain.ObjectSort
+import com.starwindow.app.domain.SkyConditions
+import com.starwindow.app.domain.TonightBoard
+import com.starwindow.app.domain.TonightSection
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -84,6 +88,29 @@ class ObjectSearchFoldingTest {
         assertEquals(ObjectSearch.fold("NGC 224"), ObjectSearch.fold("ngc224"))
         assertEquals(ObjectSearch.fold("M 45"), ObjectSearch.fold("m45"))
         assertEquals(ObjectSearch.fold("IC-1396"), ObjectSearch.fold("ic 1396"))
+    }
+
+    /**
+     * Catalogues pad their numbers so they sort as text — OpenNGC writes Caldwell 20 as `C 020`
+     * and the Barnard nebulae as `B033` — while every chart and every person writes `C20` and
+     * `B33`. Without folding the padding away, that is not a worse match but no match at all.
+     */
+    @Test
+    fun `padded catalogue numbers fold onto the way people write them`() {
+        assertEquals(ObjectSearch.fold("C 020"), ObjectSearch.fold("C20"))
+        assertEquals(ObjectSearch.fold("B033"), ObjectSearch.fold("B 33"))
+        assertEquals(ObjectSearch.fold("IC 0434"), ObjectSearch.fold("ic434"))
+        assertEquals(ObjectSearch.fold("ESO 029-021"), ObjectSearch.fold("ESO 29-21"))
+    }
+
+    /** Only the padding goes. A number's own zeros are part of it. */
+    @Test
+    fun `zeros inside a number survive the folding`() {
+        assertEquals("ngc100", ObjectSearch.fold("NGC 100"))
+        assertEquals("m101", ObjectSearch.fold("M 101"))
+        assertEquals("ngc7000", ObjectSearch.fold("NGC 7000"))
+        // Two separate numbers, each padded on its own.
+        assertEquals("ngc10525", ObjectSearch.fold("NGC 0105-025"))
     }
 
     @Test
@@ -197,24 +224,89 @@ class ObjectSearchSortTest {
     }
 }
 
-class ObjectSearchSuggestionTest {
+/**
+ * The board that replaced the old flat suggestion list.
+ *
+ * The list it replaced is worth remembering, because its failure was quiet: it ranked by
+ * brightness, and once nine thousand stars entered the catalogue — all of them brighter than
+ * almost every deep sky object — "what should I look at tonight" filled up with stars nobody was
+ * going to photograph. Nothing crashed and no test failed; the feature simply stopped answering
+ * its question. Several of the tests below exist to make that failure loud if it ever returns.
+ */
+class TonightBoardTest {
+
+    private val conditions = SkyConditions(bortleLevel = 4)
+
+    private fun board(
+        objects: List<SkyObject> = catalog,
+        observer: ObserverLocation? = MUNICH,
+        inWindow: List<Pair<SkyObject, Int?>> = emptyList(),
+    ) = TonightBoard.build(objects, observer, conditions, SEARCH_MOMENT, inWindow)
 
     @Test
-    fun `the suggestion list only offers what is actually up`() {
-        val suggestions = ObjectSearch.visibleNow(catalog, MUNICH, SEARCH_MOMENT, minAltitudeDeg = 15.0)
-        assertTrue(suggestions.all { it.altitudeDeg!! >= 15.0 }, "something below the cut is offered")
+    fun `the board only offers what is actually up`() {
+        val entries = board().filter { it.section == TonightSection.HIGH_NOW }.flatMap { it.entries }
+        assertTrue(
+            entries.all { it.altitudeDeg!! >= TonightBoard.MIN_ALTITUDE_DEG },
+            "something below the cut is offered",
+        )
     }
 
     @Test
     fun `without a position nothing can be suggested`() {
-        assertTrue(ObjectSearch.visibleNow(catalog, observer = null, nowMillis = SEARCH_MOMENT).isEmpty())
+        assertTrue(board(observer = null).isEmpty())
     }
 
     @Test
-    fun `the suggestion list stays within its limit`() {
+    fun `each section stays within its limit and says how much it left out`() {
         val many = (1..200).map {
             andromeda.copy(id = "X$it", name = "Test $it", magnitude = 5.0)
         }
-        assertTrue(ObjectSearch.visibleNow(many, MUNICH, SEARCH_MOMENT, 0.0, limit = 12).size <= 12)
+        val group = board(many).single { it.section == TonightSection.HIGH_NOW }
+        assertEquals(TonightBoard.ENTRIES_PER_SECTION, group.entries.size)
+        assertTrue(group.moreCount > 0, "the section hides entries without saying so")
+    }
+
+    /** The regression that motivated the whole board: stars must not crowd out the targets. */
+    @Test
+    fun `bright stars do not push deep sky targets off the board`() {
+        val stars = (1..300).map {
+            SkyObject(
+                id = "HR $it",
+                name = "Stern $it",
+                type = ObjectType.STAR,
+                raDeg = andromeda.raDeg,
+                decDeg = andromeda.decDeg,
+                magnitude = -1.0,
+            )
+        }
+        val entries = board(stars + andromeda)
+            .filter { it.section == TonightSection.HIGH_NOW }
+            .flatMap { it.entries }
+
+        assertTrue(entries.any { it.obj.id == "M31" }, "the one real target was crowded out")
+        assertTrue(entries.none { it.obj.type.isStar }, "a star is not a photographic target")
+    }
+
+    /** What is about to leave the window comes first: time is the scarce thing there. */
+    @Test
+    fun `the window section is ordered by how little time is left`() {
+        val group = board(
+            inWindow = listOf(andromeda to 70, orionNebula to 12, pleiades to null),
+        ).single { it.section == TonightSection.IN_WINDOW }
+
+        assertEquals(listOf("M42", "M31", "M45"), group.entries.map { it.obj.id })
+    }
+
+    /** An object in the window must not also appear under "steht jetzt hoch". */
+    @Test
+    fun `nothing is offered twice`() {
+        val ids = board(inWindow = listOf(andromeda to 30)).flatMap { it.entries }.map { it.obj.id }
+        assertEquals(ids.size, ids.toSet().size, "an object appears in two sections")
+    }
+
+    @Test
+    fun `every entry carries a verdict for tonight`() {
+        assertTrue(board().flatMap { it.entries }.all { it.feasibility != Feasibility.BELOW })
     }
 }

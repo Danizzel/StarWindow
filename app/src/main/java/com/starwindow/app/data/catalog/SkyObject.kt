@@ -87,6 +87,21 @@ data class SkyObject(
     val surfaceBrightness: Double? = null,
     /** Morphological classification, e.g. `SA(s)b` for a galaxy. */
     val morphology: String? = null,
+    /**
+     * Spectral classification of a star, e.g. `K1.5III`.
+     *
+     * Kept apart from [morphology] rather than sharing the field, because the two look alike and
+     * mean nothing like each other: `S` opens a galaxy's spiral class and a star's spectral class,
+     * and a shared field would have the description call an S-type giant a spiral galaxy.
+     */
+    val spectralType: String? = null,
+    /**
+     * Separation of a double star's components in arcseconds.
+     *
+     * The one number that decides whether a double is worth pointing at: below an arcsecond no
+     * amateur instrument splits it, and past a few hundred the pair stops reading as a pair.
+     */
+    val separationArcsec: Double? = null,
     /** Three letter IAU constellation abbreviation. */
     val constellation: String? = null,
     /** Other designations this object is known under, for searching and for lookups. */

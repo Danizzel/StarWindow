@@ -24,7 +24,7 @@ Anforderungen: Android Studio Ladybug oder neuer, JDK 17, Android SDK 35, minSdk
 
 ```
 ./gradlew :app:assembleDebug     # APK bauen
-./gradlew :app:testDebugUnitTest # 282 Unit-Tests
+./gradlew :app:testDebugUnitTest # 339 Unit-Tests
 ```
 
 ---
@@ -206,9 +206,32 @@ Kette **suchen → anschauen → hinfinden**:
    Gleichstand gewinnt das hellere Objekt. `M31` bringt deshalb die Andromedagalaxie nach vorn und
    nicht `NGC 3184`, das die Zeichenfolge zufällig in einer Nebenbezeichnung trägt.
 
-   Solange nichts eingegeben ist, zeigt die Liste **was gerade hoch am Himmel steht** – der
-   Bildschirm ist nie leer, und das beantwortet die Frage „was soll ich heute Nacht überhaupt
-   anschauen".
+   Solange nichts eingegeben ist, zeigt der Bildschirm **gar keine Liste**, sondern *heute Nacht*:
+   drei kurze Abschnitte für **jetzt im Fenster** (mit der Zeit, die das Objekt dort noch hat),
+   **steht jetzt hoch** und **kommt noch hoch** (mit der Uhrzeit). Sechs Einträge je Abschnitt,
+   der Rest steht als Zahl daneben.
+
+   Das ist die Antwort auf ein Problem, das der große Katalog geschaffen hat. Vorher stand hier
+   eine nach Helligkeit bewertete Liste, und das funktionierte, solange fast jeder Eintrag ein
+   mögliches Ziel war. Mit 9.096 Sternen – alle heller als fast jedes Deep-Sky-Objekt – füllte
+   sie sich lautlos mit Sternen, auf die niemand eine Kamera richtet. Der Ausweg war nicht eine
+   bessere Sortierung derselben Liste, sondern **keine Liste**: die Vorschläge kommen jetzt aus
+   `PhotographicInterest`, das nach *Ausdehnung* rangiert statt nach Helligkeit — für eine Kamera
+   ist ein großer lichtschwacher Nebel ein Bild und ein heller Fleck von einer halben Bogenminute
+   keines.
+
+   **Filter** stehen in einem Blatt, das von unten aufzieht: Art, Helligkeit, Mindestgröße,
+   Mindesthöhe, Sternbild, „nur was heute machbar ist" und „nur was durchs Fenster zieht". Über der
+   Liste bleibt nur eine Zeile mit dem, was gerade aktiv ist – als Chips zum Wegtippen, denn ein
+   Filter, den man nicht sieht, lässt die Liste stillschweigend lügen.
+
+   **Jede Zeile sagt, ob es geht.** Rechts steht neben der Höhe ein Urteil für heute Nacht:
+   `leicht`, `geht`, `schwierig`, `zu tief`, `zu schwach`. Es folgt aus der Flächenhelligkeit
+   gegen den Himmelshintergrund, und der wiederum aus Bortle-Stufe und Mond. Gerechnet wird
+   **fotografisch, nicht visuell**: ein Objekt darf gut zwei Magnituden *unter* dem Himmel liegen
+   und ist trotzdem erreichbar – genau dafür belichtet man lang. Damit darf eine Trefferliste lang
+   sein, weil man sie an der rechten Kante entlangliest statt Zeile für Zeile. Woher das Urteil
+   kommt, steht in der Kopfzeile, samt „(gesch.)", wenn die Bortle-Stufe nur geschätzt ist.
 
 2. **Anschauen** – ein Tipp auf eine Zeile öffnet dasselbe Info-Blatt wie das Info-Symbol in der
    Fensteransicht: Bild, Höhenverlauf über die nächsten 24 Stunden, Helligkeit, Flächenhelligkeit,
@@ -240,7 +263,16 @@ ohne Lesen zusammenfinden:
   für Emissionsnebel, Staubblau für Reflexionsnebel, Violett für Galaxien.
 * **Die Höhe jetzt** rechts in jeder Zeile, farbig danach, ob das Objekt hoch genug für eine
   Aufnahme steht, tief im Dunst hängt oder unter dem Horizont ist. Die Farbe wiederholt die Zahl,
-  sie ersetzt sie nicht – das bleibt auch für ein farbenblindes Auge lesbar.
+  sie ersetzt sie nicht – das bleibt auch für ein farbenblindes Auge lesbar. Darunter das Urteil
+  für heute Nacht, in denselben drei Stufen.
+
+**Der Sucher zeigt nicht den Katalog.** Über dem Kamerabild stehen höchstens **400** Markierungen
+statt 22.528 Einträgen: die 250 fotografisch lohnendsten Objekte, die von dieser Breite je
+aufgehen, und 150 Sterne bis 4,2 mag. Die Sterne sind keine Ziele, sondern der Bezugsrahmen – an
+einem bekannten hellen Stern prüft man, ob die Projektion überhaupt stimmt, und die
+Sternkalibrierung misst gegen sie. Alles andere findet man über Suchfeld und **Track**, wo man ein
+bestimmtes Objekt ohnehin sucht; im Sucher hätte es niemand gefunden, und zehntausend Markierungen
+sind keine Sternkarte, sondern eine graue Fläche über dem Bild.
 
 ---
 
@@ -292,12 +324,29 @@ Fehler ist in einer 5°-Lücke nichts und in einem halben Grad Schlitz alles.
 
 Die Detailansicht eines Fensters beantwortet drei Fragen auf einmal:
 
-* **Was** zieht durch – gefiltert nach Sternbildern, Sternen, Nebeln, Galaxien oder Sternhaufen.
+* **Was** zieht durch – gefiltert nach Sternbildern, Sternen, Nebeln, Galaxien oder Sternhaufen,
+  durchsuchbar über ein eigenes Feld und in fünf Reihenfolgen.
 * **Wann** – Eintritt, Austritt, Dauer und der Zeitpunkt der größten Höhe, jeweils auf die Sekunde
   eingeschachtelt.
 * **Wie die Laufbahn verläuft** – die Fensteransicht oben zeichnet das stehende Fenster und die
   Bahnen, die hindurchziehen. Durchgezogen ist die Zeit im Fenster, gepunktet der An- und Abflug,
   Punkte markieren volle Stunden, ein Pfeil zeigt die Richtung.
+
+**Die besten je Art stehen oben.** Ein Fenster liefert je nach Größe ein paar hundert Einträge, und
+in zeitlicher Reihenfolge steht M31 irgendwo mittendrin zwischen namenlosen 13-mag-Galaxien. Deshalb
+sortiert die Liste jetzt standardmäßig nach fotografischem Wert (`PhotographicInterest`, dasselbe
+Maß wie im Sucher und auf der Vorschlagsseite), und darüber steht eine kurze Übersicht: die drei
+besten **Nebel**, **Galaxien**, **Sternhaufen** und **Sterne** dieses Fensters. Dass eine Lücke ein
+Galaxienfenster ist und ein Nebelfenster nicht, sieht man in keiner Sortierung der Gesamtliste – nur
+nebeneinander. „alle zeigen" schaltet die Liste darunter auf diese Art um.
+
+Wer etwas Bestimmtes sucht, tippt es ins **Suchfeld über der Liste**. Das durchsucht nicht den
+Katalog, sondern die Ergebnisse – alles, was hier auftaucht, zieht nachweislich durch dieses
+Fenster. Findet die Suche nichts, ist genau das die Antwort, und die App sagt es auch so.
+
+Die übrigen Reihenfolgen bleiben eine Antippbewegung entfernt: **Eintritt** liest die Liste als
+Ablauf der Nacht, **Dauer** stellt nach oben, was am längsten steht – und damit, wie lange man
+belichten kann.
 
 **Antippen filtert.** Solange nichts ausgewählt ist, zeigt das Diagramm eine Handvoll Bahnen als
 Überblick – ein leeres Diagramm unter einer vollen Ergebnisliste sähe kaputt aus. Sobald eine Zeile
@@ -318,7 +367,7 @@ lassen.
 
 * **Was es überhaupt ist.** Ein Katalogeintrag sagt `EMISSION_NEBULA, 6,0 mag, 120'` – für die
   Durchgangsrechnung vollständig, für einen Menschen nichts. Deshalb steht oben ein Absatz in
-  Klartext, und zwar in zwei Schichten. Die **Art** wird für alle 3.241 Einträge erklärt: dass ein
+  Klartext, und zwar in zwei Schichten. Die **Art** wird für alle 22.528 Objekte erklärt: dass ein
   Emissionsnebel sein Licht in wenigen schmalen Linien abstrahlt und deshalb auf Schmalbandfilter
   anspricht, ein Reflexionsnebel dagegen nur fremdes Sternlicht streut – und derselbe Filter dort
   genau das wegwirft, was den Nebel ausmacht. Ein Planetarischer Nebel bekommt dazu gesagt, dass er
@@ -360,11 +409,43 @@ Katalogobjekt die Zugehörigkeit zum Fenster und schachtelt jeden Ein- und Austr
 auf unter eine Sekunde ein. Abtasten statt analytisch lösen, weil das Fenster ein beliebiges
 Polygon sein darf – dafür gibt es keine geschlossene Lösung.
 
-* Objekte, deren Deklination von diesem Breitengrad aus die Höhe des Fensters nie erreicht, werden
-  vorab aussortiert.
 * Die Positionen enthalten atmosphärische Refraktion (Bennett), passend dazu, dass das Fenster
   anhand des Kamerabildes gezeichnet wurde.
 * Ergebnis pro Objekt: Eintritt, Austritt, Dauer, höchste erreichte Höhe.
+
+### Warum das trotz 22.528 Objekten schnell bleibt
+
+Der Abtastdurchlauf kostet mehrere hundert Positionsberechnungen **pro Objekt**. Mit dem großen
+Katalog dauerte eine Fensterabfrage dadurch spürbar lange. Zwei Schritte haben das erledigt, und
+der erste ist eine Beobachtung über die Geometrie:
+
+**Ein Fenster sieht immer dasselbe Deklinationsband.** Es hängt am Horizont, also wandert beim
+Drehen des Himmels seine *Rektaszension* – seine **Deklination ändert sich nie**. Was weiter von
+dieser Deklination entfernt liegt als das Fenster breit ist, kann folglich niemals hineinziehen und
+muss gar nicht erst abgetastet werden. Die frühere Prüfung sah nur die *Höhe* und war deshalb viel
+zu großzügig: Von Berlin aus erreicht ein zirkumpolares Objekt bei +80° durchaus 45° Höhe – aber nur
+im Norden, nie in einem Südfenster.
+
+**Und die Objekte sind voneinander unabhängig**, also läuft der Rest über alle Kerne.
+
+Gemessen am echten Katalog, Berlin, zwölf Stunden Vorschau:
+
+| Fenster | vorher | jetzt | gefundene Durchgänge |
+|---|---:|---:|---:|
+| Kreis 5° | 785 ms | **61 ms** | 448 |
+| Kreis 12° | 869 ms | **110 ms** | 1.117 |
+| Polygon ≈ 25° | 789 ms | **132 ms** | 1.346 |
+
+Die Durchgangszahlen sind dabei *gestiegen*, nicht gefallen – ein zweiter Fehler steckte in der
+Vorauswahl: Ein Objekt ohne Helligkeitsangabe galt als unendlich lichtschwach und fiel unter jede
+Grenzgröße. Das traf keine zufälligen Einträge, sondern genau die Sharpless- und Lynds-Nebel, die
+nach *Ausdehnung* katalogisiert sind und nicht nach Helligkeit – also die großen lichtschwachen
+Wolken, für die diese App gebaut ist. Jetzt entscheidet bei fehlender Helligkeit die Größe.
+
+Der Test, der das absichert, ist `nothing that really crosses the window is rejected`: Er legt ein
+dichtes Objektgitter über den ganzen Himmel und vergleicht die gefilterte Suche gegen einen
+vollständigen Zeitdurchlauf. Eine zu eifrige Vorauswahl fällt nicht auf – sie lässt einfach still
+Objekte aus der Nacht verschwinden.
 
 ---
 
@@ -551,33 +632,54 @@ weiterzugelten.
 
 ## Kataloge
 
-Alles liegt lokal, zusammen **184 KB gepackt**:
+Alles liegt lokal – **22.616 Einträge**, zusammen 5,6 MB unkomprimiert:
 
-| Datei | Inhalt | gepackt |
+| Datei | Inhalt | Größe |
 |---|---|---:|
-| `starwindow_core.json` | 57 helle Sterne, deutsche Namen | 2 KB |
-| `deepsky.json` | 3.241 Deep-Sky-Objekte aus OpenNGC | 179 KB |
-| `constellations.json` | 29 Sternbildfiguren, 203 Figursterne | 4 KB |
+| `stars.json` | 9.096 Sterne bis 7 mag, 386 mit Namen | 1,8 MB |
+| `deepsky.json` | 13.432 Deep-Sky-Objekte | 3,8 MB |
+| `constellations.json` | alle 88 Sternbildfiguren, 767 Figursterne | 98 KB |
 
-Die Deep-Sky-Auswahl zielt auf **Astrofotografie**, nicht auf Vollständigkeit: aufgenommen wird,
-was einen Eigennamen trägt, im Messier-Katalog steht, heller als 13 mag oder größer als 5′ ist.
-Groß und lichtschwach ist dabei ausdrücklich erwünscht – Kalifornien-, Rosetten- oder Herznebel
-stehen in keiner visuellen Liste, sind aber Standardziele. Die übrigen rund 9.000 namenlosen
-15-mag-Galaxien bleiben draußen; sie würden jede Ergebnisliste unbrauchbar machen, ohne je ein
-Ziel zu sein.
+**Sterne** kommen aus dem Bright Star Catalogue und reichen damit bis rund 6,5 mag – genau bis zur
+Grenze des bloßen Auges. Jeder Stern, den jemand am Himmel sieht und auf den er das Handy richtet,
+ist darin. Jeder trägt seine Bayer- und Flamsteed-Bezeichnung in allen vier Schreibweisen
+(`α Ori`, `Alpha Orionis`, `58 Ori`, `HD 39801`), seinen Spektraltyp und sein Sternbild; die
+938 Doppelsterne dazu ihren Abstand. Die deutschen Namensformen (Wega, Arktur, Beteigeuze) sind
+handgepflegt, die englischen bleiben suchbar.
 
-Zu jedem Objekt kommen die Angaben, die beim Fotografieren zählen: Flächenhelligkeit, große und
-kleine Achse, Positionswinkel, Morphologie und sämtliche Katalogbezeichnungen.
+**Deep Sky** ist der vollständige OpenNGC-Bestand, ergänzt um drei Nebelkataloge, die dort fehlen:
+Sharpless (HII-Regionen), Barnard (Dunkelnebel) und Lynds Bright Nebulae. Wo ein Nebel schon eine
+NGC-Nummer hat, wird die zusätzliche Bezeichnung nur nachgetragen statt ein zweiter Eintrag
+angelegt – `Sh2-49` findet denselben Adlernebel wie `M16`. Zu jedem Objekt kommen die Angaben,
+die beim Fotografieren zählen: Flächenhelligkeit, große und kleine Achse, Positionswinkel,
+Morphologie und sämtliche Katalogbezeichnungen.
 
-Erzeugt wird `deepsky.json` reproduzierbar mit `scripts/import_openngc.py`; die deutschen Namen
-liegen daneben in `scripts/german_names.json`, damit sie einen Neuimport überstehen.
-Quelle: [OpenNGC](https://github.com/mattiaverga/OpenNGC) von Mattia Verga, CC-BY-SA-4.0.
+Die frühere Grenze bei 13 mag ist bewusst gefallen. Sie stand an der falschen Stelle: wer
+`NGC 5387` sucht, soll es finden, und *wie viel* davon eine Liste zeigt, gehört in den Filter der
+Oberfläche und nicht in den Katalog. Der Sucher zeichnet deshalb nie den ganzen Katalog, sondern
+eine Auswahl daraus (`domain/OverlaySelection.kt`).
 
-Der Ausbau geht **lokal**, nicht online: der vollständige NGC/IC-Katalog (13.970 Objekte) wiegt auf
-die benötigten Felder reduziert 228 KB gepackt, das ganze Sternenfeld des bloßen Auges rund 140 KB.
-Speicherplatz ist also kein Argument für einen Online-Katalog, Verfügbarkeit im Dunkeln aber ein
-starkes dagegen. Warum insbesondere Gaia dafür der falsche Katalog ist, steht in
-[DEV_PLAN.md](DEV_PLAN.md).
+**Sternbilder** sind jetzt alle 88, nicht mehr die 29 auffälligsten. Die Figursterne holen ihre
+Namen beim Import aus `stars.json`, damit nicht zwei Quellen für dieselbe Angabe gepflegt werden.
+
+Alle drei Dateien werden reproduzierbar erzeugt – `scripts/import_bsc.py`,
+`scripts/import_deepsky.py` und `scripts/import_constellations.py`, jeweils mit den
+Download-Befehlen für die Rohdaten im Kopf. Die handgepflegten deutschen Namen liegen daneben in
+`scripts/german_names.json` und `scripts/german_star_names.json`, damit sie einen Neuimport
+überstehen. In welchem Sternbild ein Objekt steht, rechnet `scripts/constellation_boundaries.py`
+nach Roman (1987) aus der Position aus – gegengeprüft an allen 3.143 Sternbildangaben des BSC,
+ohne eine einzige Abweichung.
+
+Quellen: [OpenNGC](https://github.com/mattiaverga/OpenNGC) von Mattia Verga (CC-BY-SA-4.0),
+Bright Star Catalogue 5. Ausgabe (Hoffleit & Warren, VizieR V/50), Sternnamen der
+[IAU WGSN](https://www.iau.org/public/themes/naming_stars/) (CC-BY),
+Linienzüge aus [d3-celestial](https://github.com/ofrohn/d3-celestial) von Olaf Frohn (BSD-3-Clause),
+Sharpless/Barnard/LBN und die Sternbildgrenzen über VizieR (CDS Straßburg).
+
+Der Ausbau ging **lokal**, nicht online: 22.616 Einträge kosten 5,6 MB und werden beim Start in
+gut einer Drittelsekunde gelesen. Speicherplatz ist also kein Argument für einen Online-Katalog,
+Verfügbarkeit im Dunkeln aber ein starkes dagegen. Warum insbesondere Gaia dafür der falsche
+Katalog ist, steht in [DEV_PLAN.md](DEV_PLAN.md).
 
 Für Online-Kataloge steht das Interface `CatalogSource` trotzdem bereit; `RemoteCatalogSource` ist
 ein bewusst leerer Platzhalter mit der geplanten VizieR/SIMBAD-TAP-Abfrage im Kommentar – gedacht
@@ -616,7 +718,7 @@ Abhängigkeit). Jede dieser Stellen ist eine einzelne Naht, die sich später aus
 
 ## Tests
 
-282 Unit-Tests in `app/src/test/`, alle grün. Sie prüfen nicht nur, dass Funktionen etwas
+339 Unit-Tests in `app/src/test/`, alle grün. Sie prüfen nicht nur, dass Funktionen etwas
 zurückgeben, sondern physikalische Invarianten:
 
 * GMST zur Epoche J2000 gegen die IAU-Konstante, siderischer Tag gegen Sonnentag,

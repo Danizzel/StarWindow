@@ -22,6 +22,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CenterFocusStrong
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -31,6 +33,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -56,6 +60,7 @@ import com.starwindow.app.data.images.SkyImageLoader
 import com.starwindow.app.domain.ObjectTransit
 import com.starwindow.app.domain.AccuracyBand
 import com.starwindow.app.domain.ResultFilter
+import com.starwindow.app.domain.TransitSort
 import com.starwindow.app.domain.WindowAccuracy
 import com.starwindow.app.domain.accuracy
 import com.starwindow.app.ui.components.ObjectSymbol
@@ -217,6 +222,30 @@ fun WindowDetailScreen(
                             )
                         }
                     }
+                    Spacer(Modifier.height(8.dp))
+                    Text("Reihenfolge", style = MaterialTheme.typography.titleSmall)
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(TransitSort.entries.toList(), key = { it.name }) { sort ->
+                            FilterChip(
+                                selected = state.sort == sort,
+                                onClick = { viewModel.setSort(sort) },
+                                label = { Text(sort.label) },
+                            )
+                        }
+                    }
+                }
+            }
+
+            // The list can run to a few hundred entries, so it gets a field of its own. It filters
+            // what the search already found rather than the catalogue — the object has to pass
+            // through this window to be here at all.
+            if (state.result != null && !state.isSearching) {
+                item {
+                    ResultSearchField(
+                        query = state.query,
+                        onQueryChange = viewModel::setQuery,
+                        onClear = viewModel::clearQuery,
+                    )
                 }
             }
 
@@ -236,8 +265,14 @@ fun WindowDetailScreen(
 
                 state.isEmpty -> item {
                     Text(
-                        "In diesem Zeitraum kreuzt nichts das Fenster. Größeren Zeitraum, " +
-                            "schwächere Grenzgröße oder eine andere Art probieren.",
+                        if (state.hasQuery) {
+                            "Nichts im Ergebnis passt zu \"${state.query}\". Der Suchbegriff " +
+                                "filtert nur, was durch dieses Fenster zieht – im Katalog steht " +
+                                "das Objekt vielleicht trotzdem."
+                        } else {
+                            "In diesem Zeitraum kreuzt nichts das Fenster. Größeren Zeitraum, " +
+                                "schwächere Grenzgröße oder eine andere Art probieren."
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = StarWindowColors.Muted,
                     )
@@ -246,6 +281,30 @@ fun WindowDetailScreen(
                 else -> {
                     val constellations = state.visibleConstellations
                     val objects = state.visibleObjects
+                    val highlights = state.highlights
+
+                    // What this window is actually good for, before anyone scrolls: the best few
+                    // of each kind. A gap that catches three bright galaxies and nothing else is a
+                    // galaxy window, and that is invisible in any single ordering of the list.
+                    if (highlights.isNotEmpty()) {
+                        item {
+                            SectionHeader(
+                                title = "Die besten je Art",
+                                count = highlights.values.sumOf { it.size },
+                                note = "Antippen filtert die Liste darunter",
+                            )
+                        }
+                        highlights.forEach { (kind, best) ->
+                            item(key = "hl-${kind.name}") {
+                                HighlightRow(
+                                    kind = kind,
+                                    transits = best,
+                                    onSelectKind = { viewModel.setFilter(kind) },
+                                    onOpen = { viewModel.openInfo(it) },
+                                )
+                            }
+                        }
+                    }
 
                     if (constellations.isNotEmpty()) {
                         item {
@@ -269,8 +328,16 @@ fun WindowDetailScreen(
                             SectionHeader(
                                 title = "Objekte",
                                 count = objects.size,
-                                note = "in zeitlicher Reihenfolge" +
-                                    (state.result?.let { " · ${it.computeMillis} ms" } ?: ""),
+                                note = buildString {
+                                    if (objects.size < state.totalObjects) {
+                                        append("von ").append(state.totalObjects).append(" · ")
+                                    }
+                                    append(
+                                        if (state.hasQuery) "beste Treffer zuerst"
+                                        else state.sort.listNote
+                                    )
+                                    state.result?.let { append(" · ").append(it.computeMillis).append(" ms") }
+                                },
                             )
                         }
                         items(objects, key = { "obj-${it.obj.id}" }) { transit ->
@@ -646,6 +713,104 @@ private fun SelectableCard(
                 )
             }
             Column(modifier = Modifier.weight(1f)) { content() }
+        }
+    }
+}
+
+/**
+ * The field that narrows an already-computed result list.
+ *
+ * Deliberately not the catalogue search: everything reachable from here has already been shown to
+ * pass through this window, and the placeholder says so. Typing a name that is not in the list is
+ * therefore an answer — that object does not cross this gap tonight — rather than a failure, and
+ * the empty state spells that out.
+ */
+@Composable
+private fun ResultSearchField(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    onClear: () -> Unit,
+) {
+    OutlinedTextField(
+        value = query,
+        onValueChange = onQueryChange,
+        modifier = Modifier.fillMaxWidth(),
+        singleLine = true,
+        shape = RoundedCornerShape(24.dp),
+        placeholder = { Text("In den Ergebnissen suchen", style = MaterialTheme.typography.bodyMedium) },
+        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+        trailingIcon = {
+            if (query.isNotEmpty()) {
+                IconButton(onClick = onClear) {
+                    Icon(Icons.Filled.Close, contentDescription = "Eingabe löschen")
+                }
+            }
+        },
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedContainerColor = StarWindowColors.NightSurface,
+            unfocusedContainerColor = StarWindowColors.NightSurface,
+        ),
+    )
+}
+
+/**
+ * The best few objects of one kind, as a single scannable row.
+ *
+ * Answers "what is this window good for" before the list is scrolled at all. The kind's name is
+ * the button: tapping it filters the list below to that kind, so the row is a way *into* the
+ * results rather than a decoration on top of them.
+ */
+@Composable
+private fun HighlightRow(
+    kind: ResultFilter,
+    transits: List<ObjectTransit>,
+    onSelectKind: () -> Unit,
+    onOpen: (String) -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(StarWindowColors.NightSurface)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = kind.label,
+                style = MaterialTheme.typography.labelLarge,
+                color = StarWindowColors.AnchorPoint,
+                modifier = Modifier.weight(1f),
+            )
+            TextButton(onClick = onSelectKind, contentPadding = PaddingValues(horizontal = 8.dp)) {
+                Text("alle zeigen", style = MaterialTheme.typography.labelSmall)
+            }
+        }
+        transits.forEach { transit ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable { onOpen(transit.obj.id) }
+                    .padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                ObjectSymbol(transit.obj.type, size = 16.dp)
+                Text(
+                    text = transit.obj.displayName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = StarWindowColors.Starlight,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    text = formatDuration(transit.totalDurationMillis),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = StarWindowColors.WindowStroke,
+                )
+            }
         }
     }
 }

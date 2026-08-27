@@ -2,7 +2,7 @@
 
 Stand: Grundgerüst, Nachtsicht-Sucher, Kalibrierung, Sternbilder, Laufbahnen, Deep-Sky-Katalog,
 Objektsuche und Verfolgung im Sucher, Wettervorhersage für die Nacht. Die Rechenkette
-Bildschirm → Himmel steht und ist durch 282 Unit-Tests abgesichert; die App übersetzt und läuft auf
+Bildschirm → Himmel steht und ist durch 339 Unit-Tests abgesichert; die App übersetzt und läuft auf
 einem echten Gerät.
 
 Reihenfolge ist bewusst: Abschnitt 2 sind Stellen, die ich beim Nachlesen des eigenen Codes als
@@ -15,7 +15,7 @@ mehr Code, sondern **Gegenprüfung am Himmel** – siehe Abschnitt 1.
 
 - [x] ~~Projekt synchronisieren und kompilieren.~~ Werkzeugkette auf Gradle 9.4.1, AGP 9.2.1,
       Kotlin 2.3.21, SDK 36 angehoben.
-- [x] ~~`./gradlew :app:testDebugUnitTest`~~ – 282 Tests, grün.
+- [x] ~~`./gradlew :app:testDebugUnitTest`~~ – 339 Tests, grün.
 - [x] ~~Auf echtem Gerät starten.~~ Läuft auf einem Pixel 9.
 - [ ] **Feldabgleich am Himmel:** auf einen bekannten hellen Stern zielen und prüfen, ob dessen
       Katalogmarkierung darauf sitzt. Sitzt sie daneben → Kompass kalibrieren (Achterbewegung).
@@ -43,9 +43,17 @@ mehr Code, sondern **Gegenprüfung am Himmel** – siehe Abschnitt 1.
 
 - [x] ~~Standort von Hand eingeben.~~ Eingabefelder für Breite und Länge im Einstellungsdialog,
       mit Rückschalter auf GPS.
-- [ ] **Grenzgröße in der Kameraansicht.** `Settings.magnitudeLimit` wird gespeichert, aber
-      nirgends gelesen – das Overlay zeichnet immer alle 115 Objekte. Die Detailansicht hat eine
-      eigene, davon unabhängige Auswahl. Beides auf eine Quelle zusammenführen.
+- [x] ~~**Der Sucher zeigt nur noch Fotoziele.**~~ `OverlaySelection` gibt dem Overlay höchstens
+      **400** Markierungen statt der 22.528 Katalogeinträge: die 250 fotografisch lohnendsten
+      Objekte, die von dieser Breite je aufgehen (`PhotographicInterest`), und 150 Sterne bis
+      4,2 mag als Orientierung – die braucht es, denn an einem bekannten hellen Stern wird geprüft,
+      ob die Projektion überhaupt stimmt, und die Sternkalibrierung misst gegen sie. Der Rest ist
+      über Suchfeld und Verfolgung erreichbar, wo man ein bestimmtes Objekt ohnehin sucht; im
+      Sucher hätte es niemand gefunden. `Settings.magnitudeLimit` wird dabei gelesen und kann die
+      Auswahl nur enger machen, nie weiter.
+- [ ] **Regler für die Grenzgröße in der Kameraansicht.** Der Wert wirkt, ist dort aber noch nicht
+      einstellbar – nur die Fensteransicht hat einen eigenen, davon unabhängigen. Beides auf eine
+      Quelle zusammenführen.
 - [ ] **Export.** `SkyWindowRepository.exportJson()` hat keinen Aufrufer. Teilen-Intent ergänzen.
 - [ ] **Notizen.** `SkyWindow.notes` wird gespeichert, aber weder gesetzt noch angezeigt.
 - [ ] **Fenster nachbearbeiten:** umbenennen, Punkte verschieben, löschen einzelner Ecken.
@@ -98,11 +106,13 @@ mehr Code, sondern **Gegenprüfung am Himmel** – siehe Abschnitt 1.
       in die Durchgangsliste hinein.
 - [ ] **Satelliten (ISS, Starlink)** über TLE + SGP4 – passt konzeptionell perfekt zum Fenster,
       ist aber ein eigenes Teilprojekt.
-- [x] ~~OpenNGC lokal mitliefern.~~ 3.241 fotografisch interessante Objekte, 179 KB gepackt,
-      reproduzierbar über `scripts/import_openngc.py`.
-- [ ] **Sternkatalog bis ~7 mag** lokal: 9.110 Sterne reichen bis zur Grenze des bloßen Auges
-      (Yale Bright Star Catalogue), das sind rund 140 KB gepackt. Bisher sind nur 57 helle Sterne
-      dabei.
+- [x] ~~OpenNGC lokal mitliefern.~~ Inzwischen der **vollständige** Bestand: 13.432 Deep-Sky-Objekte,
+      dazu Sharpless, Barnard und LBN für die Nebel, die im NGC fehlen. Reproduzierbar über
+      `scripts/import_deepsky.py`. Die alte Grenze bei 13 mag ist gefallen -- sie stand an der
+      falschen Stelle, siehe `domain/OverlaySelection.kt`.
+- [x] ~~**Sternkatalog bis ~7 mag** lokal.~~ 9.096 Sterne aus dem Yale Bright Star Catalogue,
+      386 davon mit Namen, dazu Bayer- und Flamsteed-Bezeichnung in allen Schreibweisen,
+      Spektraltyp, Sternbild und bei 938 Doppelsternen der Abstand. `scripts/import_bsc.py`.
 - [ ] **Kein Gaia für Deep Sky.** Siehe Entscheidungstabelle in [DEV_PLAN.md](DEV_PLAN.md):
       Gaia ist ein Punktquellenkatalog ohne Ausdehnung und ohne gängige Namen, und ausgerechnet
       oberhalb 3 mag – bei den Sternen, auf die man das Handy richtet – lückenhaft.
@@ -113,15 +123,41 @@ mehr Code, sondern **Gegenprüfung am Himmel** – siehe Abschnitt 1.
       nicht getestet werden – aus der Bauumgebung war kein Bilddienst erreichbar. URL-Aufbau und
       Zwischenspeicher sind getestet, die Antwort des Dienstes nicht.
 - [x] ~~**Suche im Katalog**~~ Eigener Suchbildschirm über das Feld oben in der Kameraansicht:
-      bewertete Treffer (`ObjectSearch`) statt bloßem Filtern, Katalognummer wie Name, Filter nach
-      Art und Sortierung nach Treffer/Helligkeit/Höhe/Größe/Name. Ohne Eingabe steht dort, was
-      gerade hoch am Himmel steht.
-- [ ] **Suche in der Ergebnisliste eines Fensters** – die Liste hat Filter nach Art, aber kein
-      Suchfeld und keine Sortierung nach Dauer. `ObjectSearch` ließe sich dort wiederverwenden.
-- [x] ~~Sternbilder als Ganzes.~~ 29 Figuren mit 203 Figursternen mitgeliefert, eigene
+      bewertete Treffer (`ObjectSearch`) statt bloßem Filtern, Katalognummer wie Name, Sortierung
+      nach Treffer/Machbarkeit/Helligkeit/Höhe/Größe/Name.
+- [x] ~~**Heute Nacht statt Katalogliste.**~~ Ohne Eingabe zeigt der Bildschirm keine Liste mehr,
+      sondern drei kurze Abschnitte (`TonightBoard`): was gerade im gespeicherten Fenster steht –
+      mit der Zeit, die es dort noch hat –, was hoch steht, und was in den nächsten Stunden
+      hochkommt. Nötig geworden durch den großen Katalog: die alte Rangfolge belohnte Helligkeit,
+      und 9.096 Sterne sind heller als fast jedes Deep-Sky-Objekt, also füllte sich der Vorschlag
+      lautlos mit Sternen. Der Ausweg war nicht eine bessere Sortierung derselben Liste, sondern
+      gar keine Liste.
+- [x] ~~**Machbarkeit in jeder Zeile.**~~ `Feasibility` beurteilt jeden Eintrag für heute Nacht,
+      von hier: leicht / geht / schwierig / zu tief / zu schwach. Entscheidend ist die
+      Flächenhelligkeit gegen den Himmelshintergrund, der aus Bortle-Stufe und Mond folgt
+      (`SkyConditions`) – **fotografisch** gerechnet, nicht visuell: ein Objekt darf bis etwa
+      2,5 mag unter dem Himmel liegen und ist trotzdem erreichbar. Damit darf eine Trefferliste
+      lang sein, weil man sie an der rechten Kante entlangliest.
+- [x] ~~**Filterblatt statt zweier Chip-Reihen.**~~ Über der Liste steht nur noch, was aktiv ist,
+      als Chips zum Wegtippen. Das Blatt darunter (`CatalogFilterSheet`) hat Art, Helligkeit,
+      Mindestgröße, Mindesthöhe, Sternbild, „nur machbar" und „nur durchs Fenster".
+- [x] ~~**Katalog durchs Fenster gefiltert.**~~ Der Fensterfilter rechnet die Durchgänge der
+      nächsten zwölf Stunden und lässt nur stehen, was tatsächlich hindurchzieht. Auf Fotoziele
+      beschränkt und pro Fenster zwischengespeichert – ein Zwölf-Stunden-Sweep über 9.096 Sterne
+      wäre Sekunden für eine Liste, die niemand will.
+- [ ] **Zeitpunkt für den Fensterfilter wählen.** Er rechnet immer „ab jetzt". Für die Planung
+      einer Nacht in drei Tagen braucht es dasselbe mit einem anderen Startzeitpunkt – hängt am
+      selben offenen Punkt wie die Detailansicht (Abschnitt 6).
+- [x] ~~**Suche und Reihenfolge in der Ergebnisliste eines Fensters.**~~ Eigenes Suchfeld über der
+      Liste (filtert die Treffer, nicht den Katalog) und fünf Reihenfolgen in `TransitListView`:
+      lohnendste zuerst als Voreinstellung, dazu Eintritt, Dauer, Helligkeit und Größe. Darüber
+      steht „Die besten je Art" – die drei besten Nebel, Galaxien, Haufen und Sterne dieses
+      Fensters, denn dass eine Lücke ein Galaxienfenster ist, sieht man in keiner Sortierung der
+      Gesamtliste.
+- [x] ~~Sternbilder als Ganzes.~~ Alle 88 Figuren mit 767 Figursternen mitgeliefert, eigene
       Durchgangsrechnung, Angabe wie viel der Figur gleichzeitig im Fenster steht.
 - [x] ~~**Beschreibungstext zu jedem Objekt.**~~ Zwei Schichten: `ObjectDescription` erklärt für alle
-      3.241 Einträge die **Art** (Emissions- gegen Reflexionsnebel samt der Folge für den Filter,
+      22.528 Objekte die **Art** (Emissions- gegen Reflexionsnebel samt der Folge für den Filter,
       Planetarischer Nebel hat nichts mit Planeten zu tun, …) und übersetzt die Zahlen des Eintrags
       in Aussagen – Ausdehnung im Vergleich zum Vollmond, Flächenhelligkeit als Anspruch an den
       Himmel, Morphologiecode ausgeschrieben. Darüber liegen rund 150 handgeschriebene Notizen in
@@ -129,7 +165,8 @@ mehr Code, sondern **Gegenprüfung am Himmel** – siehe Abschnitt 1.
 - [ ] **Mehr Objektnotizen** – abgedeckt sind Messier, die bekannten NGC/IC-Namen und die hellen
       Sterne. Die restlichen benannten Einträge fehlen noch; ohne Notiz greift die erzeugte
       Beschreibung, das ist kein Loch, nur weniger.
-- [ ] **Mehr Sternbilder** – bisher die 29 auffälligsten. Die übrigen 59 ergänzen.
+- [x] ~~**Mehr Sternbilder**~~ – jetzt alle 88, mit deutschen Namen. Die Schlange steht als einziges
+      Sternbild in zwei getrennten Stücken am Himmel und wird zu einer Figur zusammengelegt.
 - [ ] **IAU-Sternbildgrenzen** zusätzlich zu den Figuren, für die Frage „in welchem Sternbild liegt
       mein Fenster" (im Unterschied zu „welche Figur zieht hindurch").
 

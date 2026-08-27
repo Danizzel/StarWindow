@@ -29,7 +29,9 @@ import com.starwindow.app.data.tracking.TrackingStore
 import com.starwindow.app.data.windows.Settings
 import com.starwindow.app.data.windows.SettingsStore
 import com.starwindow.app.data.windows.SkyWindowRepository
+import com.starwindow.app.domain.OverlaySelection
 import java.util.UUID
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -45,6 +47,7 @@ import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /** Which kind of window the next taps build. */
 enum class DrawMode(val label: String, val hint: String, val requiredAnchors: Int) {
@@ -176,18 +179,25 @@ class CaptureViewModel(
     private var lastFix: ObserverLocation? = null
     private var locationJob: Job? = null
 
+    /** The whole catalogue; what the overlay draws is a small selection from it. */
+    private var fullCatalog: List<SkyObject> = emptyList()
+    private var overlayJob: Job? = null
+
     init {
         viewModelScope.launch {
             settingsStore.settings.collect { settings ->
+                val limitChanged = _uiState.value.settings.magnitudeLimit != settings.magnitudeLimit
                 _uiState.update { it.copy(settings = settings) }
                 // The tracker stamps the calibration onto every attitude, so no consumer can end
                 // up with an uncorrected direction by accident.
                 orientationTracker.updateCalibration(settings.calibration)
                 applyObserver(settings.manualLocation ?: lastFix)
+                if (limitChanged) refreshOverlayCatalog()
             }
         }
         viewModelScope.launch {
-            _uiState.update { it.copy(catalog = catalogRepository.objects()) }
+            fullCatalog = catalogRepository.objects()
+            refreshOverlayCatalog()
         }
         viewModelScope.launch {
             trackingStore.target.collect { target ->
@@ -217,7 +227,34 @@ class CaptureViewModel(
 
     private fun applyObserver(observer: ObserverLocation?) {
         orientationTracker.updateLocation(observer)
+        val latitudeChanged = _uiState.value.observer?.latitudeDeg != observer?.latitudeDeg
         _uiState.update { it.copy(observer = observer) }
+        // Half the catalogue never rises here, and which half depends on the latitude.
+        if (latitudeChanged) refreshOverlayCatalog()
+    }
+
+    /**
+     * Rebuilds the list of objects the overlay draws.
+     *
+     * Off the main thread and only when something it depends on has actually changed: it walks
+     * twenty-two thousand entries, which is nothing once but would be felt if it ran on every
+     * location update — those arrive every few seconds.
+     */
+    private fun refreshOverlayCatalog() {
+        val catalog = fullCatalog
+        if (catalog.isEmpty()) return
+        overlayJob?.cancel()
+        overlayJob = viewModelScope.launch {
+            val state = _uiState.value
+            val selected = withContext(Dispatchers.Default) {
+                OverlaySelection.select(
+                    catalog = catalog,
+                    latitudeDeg = state.observer?.latitudeDeg,
+                    magnitudeLimit = state.settings.magnitudeLimit,
+                )
+            }
+            _uiState.update { it.copy(catalog = selected) }
+        }
     }
 
     fun setMode(mode: DrawMode) = _uiState.update {

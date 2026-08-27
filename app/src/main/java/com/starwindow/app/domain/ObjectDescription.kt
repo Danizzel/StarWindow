@@ -160,7 +160,50 @@ companion object {
             add("Kein Schmalbandfilter – er würde gerade das Licht wegfiltern, das den Nebel ausmacht.")
         }
 
+        obj.separationArcsec?.let { separation ->
+            when {
+                separation < 3.0 -> add(
+                    "Die beiden stehen %.1f\" auseinander – eng. Das trennt nur ein Teleskop bei " .format(separation) +
+                        "ruhiger Luft, und im Handybild bleiben sie ein Punkt."
+                )
+                separation < 30.0 -> add(
+                    "Abstand %.0f\" – im kleinen Teleskop sauber getrennt, im Fernglas grenzwertig." .format(separation)
+                )
+                else -> add(
+                    "Abstand %.0f\" – ein weites Paar, das schon das Fernglas trennt." .format(separation)
+                )
+            }
+        }
+
+        obj.spectralType?.takeIf { it.isNotBlank() }?.let { add(spectralHint(it)) }
+
         obj.morphology?.takeIf { it.isNotBlank() }?.let { add(morphologyHint(it)) }
+    }
+
+    /**
+     * The spectral class, as the one thing it says that can be seen: colour.
+     *
+     * A star has no shape and no size to describe — the entire visible difference between one star
+     * and the next is brightness and hue, and the hue is what the spectral letter encodes. Only
+     * the leading letter is read; the digit and the luminosity class behind it refine a
+     * temperature that is already binned more coarsely than any eye can judge.
+     */
+    private fun spectralHint(spectralType: String): String {
+        val colour = when (spectralType.trim().firstOrNull()?.uppercaseChar()) {
+            'O', 'B' -> "bläulich-weiß und sehr heiß"
+            'A' -> "rein weiß"
+            'F' -> "weißlich-gelb"
+            'G' -> "gelb, wie unsere Sonne"
+            'K' -> "orange und deutlich kühler als die Sonne"
+            'M' -> "rötlich – die kühlsten Sterne, die noch hell genug für das bloße Auge sind"
+            'C', 'S' -> "tiefrot: ein Kohlenstoffstern, einer der farbigsten Anblicke überhaupt"
+            else -> null
+        }
+        return if (colour == null) {
+            "Spektralklasse $spectralType."
+        } else {
+            "Spektralklasse $spectralType, also $colour."
+        }
     }
 
     /**

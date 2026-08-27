@@ -17,12 +17,27 @@ class CatalogRepository(private val sources: List<CatalogSource>) {
         cached ?: loadAll().also { cached = it }
     }
 
-    /** Objects that can be seen at all from this latitude, brightest first. */
+    /**
+     * Objects that can be seen at all from this latitude, brightest first.
+     *
+     * An entry **without** a magnitude passes the brightness limit rather than failing it, as long
+     * as it is large enough to be a target at all. Treating a missing value as "infinitely faint"
+     * silently dropped two thousand entries — and not a random two thousand: the Sharpless and
+     * Lynds nebulae are catalogued by extent, not by integrated brightness, so the rule threw out
+     * precisely the large faint clouds this app exists to help photograph. The California Nebula
+     * has no useful magnitude and is nearly three degrees across.
+     */
     suspend fun objectsVisibleFrom(latitudeDeg: Double, magnitudeLimit: Double?): List<SkyObject> =
         objects().filter { obj ->
             val maxAltitude = 90.0 - kotlin.math.abs(latitudeDeg - obj.decDeg)
-            maxAltitude > 0.0 && (magnitudeLimit == null || (obj.magnitude ?: 99.0) <= magnitudeLimit)
+            maxAltitude > 0.0 && isBrightEnough(obj, magnitudeLimit)
         }
+
+    private fun isBrightEnough(obj: SkyObject, magnitudeLimit: Double?): Boolean {
+        if (magnitudeLimit == null) return true
+        val magnitude = obj.magnitude ?: return (obj.sizeArcmin ?: 0.0) >= MIN_SIZE_WITHOUT_MAGNITUDE_ARCMIN
+        return magnitude <= magnitudeLimit
+    }
 
     suspend fun refresh() = mutex.withLock {
         cached = loadAll()
@@ -33,4 +48,9 @@ class CatalogRepository(private val sources: List<CatalogSource>) {
         .flatten()
         .distinctBy { it.id }
         .sortedBy { it.magnitude ?: 99.0 }
+
+    private companion object {
+        /** An entry with no magnitude has to be at least this large to count as a target. */
+        const val MIN_SIZE_WITHOUT_MAGNITUDE_ARCMIN = 3.0
+    }
 }
