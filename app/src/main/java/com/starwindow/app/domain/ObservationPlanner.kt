@@ -66,6 +66,19 @@ data class ObservationNight(
     val moonAltitudeDeg: Double,
     /** Overall quality, 0 (useless) to 100 (as good as this object gets here). */
     val score: Double,
+    /**
+     * Der längste zusammenhängende Abschnitt hinter [usableMillis], als Zeitspanne.
+     *
+     * [usableMillis] ist eine Summe und beantwortet „wie viel Belichtung gibt die Nacht her".
+     * Sobald aber jemand benachrichtigt werden soll, reicht das nicht: „4,2 Stunden" ist keine
+     * Auskunft, „4,2 Stunden ab 22:10" ist eine. Und nur mit einer Zeitspanne lässt sich die
+     * Vorhersage darüberlegen — ob es *dann* klar ist, nicht irgendwann in der Nacht.
+     *
+     * Auseinander fallen die beiden Zahlen praktisch nur in Polnähe, wo die Dunkelheit länger sein
+     * kann als der Bogen, den ein Objekt über der Mindesthöhe zurücklegt.
+     */
+    val usableFromMillis: Long? = null,
+    val usableToMillis: Long? = null,
 ) {
     val usableHours: Double get() = usableMillis / 3_600_000.0
 
@@ -138,8 +151,54 @@ object ObservationPlanner {
         )
         val position = obj.positionAt(precession)
         return (0 until days).map { offset ->
-            nightOf(from.plusDays(offset.toLong()), position, observer, zone)
+            val date = from.plusDays(offset.toLong())
+            // Sonne und Mond stehen jede Nacht woanders — der Mond um dreizehn Grad weiter als
+            // in der vorigen. Eine einmal gerechnete Position wäre nach einer Woche sinnlos, also
+            // wird für jede Nacht neu gefragt. Innerhalb *einer* Nacht bleibt es bei der Position
+            // um Mitternacht: Das kostet beim Mond gut drei Grad an den Rändern, was für die Frage
+            // „welche Nacht" nicht ins Gewicht fällt — die Durchgangsrechnung, bei der es darauf
+            // ankommt, rechnet ohnehin je Abtastschritt.
+            val nightPosition = if (obj.isMoving) {
+                obj.positionAtMillis(midnightAfter(date, zone))
+            } else {
+                position
+            }
+            nightOf(date, nightPosition, observer, zone)
         }
+    }
+
+    /**
+     * Mitternacht **nach** dem betreffenden Abend.
+     *
+     * Eine Nacht gehört zu dem Tag, an dem sie beginnt, so wie man darüber spricht
+     * („Freitagnacht") — nicht zu dem Kalendertag, an dem sie endet.
+     */
+    private fun midnightAfter(date: LocalDate, zone: ZoneId): Long =
+        date.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+
+    /**
+     * Eine einzelne Nacht für eine gespeicherte Position.
+     *
+     * Der Einstieg für die Merkliste: Dort steht keine [SkyObject]-Instanz, sondern eine
+     * Katalog-Kennung mit Koordinaten — bewusst, damit die nächtliche Prüfung nicht 22.528 Einträge
+     * von der Platte holen muss, nur um bei einem davon nachzusehen.
+     *
+     * @param positionJ2000 Katalogposition; die Präzession auf das Datum passiert hier.
+     * @param minAltitudeDeg ab welcher Höhe das Objekt als brauchbar gilt. Einstellbar, weil die
+     *   Antwort vom Objekt abhängt: Ein Kugelsternhaufen verträgt 25°, eine schwache Galaxie im
+     *   Dunst über der Stadt nicht.
+     */
+    fun nightFor(
+        positionJ2000: com.starwindow.app.core.astro.Equatorial,
+        observer: ObserverLocation,
+        zone: ZoneId,
+        date: LocalDate,
+        minAltitudeDeg: Double = MIN_USEFUL_ALTITUDE_DEG,
+    ): ObservationNight {
+        val precession = Precession.forEpoch(
+            date.atTime(LocalTime.NOON).atZone(zone).toInstant().toEpochMilli()
+        )
+        return nightOf(date, precession.toDate(positionJ2000), observer, zone, minAltitudeDeg)
     }
 
     /**
@@ -228,10 +287,9 @@ object ObservationPlanner {
         position: com.starwindow.app.core.astro.Equatorial,
         observer: ObserverLocation,
         zone: ZoneId,
+        minAltitudeDeg: Double = MIN_USEFUL_ALTITUDE_DEG,
     ): ObservationNight {
-        // Local midnight *after* the evening in question: a night belongs to the day it starts on,
-        // the way people speak about it ("Freitagnacht"), not to the calendar day it ends on.
-        val midnight = date.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+        val midnight = midnightAfter(date, zone)
         val sun = SolarEphemeris.at(midnight)
 
         val (darkFrom, darkTo, darkness) = darkWindow(sun, observer, midnight)
@@ -260,7 +318,7 @@ object ObservationPlanner {
         val best = transit.coerceIn(darkFrom, darkTo)
         val bestAltitude = altitudeAt(position, observer, best)
 
-        val usable = usableOverlap(position, observer, midnight, darkFrom, darkTo)
+        val usable = usableOverlap(position, observer, midnight, darkFrom, darkTo, minAltitudeDeg)
 
         val moon = LunarEphemeris.at(best)
         val moonAltitude = LunarEphemeris.topocentricAltitudeDeg(moon, observer, best)
@@ -273,10 +331,14 @@ object ObservationPlanner {
             darkness = darkness,
             bestMillis = best,
             bestAltitudeDeg = bestAltitude,
-            usableMillis = usable,
+            usableMillis = usable.totalMillis,
             moonIlluminationPercent = illumination,
             moonAltitudeDeg = moonAltitude,
-            score = score(usable, bestAltitude, maxAltitude, darkness, illumination, moonAltitude),
+            score = score(
+                usable.totalMillis, bestAltitude, maxAltitude, darkness, illumination, moonAltitude,
+            ),
+            usableFromMillis = usable.fromMillis,
+            usableToMillis = usable.toMillis,
         )
     }
 
@@ -308,12 +370,15 @@ object ObservationPlanner {
     }
 
     /**
-     * How much of the dark window the object spends above [MIN_USEFUL_ALTITUDE_DEG].
+     * Wie viel der Dunkelheit das Objekt über [minAltitudeDeg] verbringt — und wann.
      *
      * The object is high enough between −H and +H of its transit, so this is the overlap of two
      * intervals — no search, and it handles the two edge cases by construction: an object that
      * never gets that high yields no interval at all, and a circumpolar one that never drops below
      * it gets the whole dark window.
+     *
+     * Zurück kommt beides: die Summe, nach der geplant wird, und der längste zusammenhängende
+     * Abschnitt, der gebraucht wird, sobald jemand eine Uhrzeit genannt bekommen soll.
      */
     private fun usableOverlap(
         position: com.starwindow.app.core.astro.Equatorial,
@@ -321,14 +386,19 @@ object ObservationPlanner {
         midnightMillis: Long,
         darkFrom: Long,
         darkTo: Long,
-    ): Long {
+        minAltitudeDeg: Double = MIN_USEFUL_ALTITUDE_DEG,
+    ): UsableWindow {
         val hourAngle = hourAngleAtAltitude(
-            MIN_USEFUL_ALTITUDE_DEG, position.decDeg, observer.latitudeDeg,
+            minAltitudeDeg, position.decDeg, observer.latitudeDeg,
         )
         if (hourAngle == null) {
             // No crossing: either always above the threshold, or never.
-            val always = 90.0 - abs(observer.latitudeDeg - position.decDeg) >= MIN_USEFUL_ALTITUDE_DEG
-            return if (always) darkTo - darkFrom else 0L
+            val always = 90.0 - abs(observer.latitudeDeg - position.decDeg) >= minAltitudeDeg
+            return if (always) {
+                UsableWindow(darkTo - darkFrom, darkFrom, darkTo)
+            } else {
+                UsableWindow.NONE
+            }
         }
 
         val transit = timeOfHourAngle(position.raDeg, 0.0, observer, midnightMillis)
@@ -337,10 +407,33 @@ object ObservationPlanner {
         // The object is up around its transit, and the transit itself may sit a sidereal day either
         // side of our midnight, so neighbouring passes are checked too.
         val siderealDay = (360.0 * AstroTime.SECONDS_PER_DEGREE_OF_HOUR_ANGLE * 1000.0).toLong()
-        return (-1..1).sumOf { turn ->
+        var total = 0L
+        var bestFrom: Long? = null
+        var bestTo: Long? = null
+        var bestLength = 0L
+        for (turn in -1..1) {
             val centre = transit + turn * siderealDay
-            val overlap = min(darkTo, centre + halfWidth) - max(darkFrom, centre - halfWidth)
-            max(0L, overlap)
+            val from = max(darkFrom, centre - halfWidth)
+            val to = min(darkTo, centre + halfWidth)
+            if (to <= from) continue
+            total += to - from
+            if (to - from > bestLength) {
+                bestLength = to - from
+                bestFrom = from
+                bestTo = to
+            }
+        }
+        return UsableWindow(total, bestFrom, bestTo)
+    }
+
+    /** Summe und längster Abschnitt der brauchbaren Zeit einer Nacht. */
+    private data class UsableWindow(
+        val totalMillis: Long,
+        val fromMillis: Long?,
+        val toMillis: Long?,
+    ) {
+        companion object {
+            val NONE = UsableWindow(0L, null, null)
         }
     }
 

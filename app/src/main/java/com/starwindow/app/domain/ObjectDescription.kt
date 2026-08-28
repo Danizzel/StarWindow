@@ -1,5 +1,6 @@
 package com.starwindow.app.domain
 
+import com.starwindow.app.data.catalog.EphemerisCatalog
 import com.starwindow.app.data.catalog.ObjectType
 import com.starwindow.app.data.catalog.SkyObject
 
@@ -33,9 +34,19 @@ data class ObjectDescription(
  */
 companion object {
 
-    fun describe(obj: SkyObject, note: String? = null): ObjectDescription = ObjectDescription(
+    /**
+     * @param nowMillis nur für Sonne und Mond von Belang: Ihre Notiz ist keine feste Zeile,
+     *   sondern der Zustand des Augenblicks — Phase, Beleuchtung, Abstand. Eine hingeschriebene
+     *   Notiz wäre an den meisten Tagen falsch.
+     */
+    fun describe(
+        obj: SkyObject,
+        note: String? = null,
+        nowMillis: Long = System.currentTimeMillis(),
+    ): ObjectDescription = ObjectDescription(
         whatItIs = whatItIs(obj.type),
-        note = note?.takeIf { it.isNotBlank() },
+        note = note?.takeIf { it.isNotBlank() }
+            ?: obj.body?.let { EphemerisCatalog.stateText(it, nowMillis) },
         traits = traits(obj),
     )
 
@@ -103,6 +114,13 @@ companion object {
         ObjectType.CLUSTER_NEBULA ->
             "Ein junger Sternhaufen, der noch in der Gaswolke steckt, aus der er entstanden ist – " +
                 "Sternentstehung sozusagen auf frischer Tat."
+
+        ObjectType.SOLAR_SYSTEM ->
+            "Ein Körper des Sonnensystems: Seine Position steht in keinem Katalog, sondern wird " +
+                "für jeden Zeitpunkt neu gerechnet. Er wandert damit nicht nur mit der Erddrehung " +
+                "über den Himmel wie die Sterne, sondern zusätzlich vor ihnen entlang – der Mond " +
+                "um seinen eigenen Durchmesser pro Stunde. Deshalb gilt jede Angabe zu ihm nur " +
+                "für den Augenblick, in dem sie gemacht wurde."
 
         ObjectType.OTHER ->
             "Ein Eintrag des Deep-Sky-Katalogs außerhalb der gängigen Klassen."

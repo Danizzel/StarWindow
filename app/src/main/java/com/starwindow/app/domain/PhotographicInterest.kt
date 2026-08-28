@@ -66,6 +66,9 @@ object PhotographicInterest {
      * small to resolve and with nothing — no name, no Messier number — to say otherwise.
      */
     fun isPhotoTarget(obj: SkyObject): Boolean {
+        // Der Mond ist das meistfotografierte Objekt am Himmel überhaupt, und die Sonne das eine,
+        // vor dem gewarnt gehört. Über beide muss nicht abgestimmt werden.
+        if (obj.isMoving) return true
         if (obj.type == ObjectType.DOUBLE_STAR) return true
         if (obj.type.isStar) return false
         if (obj.name.isNotBlank() || isMessier(obj)) return true
@@ -104,6 +107,10 @@ object PhotographicInterest {
 
     /** A small nudge for the kinds that reward a camera more than an eye. */
     private fun typeScore(type: ObjectType): Double = when (type) {
+        // Zieht der Mond durch ein gespeichertes Fenster, ist das das Ergebnis, wegen dem die
+        // Liste geöffnet wurde — und ohne diese Zeile stünde er ganz unten darin, weil ihn die
+        // Flächenhelligkeit gegen eine Galaxie antreten ließe.
+        ObjectType.SOLAR_SYSTEM -> 12.0
         ObjectType.EMISSION_NEBULA, ObjectType.CLUSTER_NEBULA -> 8.0
         ObjectType.REFLECTION_NEBULA, ObjectType.SUPERNOVA_REMNANT -> 7.0
         ObjectType.GALAXY, ObjectType.PLANETARY_NEBULA, ObjectType.GLOBULAR_CLUSTER -> 5.0

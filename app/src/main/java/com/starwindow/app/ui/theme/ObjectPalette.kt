@@ -26,6 +26,15 @@ object ObjectPalette {
     val Remnant = Color(0xFFFFA870)
     val OpenCluster = Color(0xFFA9E6A0)
     val GlobularCluster = Color(0xFFD9E88F)
+
+    /**
+     * Sonne und Mond.
+     *
+     * Ein warmes Weiß, das sich von allem anderen abhebt — und das darf es hier auch: Beide sind
+     * am Himmel so hell, dass eine dezente Markierung neben ihnen wirkungslos wäre.
+     */
+    val SolarSystem = Color(0xFFFFF3C4)
+
     val Other = Color(0xFFB9C0D6)
 
     fun colorFor(type: ObjectType): Color = when (type) {
@@ -38,6 +47,7 @@ object ObjectPalette {
         ObjectType.SUPERNOVA_REMNANT -> Remnant
         ObjectType.OPEN_CLUSTER, ObjectType.CLUSTER_NEBULA -> OpenCluster
         ObjectType.GLOBULAR_CLUSTER -> GlobularCluster
+        ObjectType.SOLAR_SYSTEM -> SolarSystem
         ObjectType.OTHER -> Other
     }
 }

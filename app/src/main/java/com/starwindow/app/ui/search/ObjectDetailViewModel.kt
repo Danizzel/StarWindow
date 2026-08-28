@@ -13,6 +13,8 @@ import com.starwindow.app.core.sensors.LocationTracker
 import com.starwindow.app.data.catalog.CatalogRepository
 import com.starwindow.app.data.catalog.ObjectNotesRepository
 import com.starwindow.app.data.catalog.SkyObject
+import com.starwindow.app.data.planning.WatchScheduler
+import com.starwindow.app.data.planning.WatchlistRepository
 import com.starwindow.app.data.tracking.TrackedObject
 import com.starwindow.app.data.tracking.TrackingStore
 import com.starwindow.app.data.windows.SettingsStore
@@ -30,6 +32,8 @@ data class ObjectDetailUiState(
     val info: ObjectInfo? = null,
     val observer: ObserverLocation? = null,
     val isTracked: Boolean = false,
+    /** True, wenn dieses Objekt auf der Merkliste steht. */
+    val isWatched: Boolean = false,
     val description: ObjectDescription? = null,
     val isLoading: Boolean = true,
     val error: String? = null,
@@ -49,6 +53,8 @@ class ObjectDetailViewModel(
     private val settingsStore: SettingsStore,
     private val trackingStore: TrackingStore,
     private val objectNotesRepository: ObjectNotesRepository,
+    private val watchlistRepository: WatchlistRepository,
+    private val watchScheduler: WatchScheduler,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ObjectDetailUiState())
@@ -81,6 +87,14 @@ class ObjectDetailViewModel(
                 _uiState.update { it.copy(isTracked = target?.id == objectId) }
             }
         }
+        viewModelScope.launch {
+            watchlistRepository.load()
+            watchlistRepository.watched.collect { watched ->
+                _uiState.update { state ->
+                    state.copy(isWatched = watched.any { it.objectId == objectId })
+                }
+            }
+        }
     }
 
     /** Starts following the object; the viewfinder picks it up from the store. */
@@ -89,6 +103,24 @@ class ObjectDetailViewModel(
     }
 
     fun untrack() = trackingStore.clear()
+
+    /**
+     * Merkt das Objekt vor, oder nimmt es wieder von der Liste.
+     *
+     * Der Benachrichtigungskanal wird hier angelegt und nicht beim Start: Eine App, von der niemand
+     * eine Meldung verlangt hat, soll nicht in den Systemeinstellungen stehen und eine anbieten.
+     */
+    fun toggleWatch() {
+        val obj = _uiState.value.obj ?: return
+        viewModelScope.launch {
+            if (watchlistRepository.isWatched(obj.id)) {
+                watchlistRepository.removeObject(obj.id)
+            } else {
+                watchScheduler.ensureChannel()
+                watchlistRepository.add(obj)
+            }
+        }
+    }
 
     /**
      * Builds the curve and the current position.
@@ -136,6 +168,8 @@ class ObjectDetailViewModel(
                     settingsStore = container.settingsStore,
                     trackingStore = container.trackingStore,
                     objectNotesRepository = container.objectNotesRepository,
+                    watchlistRepository = container.watchlistRepository,
+                    watchScheduler = container.watchScheduler,
                 )
             }
         }

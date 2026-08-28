@@ -17,18 +17,27 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.VideocamOff
+import androidx.compose.material.icons.outlined.NotificationsNone
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -59,7 +68,11 @@ fun ObjectDetailScreen(
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val imageLoader = LocalContext.current.appContainer.skyImageLoader
+    val context = LocalContext.current
+    val imageLoader = context.appContainer.skyImageLoader
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { /* Abgelehnt heißt: der Eintrag bleibt, er kann sich nur nicht melden. */ }
 
     Column(modifier = modifier.fillMaxSize().safeDrawingPadding()) {
         Row(
@@ -125,12 +138,31 @@ fun ObjectDetailScreen(
         if (state.obj != null) {
             TrackBar(
                 isTracked = state.isTracked,
+                isWatched = state.isWatched,
+                // Sonne und Mond lassen sich nicht vormerken: Die Merkliste hält die Koordinaten
+                // ihrer Einträge fest, damit die nächtliche Prüfung ohne den Katalog auskommt —
+                // und genau die haben diese beiden nicht. Ein Knopf, der stillschweigend etwas
+                // anderes täte, wäre schlechter als keiner.
+                canWatch = state.obj?.isMoving != true,
                 onTrack = {
                     viewModel.track()
                     onStartTracking()
                 },
                 onUntrack = viewModel::untrack,
                 onPlan = onOpenPlanning,
+                onToggleWatch = {
+                    // Erst beim Einschalten fragen, und genau dann: Der Nutzer hat gerade gesagt,
+                    // wofür er die Benachrichtigung haben will.
+                    if (!state.isWatched &&
+                        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                        ContextCompat.checkSelfPermission(
+                            context, Manifest.permission.POST_NOTIFICATIONS,
+                        ) != PackageManager.PERMISSION_GRANTED
+                    ) {
+                        permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                    viewModel.toggleWatch()
+                },
             )
         }
     }
@@ -145,9 +177,12 @@ fun ObjectDetailScreen(
 @Composable
 private fun TrackBar(
     isTracked: Boolean,
+    isWatched: Boolean,
+    canWatch: Boolean,
     onTrack: () -> Unit,
     onUntrack: () -> Unit,
     onPlan: () -> Unit,
+    onToggleWatch: () -> Unit,
 ) {
     Surface(color = StarWindowColors.NightSurface, shadowElevation = 8.dp) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
@@ -180,15 +215,51 @@ private fun TrackBar(
                 }
             }
             Spacer(Modifier.height(8.dp))
-            OutlinedButton(onClick = onPlan, modifier = Modifier.fillMaxWidth()) {
-                Icon(
-                    Icons.Filled.CalendarMonth,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                )
-                Spacer(Modifier.size(8.dp))
-                Text("Planung")
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedButton(onClick = onPlan, modifier = Modifier.weight(1f)) {
+                    Icon(
+                        Icons.Filled.CalendarMonth,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(Modifier.size(8.dp))
+                    Text("Planung")
+                }
+                if (canWatch) {
+                    OutlinedButton(onClick = onToggleWatch, modifier = Modifier.weight(1f)) {
+                        Icon(
+                            imageVector = if (isWatched) {
+                                Icons.Filled.NotificationsActive
+                            } else {
+                                Icons.Outlined.NotificationsNone
+                            },
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = if (isWatched) {
+                                StarWindowColors.WindowStroke
+                            } else {
+                                LocalContentColor.current
+                            },
+                        )
+                        Spacer(Modifier.size(8.dp))
+                        Text(if (isWatched) "Vorgemerkt" else "Bescheid geben")
+                    }
+                }
             }
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = when {
+                    !canWatch -> "Planung rechnet für jede Nacht des kommenden Jahres, wie lange " +
+                        "das Objekt hoch steht und der Himmel dunkel ist."
+                    isWatched -> "Steht auf der Merkliste: Die App meldet sich nachmittags, sobald " +
+                        "es nachts hoch genug steht und die Vorhersage mitspielt."
+                    else -> "Planung legt eine bestimmte Nacht fest. Bescheid geben wartet " +
+                        "stattdessen auf die erste, in der es passt – Stand am Himmel und Wetter " +
+                        "zusammen."
+                },
+                style = MaterialTheme.typography.labelSmall,
+                color = StarWindowColors.Muted,
+            )
         }
     }
 }

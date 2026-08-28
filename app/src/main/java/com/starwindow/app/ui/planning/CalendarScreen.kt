@@ -52,6 +52,8 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.starwindow.app.data.planning.PlannedSession
+import com.starwindow.app.domain.NightOutlook
+import com.starwindow.app.domain.NightVerdict
 import com.starwindow.app.ui.theme.StarWindowColors
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -90,10 +92,31 @@ fun CalendarScreen(
         ActivityResultContracts.RequestPermission()
     ) { granted -> notificationsAllowed = granted }
 
+    state.openWatch?.let { watch ->
+        WatchSheet(
+            watch = watch,
+            entry = state.watchlist.firstOrNull { it.watch.id == watch.id },
+            notificationsAllowed = notificationsAllowed,
+            onRequestPermission = {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            },
+            onChange = viewModel::updateWatch,
+            onOpenObject = {
+                viewModel.closeWatch()
+                onOpenObject(watch.objectId)
+            },
+            onRemove = { viewModel.removeWatch(watch) },
+            onDismiss = viewModel::closeWatch,
+        )
+    }
+
     state.openSession?.let { session ->
         SessionSheet(
             session = session,
             zone = state.zone,
+            outlook = state.outlookFor(session),
             notificationsAllowed = notificationsAllowed,
             onToggleReminder = { lead ->
                 if (!notificationsAllowed && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -122,8 +145,17 @@ fun CalendarScreen(
             Column(modifier = Modifier.weight(1f)) {
                 Text("Kalender", style = MaterialTheme.typography.titleLarge)
                 Text(
-                    text = if (state.upcoming.isEmpty()) "noch nichts geplant"
-                    else "${state.upcoming.size} Nächte geplant",
+                    text = buildString {
+                        when {
+                            state.upcoming.isEmpty() && state.watchlist.isEmpty() ->
+                                append("noch nichts geplant")
+                            state.upcoming.isEmpty() -> append("keine Nacht festgelegt")
+                            else -> append("${state.upcoming.size} Nächte geplant")
+                        }
+                        if (state.watchlist.isNotEmpty()) {
+                            append(" · ${state.watchlist.size} vorgemerkt")
+                        }
+                    },
                     style = MaterialTheme.typography.labelMedium,
                     color = StarWindowColors.Muted,
                 )
@@ -140,6 +172,8 @@ fun CalendarScreen(
                         session = next,
                         daysAway = state.daysUntilNext ?: 0L,
                         zone = state.zone,
+                        outlook = state.outlookFor(next),
+                        weatherNote = state.weatherNote,
                         onOpen = { viewModel.openSession(next) },
                         onShowPath = { onShowPath(next) },
                     )
@@ -161,6 +195,7 @@ fun CalendarScreen(
                 items(sessions.size) { index ->
                     SessionRow(
                         session = sessions[index],
+                        outlook = state.outlookFor(sessions[index]),
                         onOpen = { viewModel.openSession(sessions[index]) },
                         onRemove = { viewModel.remove(sessions[index]) },
                     )
@@ -187,8 +222,35 @@ fun CalendarScreen(
                 items(state.upcoming.size) { index ->
                     SessionRow(
                         session = state.upcoming[index],
+                        outlook = state.outlookFor(state.upcoming[index]),
                         onOpen = { viewModel.openSession(state.upcoming[index]) },
                         onRemove = { viewModel.remove(state.upcoming[index]) },
+                    )
+                }
+            }
+
+            if (state.watchlist.isNotEmpty()) {
+                item {
+                    Column {
+                        Text(
+                            "Merkliste",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = StarWindowColors.AnchorPoint,
+                        )
+                        Text(
+                            text = "Kein Termin, sondern eine Bedingung: Die App meldet sich " +
+                                "nachmittags, sobald eines dieser Ziele nachts gut steht und die " +
+                                "Vorhersage mitspielt.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = StarWindowColors.Muted,
+                        )
+                    }
+                }
+                items(state.watchlist.size) { index ->
+                    WatchRow(
+                        entry = state.watchlist[index],
+                        onOpen = { viewModel.openWatch(state.watchlist[index].watch) },
+                        onRemove = { viewModel.removeWatch(state.watchlist[index].watch) },
                     )
                 }
             }
@@ -204,6 +266,7 @@ fun CalendarScreen(
                 items(state.past.size) { index ->
                     SessionRow(
                         session = state.past[index],
+                        outlook = null,
                         onOpen = { onOpenObject(state.past[index].objectId) },
                         onRemove = { viewModel.remove(state.past[index]) },
                         dimmed = true,
@@ -234,6 +297,14 @@ private fun EmptyHint() {
                 "**Planung** gehen. Die App rechnet dann für das ganze Jahr aus, in welchen " +
                 "Nächten es hoch genug steht und der Himmel gleichzeitig dunkel genug ist – " +
                 "und die besten davon lassen sich hier vormerken.",
+            style = MaterialTheme.typography.labelSmall,
+            color = StarWindowColors.Muted,
+        )
+        Text(
+            text = "Wer sich nicht auf eine Nacht festlegen will, nimmt am selben Ort " +
+                "**Bescheid geben**. Das Objekt kommt dann auf die Merkliste, und die App meldet " +
+                "sich von selbst, sobald es abends hoch genug steht und die Vorhersage für die " +
+                "Nacht mitspielt.",
             style = MaterialTheme.typography.labelSmall,
             color = StarWindowColors.Muted,
         )
@@ -378,9 +449,109 @@ private fun DayCell(
     }
 }
 
+/**
+ * Die Wetterlage einer geplanten Nacht, als eine Zeile.
+ *
+ * Farbe **und** Wort, nicht nur Farbe: Ein grüner und ein roter Punkt sind für einen erheblichen
+ * Teil der Leute derselbe Punkt, und das Urteil ist die Kernaussage der Zeile.
+ */
+@Composable
+private fun ForecastLine(outlook: NightOutlook, modifier: Modifier = Modifier) {
+    Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            Modifier
+                .size(6.dp)
+                .clip(CircleShape)
+                .background(verdictColor(outlook.verdict))
+        )
+        Text(
+            text = "  " + outlook.headline,
+            style = MaterialTheme.typography.labelSmall,
+            color = verdictColor(outlook.verdict),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+private fun verdictColor(verdict: NightVerdict) = when (verdict) {
+    NightVerdict.GOOD -> StarWindowColors.WindowStroke
+    NightVerdict.PARTLY -> StarWindowColors.AnchorPoint
+    NightVerdict.POOR -> StarWindowColors.Crosshair
+    NightVerdict.NO_DARKNESS, NightVerdict.UNKNOWN -> StarWindowColors.Muted
+}
+
+/**
+ * Ein vorgemerktes Ziel.
+ *
+ * Gezeigt wird die Bedingung („ab 12. Oktober, dann 3,1 h") und nicht ein Datum: Ein Merklisteneintrag
+ * ist kein Termin, und ihn wie einen aussehen zu lassen wäre das Versprechen einer Nacht, die
+ * niemand zugesagt hat.
+ */
+@Composable
+private fun WatchRow(
+    entry: WatchEntry,
+    onOpen: () -> Unit,
+    onRemove: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(StarWindowColors.NightSurface)
+            .clickable(onClick = onOpen)
+            .padding(start = 12.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Filled.NotificationsActive,
+            contentDescription = null,
+            tint = if (entry.hasOpportunity) StarWindowColors.WindowStroke else StarWindowColors.Muted,
+            modifier = Modifier.size(16.dp),
+        )
+        Spacer(Modifier.size(10.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = entry.watch.label,
+                style = MaterialTheme.typography.bodyMedium,
+                color = StarWindowColors.Starlight,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = watchStatus(entry),
+                style = MaterialTheme.typography.labelSmall,
+                color = StarWindowColors.Muted,
+            )
+        }
+        IconButton(onClick = onRemove) {
+            Icon(
+                Icons.Filled.Delete,
+                contentDescription = "Vormerkung entfernen",
+                tint = StarWindowColors.Muted,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+    }
+}
+
+/** Ab wann sich das Warten lohnen könnte — ohne Wetter, das kommt am Tag selbst dazu. */
+private fun watchStatus(entry: WatchEntry): String {
+    val next = entry.nextNight ?: return "steht in den nächsten Monaten nicht hoch genug"
+    val today = LocalDate.now()
+    val days = next.toEpochDay() - today.toEpochDay()
+    val hours = "%.1f h".format(Locale.GERMAN, entry.nextUsableHours)
+    return when {
+        days <= 0L -> "heute Nacht $hours über ${entry.watch.minAltitudeDeg.toInt()}°"
+        days == 1L -> "morgen Nacht $hours über ${entry.watch.minAltitudeDeg.toInt()}°"
+        else -> "ab ${dateFormat.format(next)} · $hours über ${entry.watch.minAltitudeDeg.toInt()}°"
+    }
+}
+
 @Composable
 private fun SessionRow(
     session: PlannedSession,
+    outlook: NightOutlook?,
     onOpen: () -> Unit,
     onRemove: () -> Unit,
     dimmed: Boolean = false,
@@ -414,6 +585,7 @@ private fun SessionRow(
                 style = MaterialTheme.typography.labelSmall,
                 color = StarWindowColors.Muted,
             )
+            if (outlook != null) ForecastLine(outlook, Modifier.padding(top = 2.dp))
         }
         IconButton(onClick = onRemove) {
             Icon(
@@ -444,6 +616,10 @@ private fun NextSessionCard(
     session: PlannedSession,
     daysAway: Long,
     zone: ZoneId,
+    /** Die Vorhersage für diese Nacht, wenn sie in Reichweite liegt. */
+    outlook: NightOutlook?,
+    /** Warum keine dasteht, falls keine dasteht. */
+    weatherNote: String?,
     onOpen: () -> Unit,
     onShowPath: () -> Unit,
 ) {
@@ -481,6 +657,23 @@ private fun NextSessionCard(
             style = MaterialTheme.typography.labelSmall,
             color = StarWindowColors.Muted,
         )
+        when {
+            outlook != null -> {
+                ForecastLine(outlook)
+                Text(
+                    text = outlook.source,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = StarWindowColors.Muted,
+                )
+            }
+            weatherNote != null -> Text(
+                text = weatherNote,
+                style = MaterialTheme.typography.labelSmall,
+                color = StarWindowColors.Muted,
+            )
+            // Ein Termin jenseits der Vorhersage bekommt keine Zeile. Eine Kachel „keine Daten"
+            // stünde dort dann bis zu elf Monate lang und sagte in keinem davon etwas.
+        }
         if (session.hasNote) {
             Text(
                 text = session.note,

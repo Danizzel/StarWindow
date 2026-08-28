@@ -91,6 +91,13 @@ object OverlaySelection {
     ): List<SkyObject> {
         val reachable = catalog.filter { latitudeDeg == null || everRises(it, latitudeDeg) }
 
+        // Sonne und Mond stehen ohne Prüfung im Sucher, und zwar aus zwei entgegengesetzten
+        // Gründen: Der Mond ist das Objekt, das am häufigsten fotografiert wird, und die Sonne ist
+        // das eine, vor dem gewarnt gehört. Es sind zwei Markierungen — sie kosten nichts und
+        // durch keine Rangfolge zu müssen, in der sie mit ihrer Helligkeit alles überböten, ist
+        // billiger als jede Sonderregel dafür.
+        val moving = reachable.filter { it.isMoving }
+
         val stars = reachable.asSequence()
             .filter { it.type.isStar }
             .filter { (it.magnitude ?: 99.0) <= minOf(STAR_MAGNITUDE_LIMIT, magnitudeLimit) }
@@ -99,15 +106,15 @@ object OverlaySelection {
             .toList()
 
         val targets = reachable.asSequence()
-            .filter { !it.type.isStar }
+            .filter { !it.type.isStar && !it.isMoving }
             .filter { isWorthDrawing(it, magnitudeLimit) }
             .sortedByDescending { PhotographicInterest.score(it) }
-            .take(MAX_OBJECTS - stars.size)
+            .take(MAX_OBJECTS - stars.size - moving.size)
             .toList()
 
         // Brightest first, so the overlay draws the most prominent markers first and any future
         // collision handling has them to keep.
-        return (stars + targets).sortedBy { it.magnitude ?: 99.0 }
+        return (moving + stars + targets).sortedBy { it.magnitude ?: 99.0 }
     }
 
     /**
@@ -130,5 +137,7 @@ object OverlaySelection {
      * whole of the geometry: an object 30° from the observer's zenith circle culminates 30° down.
      */
     fun everRises(obj: SkyObject, latitudeDeg: Double): Boolean =
-        90.0 - abs(latitudeDeg - obj.decDeg) > 0.0
+        // Für Sonne und Mond gibt es keine feste Deklination, gegen die sich das prüfen ließe;
+        // sie gehen von jedem bewohnten Ort auf.
+        obj.isMoving || 90.0 - abs(latitudeDeg - obj.decDeg) > 0.0
 }

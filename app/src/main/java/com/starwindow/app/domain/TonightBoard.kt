@@ -193,15 +193,18 @@ object TonightBoard {
         nowMillis: Long,
     ): Long? {
         val maxAltitude = 90.0 - kotlin.math.abs(observer.latitudeDeg - obj.decDeg)
-        if (maxAltitude < MIN_ALTITUDE_DEG) return null
+        if (!obj.isMoving && maxAltitude < MIN_ALTITUDE_DEG) return null
 
         val precession = Precession.forEpoch(nowMillis)
         val position = obj.positionAt(precession)
         val end = nowMillis + RISING_HORIZON_HOURS * 3_600_000L
         var time = nowMillis + RISING_STEP_MILLIS
         while (time <= end) {
+            // Der Mond läuft in den zwölf Stunden dieses Ausblicks über sechs Grad weit; mit einer
+            // einmal gerechneten Position wäre seine Aufgangszeit um eine halbe Stunde daneben.
+            val positionNow = if (obj.isMoving) obj.positionAtMillis(time) else position
             val altitude = CoordinateTransforms.apparentHorizontalAtLst(
-                position,
+                positionNow,
                 observer.latitudeDeg,
                 AstroTime.lstDeg(time, observer.longitudeDeg),
             ).altitudeDeg

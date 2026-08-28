@@ -119,6 +119,19 @@ fun DrawScope.drawObjectSymbol(
             drawCircle(color, radius * 0.42f, center, style = dashed)
         }
 
+        // Volle Scheibe mit Strahlenkranz: das eine Zeichen, das für Sonne und Mond zugleich
+        // funktioniert, und das einzige gefüllte in der ganzen Reihe — beide sind am Himmel keine
+        // Punkte, sondern Flächen.
+        ObjectType.SOLAR_SYSTEM -> {
+            drawCircle(color, radius * 0.62f, center)
+            val from = radius * 0.82f
+            val to = radius * 1.1f
+            drawLine(color, center - Offset(to, 0f), center - Offset(from, 0f), stroke.width)
+            drawLine(color, center + Offset(from, 0f), center + Offset(to, 0f), stroke.width)
+            drawLine(color, center - Offset(0f, to), center - Offset(0f, from), stroke.width)
+            drawLine(color, center + Offset(0f, from), center + Offset(0f, to), stroke.width)
+        }
+
         ObjectType.OTHER -> rotate(45f, center) {
             drawSquare(center, radius * 0.85f, color, stroke)
         }

@@ -48,6 +48,12 @@
             android:name=".data.planning.ReminderReceiver"
             android:exported="false" />
 
+        <!-- Die taegliche Pruefung der Merkliste: steht ein vorgemerktes Ziel heute Nacht gut
+             und wird es klar? -->
+        <receiver
+            android:name=".data.planning.WatchCheckReceiver"
+            android:exported="false" />
+
         <receiver
             android:name=".data.planning.BootReceiver"
             android:exported="true"

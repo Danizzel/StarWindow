@@ -10,13 +10,17 @@ import com.starwindow.app.data.catalog.ConstellationRepository
 import com.starwindow.app.data.catalog.ObjectNotesRepository
 import com.starwindow.app.data.images.SkyImageLoader
 import com.starwindow.app.data.planning.PlanRepository
+import com.starwindow.app.data.planning.WatchScheduler
+import com.starwindow.app.data.planning.WatchlistRepository
 import com.starwindow.app.data.tracking.TrackingStore
+import com.starwindow.app.data.weather.ForecastCache
 import com.starwindow.app.data.weather.PlaceLookup
 import com.starwindow.app.data.weather.WeatherRepository
 import com.starwindow.app.data.windows.SettingsStore
 import com.starwindow.app.data.windows.SkyWindowRepository
 import com.starwindow.app.domain.ConstellationTransitCalculator
 import com.starwindow.app.domain.TransitCalculator
+import java.io.File
 
 /**
  * Hand-rolled service locator. The app is small enough that a DI framework would cost more than it
@@ -37,8 +41,17 @@ class AppContainer(context: Context) {
     val settingsStore = SettingsStore(context)
     val trackingStore = TrackingStore(context)
     val planRepository = PlanRepository(context)
+    val watchlistRepository = WatchlistRepository(context)
+    val watchScheduler = WatchScheduler(context)
     val skyImageLoader = SkyImageLoader(context.cacheDir)
-    val weatherRepository = WeatherRepository()
+
+    /**
+     * Die Vorhersage bekommt eine Ablage auf der Platte: Sie überlebt damit das Beenden der App und
+     * ist der einzige Weg, wie eine Erinnerung um 17 Uhr — in einem frisch gestarteten Prozess und
+     * womöglich ohne Empfang — überhaupt etwas über die Nacht sagen kann.
+     */
+    val forecastCache = ForecastCache(File(context.filesDir, ForecastCache.FILE_NAME))
+    val weatherRepository = WeatherRepository(diskCache = forecastCache)
     val placeLookup = PlaceLookup(context, weatherRepository)
     val transitCalculator = TransitCalculator()
     val constellationTransitCalculator = ConstellationTransitCalculator()

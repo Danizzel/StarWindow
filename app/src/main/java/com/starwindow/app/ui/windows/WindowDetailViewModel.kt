@@ -43,6 +43,8 @@ data class WindowDetailUiState(
     /** Free text over the result list; the whole catalogue is not searched here, only the hits. */
     val query: String = "",
     val sort: TransitSort = TransitSort.INTEREST,
+    /** Nur Durchgänge zeigen, die wenigstens teilweise in der Dunkelheit liegen. */
+    val onlyDark: Boolean = false,
     /**
      * Catalogue and constellation ids whose paths the chart shows.
      *
@@ -62,7 +64,15 @@ data class WindowDetailUiState(
     val error: String? = null,
 ) {
     val visibleObjects: List<ObjectTransit>
-        get() = TransitListView.build(result?.transits.orEmpty(), filter, query, sort)
+        get() = TransitListView.build(result?.transits.orEmpty(), filter, query, sort, onlyDark)
+
+    /**
+     * Wie viele Treffer in der Dunkelheit liegen.
+     *
+     * Steht am Schalter, damit man vorher sieht, was er wegnimmt: „nur nachts (48 von 212)" ist
+     * eine Auskunft, ein nackter Schalter ist ein Sprung ins Ungewisse.
+     */
+    val darkObjectCount: Int get() = result?.transits?.count { it.hasDarkTime } ?: 0
 
     val visibleConstellations: List<ConstellationTransit>
         get() = if (filter.showsConstellations && query.isBlank()) constellations else emptyList()
@@ -122,6 +132,12 @@ class WindowDetailViewModel(
 
     fun setFilter(filter: ResultFilter) {
         _uiState.update { it.copy(filter = filter) }
+        rebuildTracks()
+    }
+
+    /** Blendet Durchgänge aus, die ganz in der Helligkeit liegen. */
+    fun setOnlyDark(onlyDark: Boolean) {
+        _uiState.update { it.copy(onlyDark = onlyDark) }
         rebuildTracks()
     }
 

@@ -1,8 +1,9 @@
 # StarWindow – was noch fehlt
 
 Stand: Grundgerüst, Nachtsicht-Sucher, Kalibrierung, Sternbilder, Laufbahnen, Deep-Sky-Katalog,
-Objektsuche und Verfolgung im Sucher, Wettervorhersage für die Nacht. Die Rechenkette
-Bildschirm → Himmel steht und ist durch 381 Unit-Tests abgesichert; die App übersetzt und läuft auf
+Objektsuche und Verfolgung im Sucher, Wettervorhersage für die Nacht, Jahresplanung mit
+Terminerinnerungen und Merkliste. Sonne und Mond sind Katalogobjekte. Die Rechenkette
+Bildschirm → Himmel steht und ist durch 410 Unit-Tests abgesichert; die App übersetzt und läuft auf
 einem echten Gerät.
 
 Reihenfolge ist bewusst: Abschnitt 2 sind Stellen, die ich beim Nachlesen des eigenen Codes als
@@ -15,13 +16,19 @@ mehr Code, sondern **Gegenprüfung am Himmel** – siehe Abschnitt 1.
 
 - [x] ~~Projekt synchronisieren und kompilieren.~~ Werkzeugkette auf Gradle 9.4.1, AGP 9.2.1,
       Kotlin 2.3.21, SDK 36 angehoben.
-- [x] ~~`./gradlew :app:testDebugUnitTest`~~ – 381 Tests, grün.
+- [x] ~~`./gradlew :app:testDebugUnitTest`~~ – 410 Tests, grün.
 - [x] ~~Auf echtem Gerät starten.~~ Läuft auf einem Pixel 9.
 - [ ] **Feldabgleich am Himmel:** auf einen bekannten hellen Stern zielen und prüfen, ob dessen
       Katalogmarkierung darauf sitzt. Sitzt sie daneben → Kompass kalibrieren (Achterbewegung).
       Wandert sie beim Schwenken schneller/langsamer als das Bild → Bildfeld-Faktor in den
       Einstellungen nachziehen. Das ist der eigentliche Abnahmetest der ganzen App.
 - [ ] Abgleich in **Hoch- und Querformat** sowie mit **Haupt- und Ultraweitwinkelkamera**.
+- [ ] **Benachrichtigungen auf dem Gerät gegenprüfen.** Die Rechnung dahinter ist getestet, die
+      Zustellung nicht — und sie ist der Teil, der still ausfallen kann. Zu prüfen: Kommt die
+      Erinnerung um 17 Uhr an, wenn das Handy den ganzen Tag unangetastet lag (Doze)? Wächst die
+      Wetterzeile ein paar Sekunden später nach, **ohne** ein zweites Mal zu klingeln? Kommt sie
+      auch ohne Netz — dann mit dem alten Stand und seinem Alter? Und überlebt die Kette der
+      täglichen Merklisten-Prüfungen mehrere Tage, also setzt jede Prüfung die nächste wirklich?
 - [ ] **Sensorfusion gegenprüfen:** steht in der Statusleiste „Kreisel + Kompass"? Stehen die
       Markierungen beim Stillhalten wirklich still? Meldet die App eine Magnetstörung, wenn man
       das Handy neben ein Auto hält, und hält sie danach die Nordrichtung? Die Fusionsmathematik
@@ -95,15 +102,27 @@ mehr Code, sondern **Gegenprüfung am Himmel** – siehe Abschnitt 1.
 - [x] ~~**Ephemeriden für Sonne und Mond.**~~ `core/astro/Ephemeris.kt` nach Meeus Kap. 25 und 47:
       Sonne auf 0,01°, Mond auf 0,02° in der Länge, samt Parallaxe, Beleuchtungsgrad und Phase.
       `Twilight` findet daraus Dämmerungsschwellen, Auf- und Untergänge.
-- [ ] **Mond und Sonne als Katalogobjekte.** Die Ephemeriden liegen vor, aber die
-      Durchgangsberechnung kennt weiterhin nur feste RA/Dec — „wann zieht der Mond durch mein
-      Fenster" ist die naheliegendste Frage überhaupt und geht noch nicht. Nötig: ein
-      `SkyObject`, dessen Position eine Funktion der Zeit ist, und ein `TransitCalculator`, der
-      das aushält.
-- [ ] **Planeten.** Brauchen zusätzlich VSOP87 oder eine gekürzte Fassung davon.
-- [ ] **Dämmerungszeiten und Mondstörung in der Fensteransicht:** ein Durchgang um 14 Uhr nützt
-      nichts. Die Rechnung dafür steht jetzt in `Twilight` und `AstroWeather` — sie muss nur noch
-      in die Durchgangsliste hinein.
+- [x] ~~**Mond und Sonne als Katalogobjekte.**~~ `SkyObject` hat ein optionales Feld
+      `body: EphemerisBody?`; ist es gesetzt, kommt die Position aus der Ephemeride statt aus dem
+      Katalog (`positionAtMillis`). Ein Feld und keine Klassenhierarchie — 22.528 Einträge über
+      eine virtuelle Methode zu führen, damit zwei sich anders verhalten, wäre der teurere Weg,
+      und die Katalogdateien bleiben unverändert. Der `TransitCalculator` rechnet für sie je
+      Abtastschritt neu, mit halbierter Schrittweite, und überspringt die Deklinationsvorprüfung:
+      Der Mond läuft über 57° Breite, damit ist keine feste Deklination zu prüfen. Auch die
+      Jahresplanung fragt jetzt je Nacht neu — dreizehn Grad pro Tag machen eine einmal gerechnete
+      Position innerhalb einer Woche wertlos. Damit geht „wann zieht der Mond durch mein Fenster".
+- [ ] **Mond in der Merkliste.** Vormerken lässt er sich nicht: Die Merkliste legt die Koordinaten
+      ihrer Einträge mit ab, damit die nächtliche Prüfung ohne den Katalog auskommt, und genau die
+      hat er nicht. Der Knopf fehlt dort deshalb, statt still etwas anderes zu tun.
+- [ ] **Planeten.** Brauchen zusätzlich VSOP87 oder eine gekürzte Fassung davon. Die Struktur
+      steht: ein Wert mehr in `EphemerisBody`, dessen `positionAt` anders rechnet.
+- [x] ~~**Dämmerungszeiten und Mondstörung in der Fensteransicht.**~~ Jeder Durchgang trägt jetzt,
+      wie viel von ihm in astronomischer Dunkelheit liegt und wie der Mond dabei steht — in der
+      Liste als „dunkel", „teils Dämmerung", „zu hell", ergänzt um „Mond 87 %". Dazu ein Schalter
+      **nur nachts** mit der Anzahl daneben und eine Reihenfolge nach dunkler Zeit. Die Dämmerung
+      wird über `DarkSpans` **einmal** für den ganzen Suchzeitraum gerechnet und danach nur noch
+      geschnitten: Sie hängt am Ort und am Zeitraum, nicht am Katalog, und mehrere hundert
+      Durchgänge einzeln gegen die Sonne zu rechnen wäre tausendfach dieselbe Rechnung.
 - [ ] **Satelliten (ISS, Starlink)** über TLE + SGP4 – passt konzeptionell perfekt zum Fenster,
       ist aber ein eigenes Teilprojekt.
 - [x] ~~OpenNGC lokal mitliefern.~~ Inzwischen der **vollständige** Bestand: 13.432 Deep-Sky-Objekte,
@@ -262,9 +281,13 @@ mehr Code, sondern **Gegenprüfung am Himmel** – siehe Abschnitt 1.
       Dämmerungsgrenzen werden analytisch gelöst statt abgetastet (ein Jahr in Millisekunden statt
       zweihunderttausend Ephemeriden), gegengeprüft gegen `Twilight` auf unter sechs Minuten.
       Vorgemerkte Nächte liegen in `PlanRepository`.
-- [ ] **Wetter mit der Planung verbinden.** Der Kalender kennt die Nächte, die Wetteransicht kennt
-      15 Tage Vorhersage – für die vorgemerkten Nächte in Reichweite ließe sich beides
-      zusammenbringen („Freitag geplant, Prognose sagt bedeckt").
+- [x] ~~**Wetter mit der Planung verbinden.**~~ Der Kalender holt die Vorhersage einmal und legt sie
+      über jeden kommenden Termin in Reichweite: eine Zeile in der Kachel „nächster Termin", eine
+      unter jeder Terminzeile und ein Abschnitt im Terminblatt, jeweils mit Modell und Alter der
+      Aussage. Die **gespeicherten** Zahlen des Termins bleiben unangetastet — sie sind die
+      Aufzeichnung einer Entscheidung, das Wetter legt sich daneben. Termine jenseits des Laufs
+      bekommen gar keine Zeile statt einer, die „keine Daten" sagt und elf Monate lang stehen
+      bliebe.
 - [x] ~~**Erinnerung an eine geplante Nacht.**~~ Je Termin einstellbar: 1 Woche, 3 Tage, 1 Tag
       vorher oder am Tag selbst, jeweils um 17 Uhr, mehrere gleichzeitig. Über `AlarmManager` als
       **ungenaue** Alarme (`setAndAllowWhileIdle`) – Minutengenauigkeit ist eine Woche im Voraus
@@ -278,11 +301,29 @@ mehr Code, sondern **Gegenprüfung am Himmel** – siehe Abschnitt 1.
       statt zur aktuellen Position – bei einer Nacht drei Monate im Voraus liegen die an
       entgegengesetzten Enden des Himmels. Beantwortet die Frage, die man draußen nicht beantworten
       kann: steht in sechs Wochen um zwei Uhr ein Dach im Weg?
-- [ ] **Erinnerung nur bei brauchbarem Wetter.** Die Benachrichtigung kommt heute unabhängig von der
-      Vorhersage. Für den 1-Tag- und den Am-Tag-Vorlauf ließe sich die Nachtbewertung nachschlagen
-      und „aber es ist bedeckt" dazuschreiben.
-- [ ] **Erinnerung an eine Nacht ohne Termin.** Nur vorgemerkte Nächte melden sich; „sag mir
-      Bescheid, wenn M31 wieder gut steht" gibt es nicht.
+- [x] ~~**Erinnerung mit der Wetterlage dran.**~~ Und zwar in dieser Reihenfolge: Die Erinnerung wird
+      **zuerst** gepostet, ohne irgendetwas nachzuschlagen — das ist die Zusage, und sie hängt
+      weder am Empfang noch am Wetterdienst noch daran, ob ein Ort eingestellt ist. Danach wird
+      dieselbe Benachrichtigung ergänzt, erst aus der Ablage auf der Platte (sofort da, mit ihrem
+      Alter angeschrieben), dann aus einem frischen Abruf mit knappem Zeitbudget. Ergänzt wird über
+      dieselbe ID mit `setOnlyAlertOnce`, also ohne zweiten Ton. Bei schlechter Prognose steht
+      „Der Termin bleibt stehen, die Vorhersage spricht dagegen" dabei — abgesagt wird nichts, das
+      ist die Entscheidung des Nutzers. Der umgekehrte Weg — erst fragen, dann posten — hätte
+      Verlässlichkeit gegen Ausschmückung getauscht.
+- [x] ~~**Erinnerung an eine Nacht ohne Termin.**~~ Die **Merkliste**: „Bescheid geben" auf dem
+      Objektblatt merkt ein Ziel vor, ohne eine Nacht festzulegen. Ein Alarm um 15 Uhr prüft
+      täglich die ganze Liste (`WatchCheckReceiver`) und meldet sich, wenn **beides gleichzeitig**
+      zutrifft: Das Objekt steht lange genug über seiner Mindesthöhe und im Dunkeln, **und** die
+      Nachtbewertung trägt in genau diesem Abschnitt. Gerechnet wird die Überschneidung, nicht
+      zwei getrennte Urteile — ein Objekt von 20 bis 23 Uhr und eine Wolkenlücke von 2 bis 5 Uhr
+      ergeben zusammen nichts. Ohne Vorhersage wird bis zu zweimal nachgefragt und danach
+      geschwiegen: Eine Meldung „steht heute gut" schickt jemanden mit schwerem Gepäck vor die
+      Tür. Je Eintrag einstellbar sind Mindesthöhe, Mindestdauer und wie sicher das Wetter sein
+      muss; nach einer Meldung folgen drei Nächte Ruhe, sonst sagt eine Hochdrucklage fünf Abende
+      hintereinander dasselbe.
+- [ ] **Merkliste gegen ein Fenster rechnen.** Sie nimmt den freien Horizont an. Wer ein Fenster
+      gespeichert hat, will „sag mir Bescheid, wenn M31 *dort hindurch* zieht" — derselbe offene
+      Punkt wie bei der Jahresplanung eine Zeile weiter.
 - [ ] **Planung gegen ein Fenster rechnen.** Die Jahresplanung nimmt den freien Horizont an; wer ein
       Fenster gespeichert hat, will die Nächte, in denen das Objekt *dort hindurch* zieht.
 - [ ] **Zeitpunkt wählen** in der Detailansicht (aktuell immer „ab jetzt"). Für Planung braucht man
@@ -367,5 +408,8 @@ mehr Code, sondern **Gegenprüfung am Himmel** – siehe Abschnitt 1.
 - [ ] **Wetter mit den Fenstern verbinden:** „In deinem Fenster zieht am Donnerstag M31 durch, und
       das Wetter passt." Braucht nur, dass die Durchgangsliste die Nachtbewertung nachschlägt.
 - [ ] **Benachrichtigung bei Aufklaren** für eine Nacht, die man vorgemerkt hat.
-- [ ] **Vorhersage zwischenspeichern**, damit die Ansicht auch ohne Netz noch die letzte bekannte
-      Lage zeigt. Derzeit hält der Zwischenspeicher nur die laufende Sitzung.
+- [x] ~~**Vorhersage zwischenspeichern.**~~ `ForecastCache` legt die letzten drei Läufe als JSON in
+      `filesDir` ab. Nötig geworden nicht für die Ansicht, sondern für die Erinnerung: Ein Alarm um
+      17 Uhr läuft in einem Prozess, den das System dafür gestartet hat, und hat ohne Ablage
+      nichts, woraus er etwas über die Nacht sagen könnte. Der Speicher im Arbeitsspeicher bleibt
+      davor — gefragt wird die Platte erst, wenn das Netz nichts hergibt.

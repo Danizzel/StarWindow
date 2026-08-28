@@ -1,5 +1,6 @@
 package com.starwindow.app.ui.planning
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -36,10 +37,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.starwindow.app.data.planning.PlannedSession
 import com.starwindow.app.data.planning.ReminderLead
+import com.starwindow.app.domain.NightOutlook
 import com.starwindow.app.ui.theme.StarWindowColors
 import java.time.LocalDate
 import java.time.ZoneId
@@ -61,6 +64,8 @@ import java.util.Locale
 fun SessionSheet(
     session: PlannedSession,
     zone: ZoneId,
+    /** Die Vorhersage für diese Nacht, sofern sie in Reichweite eines Modelllaufs liegt. */
+    outlook: NightOutlook?,
     /** False when the system will silently drop anything this screen schedules. */
     notificationsAllowed: Boolean,
     onToggleReminder: (ReminderLead) -> Unit,
@@ -114,6 +119,45 @@ fun SessionSheet(
                 }
             }
 
+            if (outlook != null) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(StarWindowColors.Night)
+                        .padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    Text(
+                        "Vorhersage",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = StarWindowColors.Muted,
+                    )
+                    Text(
+                        text = outlook.headline,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = when {
+                            outlook.isPromising -> StarWindowColors.WindowStroke
+                            outlook.isDiscouraging -> StarWindowColors.Crosshair
+                            else -> StarWindowColors.AnchorPoint
+                        },
+                    )
+                    Text(
+                        text = outlook.source,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = StarWindowColors.Muted,
+                    )
+                    if (outlook.isDiscouraging) {
+                        Text(
+                            text = "Die Erinnerungen kommen trotzdem – ob das Wetter den Termin " +
+                                "kippt, entscheidest du.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = StarWindowColors.Muted,
+                        )
+                    }
+                }
+            }
+
             Button(onClick = onShowPath, modifier = Modifier.fillMaxWidth()) {
                 Icon(Icons.Filled.Timeline, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.size(8.dp))
@@ -136,7 +180,9 @@ fun SessionSheet(
                     color = StarWindowColors.Starlight,
                 )
                 Text(
-                    text = "Jeweils um ${timeFormat.format(ReminderLead.NOTIFY_TIME)} Uhr.",
+                    text = "Jeweils um ${timeFormat.format(ReminderLead.NOTIFY_TIME)} Uhr. Liegt " +
+                        "die Nacht dann schon in der Vorhersage, steht das Urteil mit in der " +
+                        "Meldung – sie kommt aber in jedem Fall, auch ohne Netz.",
                     style = MaterialTheme.typography.labelSmall,
                     color = StarWindowColors.Muted,
                 )

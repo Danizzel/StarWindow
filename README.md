@@ -11,6 +11,11 @@ Basiskatalog und ist für Online-Kataloge vorbereitet. Dazu kommt die zweite Fra
 Astrofotografie – **[wird die Nacht überhaupt etwas?](#wetter-für-die-nacht)** – als eigene Ansicht
 mit sechs wählbaren Wettermodellen, Dämmerung, Mondphase und Bortle-Stufe.
 
+Beides läuft in den Benachrichtigungen zusammen: Eine Erinnerung an einen geplanten Termin kommt
+**immer** an und trägt die Wetterlage nach, sobald eine da ist; und wer sich auf keine Nacht
+festlegen will, merkt ein Ziel vor – die App meldet sich dann von selbst, sobald es abends gut steht
+**und** die Nacht klar wird.
+
 ---
 
 ## In Android Studio öffnen
@@ -24,7 +29,7 @@ Anforderungen: Android Studio Ladybug oder neuer, JDK 17, Android SDK 35, minSdk
 
 ```
 ./gradlew :app:assembleDebug     # APK bauen
-./gradlew :app:testDebugUnitTest # 381 Unit-Tests
+./gradlew :app:testDebugUnitTest # 410 Unit-Tests
 ```
 
 ---
@@ -447,6 +452,41 @@ dichtes Objektgitter über den ganzen Himmel und vergleicht die gefilterte Suche
 vollständigen Zeitdurchlauf. Eine zu eifrige Vorauswahl fällt nicht auf – sie lässt einfach still
 Objekte aus der Nacht verschwinden.
 
+### Sonne und Mond ziehen mit
+
+Beide sind Katalogeinträge wie jeder andere: suchbar, verfolgbar, mit Infoblatt, und sie ziehen
+durch ein gespeichertes Fenster. „Wann zieht der Mond durch mein Fenster" ist die naheliegendste
+Frage, die diese App bekommt, und sie ging vorher nicht.
+
+Der Unterschied steckt in einem Feld: `SkyObject.body` ist bei diesen beiden gesetzt, und dann
+kommt die Position aus der Ephemeride statt aus dem Katalog. Ein Feld und keine Klassenhierarchie –
+22.528 Einträge über eine virtuelle Methode zu führen, damit zwei sich anders verhalten, wäre an
+jeder Stelle teurer, an der bisher eine schlichte Datenklasse steht.
+
+Zwei Stellen mussten dafür anders rechnen:
+
+* **Die Vorauswahl gilt für sie nicht.** Sie prüft eine feste Deklination, und der Mond hat keine –
+  er läuft im Lauf eines Monats über 57° Breite. Kosten tut die Ausnahme nichts: Es sind zwei
+  Objekte.
+* **Die Position wird je Abtastschritt neu gerechnet**, mit halbierter Schrittweite. Der Mond
+  wandert in einer Stunde um seinen eigenen Durchmesser weiter, und ein Fenster ist oft nicht viel
+  größer.
+
+Dieselbe Unterscheidung greift in der Jahresplanung, die jede Nacht neu fragt statt einmal für 365
+– dreizehn Grad pro Tag machen eine einmal gerechnete Mondposition binnen einer Woche wertlos.
+
+### Dämmerung und Mond in der Durchgangsliste
+
+Ein Durchgang um 14 Uhr sah in der Liste aus wie einer um zwei Uhr nachts. Jetzt trägt jeder
+Durchgang, wie viel von ihm in astronomischer Dunkelheit liegt („dunkel", „teils Dämmerung",
+„zu hell") und wie hell der Mond dabei über dem Horizont steht („Mond 87 %"). Dazu ein Schalter
+**nur nachts**, der gleich mitzählt, was er wegnimmt, und eine Reihenfolge nach dunkler Zeit.
+
+Die Dämmerung wird über `DarkSpans` **einmal** für den ganzen Suchzeitraum gerechnet und danach nur
+noch geschnitten. Der Grund ist derselbe wie bei der Deklinationsprüfung: Die Sonne kennt den
+Katalog nicht, ihre Bahn hängt nur am Zeitraum und am Ort – mehrere hundert Durchgänge einzeln
+gegen sie zu rechnen wäre tausendfach dieselbe Rechnung.
+
 ---
 
 ## Monate im Voraus planen
@@ -537,6 +577,70 @@ trotzdem aus dem Doze-Modus, worauf es bei einem Telefon ankommt, das tagelang l
 `BootReceiver` setzt alles nach einem Neustart neu auf – ohne das würde eine im September gemachte
 Planung beim ersten Neustart still verstummen. Sind Benachrichtigungen für die App abgeschaltet,
 sagt das Blatt es ausdrücklich, statt Erinnerungen anzunehmen, die nie ankommen.
+
+### Die Erinnerung kommt an – und sagt, wie das Wetter steht
+
+Eine Erinnerung, die vom Wetterdienst abhängt, ist keine Erinnerung mehr. Deshalb läuft sie in drei
+Stufen, und die Reihenfolge ist die eigentliche Entscheidung:
+
+1. **Sofort** wird die Benachrichtigung gepostet, ohne irgendetwas nachzuschlagen. Kein Empfang,
+   kein Ort, kein Modell – sie kommt trotzdem. Das ist die Zusage, die die Planung gibt.
+2. **Aus der Ablage** kommt der zuletzt geholte Modelllauf. Er liegt auf der Platte, ist ohne Netz
+   und ohne Wartezeit da, und wenn er bis in diese Nacht reicht, wächst die Wetterzeile nach –
+   angeschrieben mit ihrem Alter („ECMWF IFS, abgerufen gestern 18:12").
+3. **Frisch** wird parallel abgerufen, mit knappem Zeitbudget. Kommt der Abruf durch, ersetzt er
+   die Zeile aus Stufe 2; kommt er nicht durch, bleibt es beim alten Stand.
+
+Ergänzt wird immer über dieselbe Benachrichtigungs-ID mit `setOnlyAlertOnce` – der Text wächst
+lautlos nach, es klingelt kein zweites Mal und es steht kein zweiter Eintrag in der Leiste. Der
+umgekehrte Weg, erst das Netz zu fragen und dann zu posten, hätte Verlässlichkeit gegen
+Ausschmückung getauscht: Ein Termin, an den nicht erinnert wird, ist verloren; ein Termin ohne
+Wetterzeile ist bloß karg.
+
+Steht die Nacht schlecht, sagt die Benachrichtigung das – und bleibt trotzdem stehen:
+„Der Termin bleibt stehen, die Vorhersage spricht dagegen." Ob jemand wegen einer Wolkenlücke oder
+wegen der langen Fahrt doch hinausgeht, ist seine Entscheidung und nicht die der App. Liegt die
+Nacht jenseits des Modelllaufs, steht **gar keine** Wetterzeile da statt einer erfundenen.
+
+Dieselbe Aussage steht auch im Kalender: eine Zeile in der Kachel „nächster Termin", eine unter
+jeder Terminzeile, ein Abschnitt im Terminblatt. Die **gespeicherten** Zahlen des Termins bleiben
+davon unberührt – sie sind die Notiz zu einer Entscheidung, das Wetter legt sich daneben.
+
+### Merkliste: „sag mir Bescheid, wenn es passt"
+
+Ein Termin ist eine Festlegung, und für die meisten Ziele ist das die falsche Form. „Irgendwann im
+Herbst, wenn es passt" ist, wie Astrofotografie tatsächlich abläuft. Dafür gibt es neben **Planung**
+den Knopf **Bescheid geben**: Das Objekt kommt auf die Merkliste, ohne dass eine Nacht festgelegt
+wird.
+
+Ein Alarm um 15 Uhr prüft danach jeden Nachmittag die ganze Liste und meldet sich, wenn **beides
+gleichzeitig** zutrifft:
+
+* das Objekt steht lange genug über seiner Mindesthöhe, während der Himmel dunkel ist, **und**
+* die Nachtbewertung trägt in genau diesem Abschnitt.
+
+Gerechnet wird die **Überschneidung** der beiden, nicht zwei getrennte Urteile. Der Unterschied ist
+nicht theoretisch: Ein Objekt, das von 20 bis 23 Uhr hoch steht, und eine Wolkenlücke von 2 bis 5
+Uhr erfüllen beide Bedingungen und ergeben zusammen nichts. Die Länge der Überschneidung ist genau
+die Zahl, die in der Meldung steht: „4,2 h ab 22:10 · bis 62° hoch".
+
+Ohne Vorhersage meldet sich die App **nicht**. Sie fragt bis zu zweimal nach (45 Minuten Abstand)
+und schweigt danach. Das ist Absicht: Eine Meldung „M31 steht heute gut" schickt jemanden mit
+fünfzehn Kilo Ausrüstung vor die Tür, und dafür muss die App wissen, ob es klar wird.
+
+Je Eintrag lassen sich drei Dinge einstellen, und keins mehr – es sind die drei Fragen, die sich
+zwischen Zielen tatsächlich unterscheiden: **Mindesthöhe** (25°, 30°, 40°), **Mindestdauer**
+(0,5 h, 1 h, 2 h) und wie sicher das Wetter sein muss (nur geeignete Nächte, oder auch Lücken).
+Mondphase, Bewölkung und Taupunkt stecken schon in der Nachtbewertung; noch einmal einzeln danach
+zu fragen hieße, dieselbe Entscheidung zweimal zu stellen. Nach einer Meldung folgen drei Nächte
+Ruhe, sonst sagt eine stabile Hochdrucklage fünf Abende hintereinander dasselbe – und ab der
+zweiten Meldung liest sie niemand mehr, auch die nicht, die zählt.
+
+Die Prüfung läuft als **Kette**: Jeder Durchgang setzt den Alarm für den nächsten Tag, und zwar
+bevor er zu rechnen anfängt – reißt die Arbeit ab, läuft die Kette trotzdem weiter. Wiederhergestellt
+wird sie außerdem beim Öffnen des Kalenders und nach einem Neustart. Ein wiederholender Alarm wäre
+der naheliegende Weg gewesen und der falsche: `setRepeating` schläft im Doze-Modus mit, also gerade
+an den Tagen, an denen das Handy unangetastet liegt.
 
 ### Den Pfad am Himmel sehen
 
@@ -635,6 +739,18 @@ Zwei Zeitangaben, die leicht zu verwechseln sind, tragen deshalb verschiedene Na
 Der Unterschied ist real: Der DWD schiebt zwischen die langen ICON-EU-Läufe (00, 06, 12, 18 UTC,
 120 Stunden) kurze auf 30 Stunden. Der 15-UTC-Lauf endet also nach anderthalb Tagen, während die
 Schnittstelle mehrere Läufe zusammensetzt und über fünf Tage liefert.
+
+### Zwei Zwischenspeicher, zwei verschiedene Fragen
+
+Der im **Arbeitsspeicher** trägt die laufende Sitzung: Zwischen Modellen und Tagen hin und her zu
+springen darf nicht jedes Mal ans Netz gehen. Der auf der **Platte** (`ForecastCache`, die letzten
+drei Läufe als JSON) trägt alles danach – die Ansicht ohne Netz und vor allem die Erinnerung um
+17 Uhr, die in einem frisch gestarteten Prozess läuft und deren Speicher deshalb leer ist. Ohne
+Ablage käme die Benachrichtigung dort ohne ein Wort über das Wetter an.
+
+Die Platte ist bewusst nachgeordnet: Gefragt wird sie erst, wenn das Netz nichts hergibt, und was
+von ihr kommt, wird mit seinem Alter angeschrieben. „Gestern 18 Uhr sagte das Modell bedeckt" ist
+keine gute Auskunft, aber eine ehrliche – und mehr wert als Schweigen.
 
 ### Was abgefragt wird
 
@@ -757,6 +873,11 @@ Alles liegt lokal – **22.616 Einträge**, zusammen 5,6 MB unkomprimiert:
 | `deepsky.json` | 13.432 Deep-Sky-Objekte | 3,8 MB |
 | `constellations.json` | alle 88 Sternbildfiguren, 767 Figursterne | 98 KB |
 
+Dazu zwei Einträge, die aus keiner Datei kommen: **Sonne und Mond**. Ihre Position steht in keinem
+Katalog, sondern wird für jeden Zeitpunkt neu gerechnet (`EphemerisCatalog`, `EphemerisBody`). Sie
+werden dem Katalog vorangestellt und verhalten sich von da an wie jeder andere Eintrag – suchbar,
+verfolgbar, mit Infoblatt, und sie ziehen durch ein gespeichertes Fenster.
+
 **Sterne** kommen aus dem Bright Star Catalogue und reichen damit bis rund 6,5 mag – genau bis zur
 Grenze des bloßen Auges. Jeder Stern, den jemand am Himmel sieht und auf den er das Handy richtet,
 ist darin. Jeder trägt seine Bayer- und Flamsteed-Bezeichnung in allen vier Schreibweisen
@@ -814,12 +935,13 @@ app/src/main/java/com/starwindow/app/
 │   ├── camera/      Kameraoptik, Bildschirm ⇄ Himmel
 │   └── sensors/     Lage- und Standortverfolgung
 ├── data/
-│   ├── catalog/     Katalogquellen und -modell
+│   ├── catalog/     Katalogquellen und -modell, Sonne und Mond als Ephemeriden-Einträge
+│   ├── planning/    Termine, Merkliste, Alarme und Benachrichtigungen
 │   ├── tracking/    Das verfolgte Objekt, über Neustarts hinweg
-│   ├── weather/     Vorhersage und Ortssuche (Open-Meteo)
+│   ├── weather/     Vorhersage, Ortssuche (Open-Meteo) und die Ablage auf der Platte
 │   └── windows/     Persistenz (JSON) und Einstellungen
-├── domain/          Durchgangsberechnung, Katalogsuche, Nachtbewertung, Bortle-Skala
-└── ui/              Compose-Oberfläche (Kamera, Suche, Liste, Detail, Wetter)
+├── domain/          Durchgangsberechnung, Katalogsuche, Nachtbewertung, Jahresplanung, Bortle
+└── ui/              Compose-Oberfläche (Kamera, Suche, Liste, Detail, Wetter, Kalender)
 ```
 
 `core/` hat bis auf die Sensorschicht keine Android-Abhängigkeiten – deswegen laufen die Tests als
@@ -835,7 +957,7 @@ Abhängigkeit). Jede dieser Stellen ist eine einzelne Naht, die sich später aus
 
 ## Tests
 
-381 Unit-Tests in `app/src/test/`, alle grün. Sie prüfen nicht nur, dass Funktionen etwas
+410 Unit-Tests in `app/src/test/`, alle grün. Sie prüfen nicht nur, dass Funktionen etwas
 zurückgeben, sondern physikalische Invarianten:
 
 * GMST zur Epoche J2000 gegen die IAU-Konstante, siderischer Tag gegen Sonnentag,
@@ -903,7 +1025,22 @@ zurückgeben, sondern physikalische Invarianten:
   Liste fiele sonst erst draußen im Feld auf, wo kein Netz ist,
 * `meta.json` wird auf Lauf-Zeitpunkt, Veröffentlichung, Laufintervall und Zeitschritt ausgewertet,
   das Modellgebiet aus der WKT-Beschreibung gezogen (Zürich liegt im ICON-EU-Gebiet, New York
-  nicht), das Alter eines Laufs nie negativ – und ohne Gebietsangabe behauptet die App gar nichts.
+  nicht), das Alter eines Laufs nie negativ – und ohne Gebietsangabe behauptet die App gar nichts,
+* die Nachtauskunft trennt „außerhalb des Laufs" von „schlechte Nacht": Für einen Termin jenseits
+  der Reichweite kommt *nichts* zurück statt eines leeren Urteils, das aussähe, als hätte jemand
+  nachgesehen. Und sie schreibt ihr Alter an — „gestern 18:00", nicht bloß „bedeckt",
+* die Merkliste meldet eine klare Novembernacht mit M31 und dieselbe Nacht unter Wolken nicht,
+  schweigt ganz ohne Vorhersage, hält die Ruhezeit nach einer Meldung ein — und der Fall, für den
+  die Überschneidung gerechnet wird: Eine einzelne klare Stunde um Mitternacht ergibt einen Treffer
+  für den, der Lücken mitnimmt, und keinen für den, der nur sichere Nächte will,
+* der Mond bekommt seine Position aus der Ephemeride, auch über den Weg, den der ganze Rest der App
+  benutzt (`positionAt(precession)`) – käme dort die Katalogposition heraus, stünde er überall an
+  einer festen falschen Stelle, und danach fiele nichts mehr auf. Er zieht durch ein Fenster, das
+  auf ihn zeigt, und **anders** als ein Fixstern an derselben Stelle: Wären beide Verweildauern
+  gleich, ignorierte die Suche seine Eigenbewegung,
+* die Dunkelheitsabschnitte decken im Berliner November gut dreizehn Stunden ab, in Tromsø zur
+  Sonnenwende gar keine – und ein Durchgang um Mitternacht heißt „dunkel", einer um die Mittagszeit
+  „zu hell".
 
 ---
 
@@ -919,6 +1056,11 @@ daraus:
 * Bildstapelung, damit auch schwächere Sterne im Sucher erscheinen.
 * Die Wetteransicht ist gegen echte Antworten von Open-Meteo geprüft, aber noch nicht auf dem Gerät
   bedient worden – Fingerbedienung der Kurve und Ortssuche gehören ausprobiert.
-* Sonne und Mond haben jetzt Ephemeriden, sind aber noch keine **Katalogobjekte**: „wann zieht der
-  Mond durch mein Fenster" fehlt weiterhin, ebenso die Planeten und die Online-Kataloge.
+* Benachrichtigungen sind gerechnet und getestet, aber noch nicht auf einem Gerät **zugestellt**
+  worden – kommt die Erinnerung nach einem Tag im Doze-Modus an, wächst die Wetterzeile lautlos
+  nach, überlebt die Kette der täglichen Merklisten-Prüfungen mehrere Tage?
+* Sonne und Mond sind jetzt Katalogobjekte; die **Planeten** fehlen weiterhin (sie brauchen VSOP87),
+  ebenso die Online-Kataloge.
+* Merkliste und Jahresplanung nehmen den freien Horizont an. Wer ein Fenster gespeichert hat, will
+  „sag mir Bescheid, wenn M31 *dort hindurch* zieht".
 * Ein echter Lichtatlas statt der Bortle-Schätzung aus der Einwohnerzahl.
