@@ -81,12 +81,6 @@ mehr Code, sondern **Gegenprüfung am Himmel** – siehe Abschnitt 1.
       ist: liegende Acht schwenken (Sensor nicht eingemessen), ein paar Schritte weggehen
       (Feldrichtung verbogen), warten (Störung der Stärke). Der Sucher zeigt dieselbe
       Unterscheidung kurz in der Statusleiste.
-- [ ] **Zoom** (Pinch) – erhöht die Zeigegenauigkeit deutlich, muss aber zwingend über
-      `ZoomState.zoomRatio` in die Brennweitenberechnung einfließen, sonst stimmt die Projektion nicht.
-- [ ] **Bildschirm nur in der Kameraansicht wachhalten**, nicht in Liste und Detail
-      (`FLAG_KEEP_SCREEN_ON` sitzt derzeit an der ganzen Activity).
-- [ ] **Bildstapelung**: mehrere Langzeitbelichtungen mitteln, damit auch schwächere Sterne
-      erscheinen. Deutlich aufwendiger als die Einzelbelichtung, aber der nächste echte Schritt.
 
 ---
 
