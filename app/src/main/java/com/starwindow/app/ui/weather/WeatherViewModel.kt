@@ -188,7 +188,7 @@ class WeatherViewModel(
                 it.copy(
                     isLoading = false,
                     error = if (locationTracker.hasPermission) {
-                        "Noch keine Position — bitte den Ort oben eingeben."
+                        "Noch keine Position – bitte den Ort oben eingeben."
                     } else {
                         "Ohne Ortungsfreigabe: bitte den Ort oben eingeben."
                     },

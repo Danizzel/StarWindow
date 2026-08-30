@@ -279,7 +279,7 @@ fun WindowDetailScreen(
                 state.isEmpty -> item {
                     Text(
                         if (state.hasQuery) {
-                            "Nichts im Ergebnis passt zu \"${state.query}\". Der Suchbegriff " +
+                            "Nichts im Ergebnis passt zu „${state.query}“. Der Suchbegriff " +
                                 "filtert nur, was durch dieses Fenster zieht – im Katalog steht " +
                                 "das Objekt vielleicht trotzdem."
                         } else {

@@ -8,6 +8,7 @@ import com.starwindow.app.data.catalog.AssetCatalogSource
 import com.starwindow.app.data.catalog.CatalogRepository
 import com.starwindow.app.data.catalog.ConstellationRepository
 import com.starwindow.app.data.catalog.ObjectNotesRepository
+import com.starwindow.app.data.favorites.FavoritesRepository
 import com.starwindow.app.data.images.SkyImageLoader
 import com.starwindow.app.data.planning.PlanRepository
 import com.starwindow.app.data.planning.WatchScheduler
@@ -38,6 +39,7 @@ class AppContainer(context: Context) {
     )
     val constellationRepository = ConstellationRepository(context)
     val objectNotesRepository = ObjectNotesRepository(context)
+    val favoritesRepository = FavoritesRepository(context)
     val settingsStore = SettingsStore(context)
     val trackingStore = TrackingStore(context)
     val planRepository = PlanRepository(context)

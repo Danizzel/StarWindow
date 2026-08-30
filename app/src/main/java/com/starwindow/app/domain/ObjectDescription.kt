@@ -113,7 +113,7 @@ companion object {
 
         ObjectType.CLUSTER_NEBULA ->
             "Ein junger Sternhaufen, der noch in der Gaswolke steckt, aus der er entstanden ist – " +
-                "Sternentstehung sozusagen auf frischer Tat."
+                "Sternentstehung, sozusagen auf frischer Tat ertappt."
 
         ObjectType.SOLAR_SYSTEM ->
             "Ein Körper des Sonnensystems: Seine Position steht in keinem Katalog, sondern wird " +
@@ -170,7 +170,7 @@ companion object {
 
         if (obj.type.respondsToNarrowband) {
             add(
-                "Emissionsobjekt: Ein Schmalbandfilter (H-alpha, OIII) hebt es deutlich heraus und " +
+                "Emissionsobjekt: Ein Schmalbandfilter (H-alpha, O III) hebt es deutlich heraus und " +
                     "arbeitet auch gegen Lichtverschmutzung."
             )
         }

@@ -82,13 +82,6 @@ data class CalendarUiState(
     val isEmpty: Boolean
         get() = !isLoading && upcoming.isEmpty() && past.isEmpty() && watchlist.isEmpty()
 
-    /** What is planned for the day the user tapped. */
-    val selectedSessions: List<PlannedSession>
-        get() {
-            val date = selectedDate ?: return emptyList()
-            return (upcoming + past).filter { it.dateEpochDay == date.toEpochDay() }
-        }
-
     /**
      * The next night, for the banner at the top.
      *

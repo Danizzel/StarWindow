@@ -53,6 +53,7 @@ fun CatalogFilterSheet(
     constellations: List<String>,
     windows: List<SkyWindow>,
     conditions: SkyConditions,
+    favoriteCount: Int,
     onChange: (CatalogFilter) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -84,6 +85,21 @@ fun CatalogFilterSheet(
                     }
                 }
             }
+
+            // Ganz oben, weil er als Einziger nicht sucht, sondern abkürzt: Wer ihn einschaltet,
+            // ist mit dem Suchen fertig und will zu seiner eigenen Liste.
+            SwitchRow(
+                title = "Nur Favoriten",
+                subtitle = when (favoriteCount) {
+                    0 -> "Noch keine – das Herz sitzt oben auf dem Objektblatt."
+                    1 -> "1 Objekt mit Herz"
+                    else -> "$favoriteCount Objekte mit Herz"
+                },
+                checked = filter.onlyFavorites,
+                onChange = { onChange(filter.copy(onlyFavorites = it)) },
+            )
+
+            HorizontalDivider(color = StarWindowColors.NightSurfaceHigh)
 
             FilterSection("Art") {
                 ChipRow(
@@ -142,7 +158,7 @@ fun CatalogFilterSheet(
 
             SwitchRow(
                 title = "Nur was heute Nacht machbar ist",
-                subtitle = "Blendet aus, was zu tief steht oder im Himmelshintergrund untergeht — " +
+                subtitle = "Blendet aus, was zu tief steht oder im Himmelshintergrund untergeht – " +
                     "beurteilt für Bortle ${conditions.bortleLevel}" +
                     if (conditions.isEstimated) " (geschätzt)" else "",
                 checked = filter.hideImpossible,

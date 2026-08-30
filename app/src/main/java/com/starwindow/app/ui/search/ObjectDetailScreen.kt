@@ -15,11 +15,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.VideocamOff
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.NotificationsNone
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -85,6 +87,27 @@ fun ObjectDetailScreen(
             state.obj?.let { obj ->
                 ObjectSymbol(obj.type, size = 22.dp, modifier = Modifier.padding(end = 10.dp))
                 Box(modifier = Modifier.weight(1f)) { ObjectInfoTitle(obj) }
+                // Oben neben dem Namen und nicht unten bei den Knöpfen: Das Herz sagt etwas über
+                // das Objekt, während die Leiste am Fuß sagt, was mit ihm geschehen soll.
+                IconButton(onClick = viewModel::toggleFavorite) {
+                    Icon(
+                        imageVector = if (state.isFavorite) {
+                            Icons.Filled.Favorite
+                        } else {
+                            Icons.Outlined.FavoriteBorder
+                        },
+                        contentDescription = if (state.isFavorite) {
+                            "Aus den Favoriten entfernen"
+                        } else {
+                            "Zu den Favoriten hinzufügen"
+                        },
+                        tint = if (state.isFavorite) {
+                            StarWindowColors.TrackTarget
+                        } else {
+                            StarWindowColors.Muted
+                        },
+                    )
+                }
             }
         }
 

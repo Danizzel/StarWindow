@@ -1,6 +1,6 @@
 package com.starwindow.app.ui.windows
 
-import android.graphics.Bitmap
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,11 +22,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,10 +34,13 @@ import com.starwindow.app.core.astro.Angles
 import com.starwindow.app.core.astro.Horizontal
 import com.starwindow.app.data.catalog.SkyObject
 import com.starwindow.app.data.images.SkyImageLoader
-import com.starwindow.app.data.images.SkyImageRequest
+import com.starwindow.app.ui.components.SKY_IMAGE_CREDIT
+import com.starwindow.app.ui.components.rememberSkyImage
 import com.starwindow.app.domain.ObjectDescription
 import com.starwindow.app.domain.SkyTrack
+import com.starwindow.app.ui.components.SectionCard
 import com.starwindow.app.ui.theme.StarWindowColors
+import com.starwindow.app.ui.theme.StarWindowSpacing
 
 /**
  * Everything the info sheet needs, gathered by the view model so the sheet stays presentational.
@@ -112,33 +111,40 @@ fun ObjectInfoContent(
 ) {
     val obj = info.obj
 
-    Column(modifier = modifier) {
+    // Drei Karten statt einer durchgehenden Spalte mit einer Trennlinie darin: Bild, Erklärung und
+    // Zahlen beantworten drei verschiedene Fragen, und wer nur eine davon hat, findet sie so, ohne
+    // den Rest zu lesen.
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(StarWindowSpacing.between),
+    ) {
         SkyImageView(obj, imageLoader)
 
         // Before any number: what the thing actually is. Everything below this point assumes the
         // reader already knows, and for most of the catalogue that is not a safe assumption.
         info.description?.let { description ->
-            Spacer(Modifier.height(12.dp))
-            DescriptionBlock(description)
+            SectionCard { DescriptionBlock(description) }
         }
 
-        Spacer(Modifier.height(12.dp))
-        Text("Höhe über dem Horizont", style = MaterialTheme.typography.titleSmall)
-        AltitudeCurveChart(track = info.track, passes = info.passes)
-        Text(
-            if (info.passes.isEmpty()) {
-                "Die Kurve zeigt die nächsten Stunden; die Linie bei 0° ist der Horizont."
-            } else {
-                "Grün hinterlegt: die Zeit, in der das Objekt im Fenster steht."
-            },
-            style = MaterialTheme.typography.labelSmall,
-            color = StarWindowColors.Muted,
-        )
+        SectionCard {
+            Text(
+                "Höhe über dem Horizont",
+                style = MaterialTheme.typography.titleSmall,
+                color = StarWindowColors.Starlight,
+            )
+            AltitudeCurveChart(track = info.track, passes = info.passes)
+            Text(
+                if (info.passes.isEmpty()) {
+                    "Die Kurve zeigt die nächsten Stunden; die Linie bei 0° ist der Horizont."
+                } else {
+                    "Grün hinterlegt: die Zeit, in der das Objekt im Fenster steht."
+                },
+                style = MaterialTheme.typography.labelSmall,
+                color = StarWindowColors.Muted,
+            )
+        }
 
-        Spacer(Modifier.height(12.dp))
-        HorizontalDivider()
-        Spacer(Modifier.height(8.dp))
-
+        SectionCard {
         InfoRow("Helligkeit", obj.magnitude?.let { "%.1f mag".format(it) })
         InfoRow(
             "Flächenhelligkeit",
@@ -179,6 +185,7 @@ fun ObjectInfoContent(
             InfoRow("Weitere Namen", obj.alternativeNames.joinToString(", "))
         }
         InfoRow("Quelle", obj.source)
+        }
     }
 }
 
@@ -239,43 +246,27 @@ private fun DescriptionBlock(description: ObjectDescription) {
 private fun SkyImageView(obj: SkyObject, imageLoader: SkyImageLoader?) {
     if (imageLoader == null) return
 
-    var bitmap by remember(obj.id) { mutableStateOf<Bitmap?>(null) }
-    var failed by remember(obj.id) { mutableStateOf(false) }
-    var loading by remember(obj.id) { mutableStateOf(true) }
-
-    LaunchedEffect(obj.id) {
-        loading = true
-        failed = false
-        val result = imageLoader.load(
-            SkyImageRequest(
-                raDeg = obj.raDeg,
-                decDeg = obj.decDeg,
-                fieldOfViewDeg = SkyImageLoader.frameForObject(obj.sizeArcmin),
-            )
-        )
-        bitmap = result.getOrNull()
-        failed = result.isFailure
-        loading = false
-    }
+    val image by rememberSkyImage(obj, imageLoader)
+    val bitmap = image.bitmap
 
     Surface(
-        shape = RoundedCornerShape(10.dp),
+        shape = MaterialTheme.shapes.medium,
         color = StarWindowColors.NightSurfaceHigh,
-        modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(10.dp)),
+        border = BorderStroke(1.dp, StarWindowColors.Outline),
+        modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(MaterialTheme.shapes.medium),
     ) {
         Box(contentAlignment = Alignment.Center) {
-            val image = bitmap
             when {
-                image != null -> Image(
-                    bitmap = image.asImageBitmap(),
+                bitmap != null -> Image(
+                    bitmap = bitmap.asImageBitmap(),
                     contentDescription = "Aufnahme von ${obj.name.ifBlank { obj.id }}",
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxWidth(),
                 )
 
-                loading -> CircularProgressIndicator()
+                image.isLoading -> CircularProgressIndicator()
 
-                failed -> Text(
+                image.failed -> Text(
                     "Kein Bild verfügbar – keine Verbindung oder der Bilddienst antwortet nicht.",
                     style = MaterialTheme.typography.labelSmall,
                     color = StarWindowColors.Muted,
@@ -287,7 +278,7 @@ private fun SkyImageView(obj: SkyObject, imageLoader: SkyImageLoader?) {
     }
     if (bitmap != null) {
         Text(
-            "Bildausschnitt: DSS2 über hips2fits (CDS Strasbourg)",
+            SKY_IMAGE_CREDIT,
             style = MaterialTheme.typography.labelSmall,
             color = StarWindowColors.Muted,
         )

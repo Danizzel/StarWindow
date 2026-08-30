@@ -88,10 +88,10 @@ fun SkyWindow.accuracy(): WindowAccuracy {
             append("Nicht kalibriert; geschätzt aus der Kompassgüte ")
             append(
                 when (compassAccuracy) {
-                    3 -> "\"hoch\""
-                    2 -> "\"mittel\""
-                    1 -> "\"niedrig\""
-                    else -> "\"unzuverlässig\""
+                    3 -> "„hoch“"
+                    2 -> "„mittel“"
+                    1 -> "„niedrig“"
+                    else -> "„unzuverlässig“"
                 }
             )
             if (headingHeld) append(", der Kompass war zudem gestört")

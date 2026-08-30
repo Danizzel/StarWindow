@@ -274,6 +274,99 @@ mehr Code, sondern **Gegenprüfung am Himmel** – siehe Abschnitt 1.
 
 ## 6. Bedienung
 
+- [x] ~~**Objektzeichen, die man erkennt statt lernt.**~~ Vorher standen dort die Zeichen des
+      gedruckten Sternatlas — Quadrat für Nebel, gestrichelter Kreis für offenen Sternhaufen, Kreis
+      mit Kreuz für Kugelsternhaufen. Exakt und über jede Karte hinweg gleich, aber **gelernt und
+      nicht erkannt**: Wer nie einen Atlas in der Hand hatte, sieht ein Quadrat und weiß nichts.
+      Jetzt steht dort, wonach das Objekt aussieht: Spirale für die Galaxie, Wolke für den Nebel,
+      Rauchring für den planetarischen, lockere Streuung für den offenen und ein dichter Ball für
+      den Kugelsternhaufen — der Unterschied zwischen den beiden Haufenarten *ist* locker gegen
+      dicht, und genau das zeigt das Zeichen jetzt. Emissions-, Reflexions- und Haufennebel tragen
+      dieselbe Wolke mit einer aufgehellten Marke innen, daneben oder als Sterne darin.
+      Gebaut für sechzehn Punkte: höchstens zwei Aussagepunkte je Zeichen, keine Linie dünner als
+      ein Zehntel der Kantenlänge, helle Nebel als gefüllte Flächen statt als Konturen. Zwei Dinge
+      mussten nach dem ersten Blick aufs Gerät nachgebessert werden — die halbdurchsichtige Wolke
+      des Emissionsnebels wurde zum braunen Fleck, und die Spiralarme liefen nach einer
+      Vierteldrehung aus dem Bild, sodass ein „S" übrig blieb.
+      Der Preis ist die Anschlussfähigkeit an die Papierkarte. Wer aus dem Atlas kommt, muss die
+      neuen Zeichen einmal lesen; wer nicht, muss gar nichts mehr lernen.
+- [ ] **Zeichen über dem Kamerabild ansehen.** Dieselben Zeichen liegen als Marker über dem
+      Sucher, dort aber in anderer Größe und über einem Livebild. Geprüft ist das bisher nur in den
+      Listen — der Sucher zeigte beim Test nach unten, und ohne Objekte am Bildschirm war nichts zu
+      sehen.
+- [x] ~~**Ein Gestaltungssystem statt neun Bildschirmen.**~~ Vorher hatte jeder Bildschirm seine
+      eigenen Maße: acht verschiedene Eckenradien zwischen 3 und 50 Punkten, Kopfzeilen mal mit 4,
+      mal mit 8 Punkten Abstand, Trennlinien in einem Bildschirm und Karten im nächsten. Jetzt
+      liegen Farbebenen, Radien, Abstände und Typografie in `Theme.kt` und die Bausteine in
+      `ui/components/Design.kt` (`SectionCard`, `SectionHeader`, `ScreenHeader`, `StatTile`,
+      `StatusPill`, `ValueRow`).
+      **Vier Flächenebenen statt einer:** Im Dunkelmodus gibt es keine Schatten — Tiefe entsteht
+      dadurch, dass Näherliegendes heller ist, und wo das nicht reicht, durch eine Haarlinie
+      (`Outline`) statt eines Schlagschattens, den ohnehin niemand sähe. Der Grundton ist ein tiefes
+      Indigo statt Fast-Schwarz: Auf einem OLED wirkt reines Schwarz wie ein Loch, an dem jede Kante
+      hart abbricht.
+      **Karten statt Trennlinien:** Eine Linie sagt „hier endet etwas", eine Karte sagt „das gehört
+      zusammen" — und nur das Zweite erfasst man mit einem Blick. Umgestellt sind Wetter, Kalender,
+      Suche, Fensterliste, Objektblatt und die Sucher-Chrome; Hub und Fotoguide waren schon so
+      gebaut und teilen jetzt dieselben Werte.
+      **Statuspillen tragen ihre Farbe als Fläche:** Grün auf Grau muss man lesen, Grün auf Grün
+      erkennt man. Dasselbe in der unteren Leiste, wo das gewählte Ziel eine getönte Kapsel bekommt
+      — sechs kleine Symbole allein über die Farbe zu unterscheiden funktioniert nicht, und für
+      Farbenblinde gar nicht.
+- [ ] **Bewegung.** Die Umstellung ist statisch geblieben: Karten erscheinen ohne Übergang,
+      Jahreszeitenwechsel im Hub springt. Ein knapper Ein-/Ausblendübergang je Karte wäre der
+      nächste Schritt — aber einer, der sich am Gerät entscheiden muss, nicht am Schreibtisch.
+- [ ] **Helles Thema.** `LightScheme` ist bis heute eine Notlösung aus zwei Farben. Solange die App
+      nachts benutzt wird, ist das vertretbar; für den Einsatz am Tag (Planung, Fensterliste) wäre
+      ein echtes helles Thema fällig — die Tokens dafür stehen jetzt an einer Stelle.
+- [x] ~~**Leiste am unteren Rand.**~~ Sucher, Motive, Kalender, Wetter und Fenster stehen jetzt in
+      einer Leiste unten (`StarWindowBottomBar`), getragen vom `Scaffold` im `StarWindowNavHost` und
+      nur auf diesen fünf Zielen sichtbar. Vorher hingen Wetter, Kalender und Fensterliste als
+      Symbole oben neben der Suche – außer Reichweite des Daumens und optisch verwechselbar mit
+      Knöpfen für den Bildausschnitt. Oben bleibt, was zum Sucher gehört: Suchfeld, Nachtsicht,
+      Einstellungen. Der Wechsel läuft über `popUpTo(CAPTURE) { saveState = true }`, damit der
+      Stapel nicht mitwächst und jedes Ziel seinen Scrollstand behält.
+- [x] ~~**Stargazing Hub.**~~ Eigener Bereich in der Leiste: was an *diesem* Ort in *dieser*
+      Jahreszeit zu fotografieren ist, als Aufmacher plus Reihen von Bildkarten, die sich nach links
+      und rechts blättern lassen. `SeasonalHighlights` mischt dafür drei Zahlen – die Nachtrechnung
+      aus `ObservationPlanner` (Höhe, Dunkelheit, Mond, für **eine konkrete Nacht**), den
+      fotografischen Wert aus `PhotographicInterest` und eine kuratierte Beliebtheit (`Popularity`,
+      aus den gängigen Saisonlisten). Weil die Nacht konkret ist, verschiebt sich der Hub von Monat
+      zu Monat, obwohl die vier Reiter dieselben bleiben; weil der Ort eingeht, zeigt er südlich des
+      Äquators einen anderen Himmel **und** die umgekehrte Jahreszeit. Bilder kommen wie im
+      Info-Blatt aus `SkyImageLoader`, der dafür einen kleinen Speicher für dekodierte Bilder
+      bekommen hat.
+- [x] ~~**Bilddienst über beide CDS-Adressen.**~~ `alasky.cds.unistra.fr` brach den TLS-Handschlag
+      mit `Connection reset` ab, `alaskybis.cds.unistra.fr` beantwortete dieselbe Anfrage in einer
+      Sekunde – und weil die Adresse fest verdrahtet war, verschwand *jedes* Bild der App, im Hub
+      wie im Info-Blatt. hips2fits ist ausdrücklich als zwei unabhängige Endpunkte dokumentiert;
+      `SkyImageLoader` fragt jetzt beide der Reihe nach und merkt sich die erste, die antwortet, so
+      dass den Ausfall nur das erste Bild bezahlt. Weitergereicht wird bei Netzfehler und 5xx, nicht
+      bei 4xx – daran änderte die zweite Maschine nichts. Verbindungszeitgrenze auf 5 s, weil sie
+      im Fehlerfall zweimal anfällt.
+- [x] ~~**Favoriten.**~~ Ein Herz oben auf dem Objektblatt, `FavoritesRepository` als Liste von
+      Kennungen in `filesDir`, und ein Schalter „Nur Favoriten" ganz oben im Filterblatt. Bewusst
+      **nicht** mit der Merkliste zusammengelegt: Die ist ein Auftrag („sag mir Bescheid") und trägt
+      Alarm, Bedingung und Ruhezeit; ein Favorit ist eine Meinung und trägt nichts. Der Filter greift
+      **vor** dem 200er-Limit der Suche — dahinter blieb die Liste leer, weil ein Favorit irgendwo
+      unter 22.530 Einträgen steht und bei leerer Eingabe nie unter den ersten 200.
+- [x] ~~**Fotoguide.**~~ Eigener Reiter: Ziel, Gerät (Seestar S30/S30 Pro/S50, DWARF 3/Mini) und
+      Bortle-Stufe hinein, heraus kommen Filter, Einzelbelichtung, Gesamtzeit, Mosaik, Tau und ein
+      Urteil. `PhotoGuide` rechnet das nicht aus Faustregeln, sondern über `t ∝ Hintergrund/Signal²`:
+      Der Dualbandfilter dämpft beides, und welche Dämpfung überwiegt, entscheidet von allein, ob er
+      zu empfehlen ist — bei Nebeln ja, bei Galaxien um das Fünfzehnfache nein. Aus derselben Formel
+      fallen der Mondaufschlag, die Bortle-Kosten und der Öffnungsvorteil (quadratisch: das S30
+      braucht die 2,8-fache Zeit eines S50). Passt die empfohlene Zeit in keine Nacht, wird sie als
+      Zahl von Nächten ausgewiesen statt als unlesbare Stundenzahl.
+- [ ] **Geräteliste erweitern.** Bisher nur die fünf Smart-Teleskope. Für ein klassisches Setup aus
+      Optik, Kamera und Montierung müsste der Nutzer Brennweite, Pixelgröße und Sensorformat
+      eintragen — die Rechnung selbst kann das bereits, es fehlt nur die Eingabe.
+- [ ] **Eigene Aufnahmen im Hub.** Bisher zeigt jede Karte den Survey-Ausschnitt. Wer ein Motiv
+      schon einmal fotografiert hat, sollte dort sein eigenes Bild sehen – und daneben, was sich
+      seitdem geändert hat.
+- [ ] **Ausrüstung im Hub berücksichtigen.** Ob ein Motiv ins Bildfeld passt, weiß die App über
+      `fillFactor` bereits; im Hub steht es noch nicht. Mit hinterlegter Brennweite und Sensorgröße
+      ließen sich die Karten danach sortieren statt nur nach Himmel und Beliebtheit.
 - [x] ~~**Jahresplanung.**~~ Neuer Kalender-Tab in der Kameraansicht und ein Knopf **Planung** unten
       im Info-Blatt jedes Objekts. `ObservationPlanner` rechnet für jede Nacht des kommenden Jahres
       aus, wie lange das Objekt gleichzeitig über 30° steht **und** der Himmel dunkel ist – das ist
@@ -294,6 +387,17 @@ mehr Code, sondern **Gegenprüfung am Himmel** – siehe Abschnitt 1.
       wertlos, und `SCHEDULE_EXACT_ALARM` dafür zu verlangen wäre ein schlechter Tausch. Ein
       `BootReceiver` setzt sie nach einem Neustart neu auf. Dazu eine **Notiz** je Termin, die mit
       in die Benachrichtigung wandert.
+- [x] ~~**Termine am Tag statt über dem Raster.**~~ Ein Antippen öffnete die Auswahl bisher als
+      Liste **oben** über dem Kalender — bei einem Raster, durch das man monatelang scrollt, hieß
+      das: Der Finger bleibt am 3. November, die Antwort erscheint drei Bildschirmhöhen weiter oben
+      außerhalb des Sichtfelds. Jetzt hängt ein Blatt an der Kachel selbst (`DayPopup`), mit einem
+      eigenen `PopupPositionProvider`: unter der Kachel, notfalls darüber, und am Bildschirmrand
+      eingerückt — der 31. eines Monats liegt oft genug ganz rechts.
+      Das Blatt listet **alle** Ziele des Abends, weil an einer Nacht mehr als eines hängen kann;
+      die Kachel trägt dafür oben rechts die Anzahl. Die Punktreihe, die dort stand, beantwortete
+      „ist etwas geplant", aber nicht „wie viel" — und drei von vier Punkten unterscheidet auf einer
+      Kachel dieser Größe ohnehin niemand. Die Auswahl eines Ziels öffnet unverändert das
+      Terminblatt mit Bahn und Erinnerung; das Blatt entscheidet nur, *welcher* Termin gemeint ist.
 - [x] ~~**Nächster Termin im Kalender.**~~ Eigene Kachel ganz oben mit Countdown, Eckdaten, Notiz
       und der nächsten fälligen Erinnerung.
 - [x] ~~**Pfad am Himmel zeigen.**~~ „Pfad zeigen" am Termin öffnet die Kamera und zeichnet die
@@ -399,6 +503,23 @@ mehr Code, sondern **Gegenprüfung am Himmel** – siehe Abschnitt 1.
       (2,2 km), ICON-EU (7 km) und ECMWF IFS (25 km, 15 Tage, Voreinstellung). Zu jedem steht der
       Zeitpunkt des letzten Laufs aus `meta.json` des Dienstes, dazu Laufintervall und Reichweite;
       Modelle außerhalb ihres Gebiets sind ausgegraut.
+- [x] ~~**Bewertung, Mond und Dämmerungsband oben in der Wetteransicht.**~~ Drei Dinge, die vorher
+      über Kurve, Datentafel und Mondzeile verteilt waren, jetzt als erste Karte.
+      **Die Bewertung** (`AstroNight.stargazingRating`) ist nicht `bestScore`: Der kennt nur den
+      besten Augenblick, und eine Nacht mit einer perfekten Stunde und fünf bewölkten bekäme
+      dieselbe Zahl wie eine, die durchgehend trägt. Der Anteil der brauchbaren Dunkelheit dämpft
+      ihn deshalb — aber nur bis auf 60 %, denn für ein gutes Loch fährt man notfalls trotzdem raus.
+      **Der Mond** wird gezeichnet statt aus Symbolen ausgewählt: Der Terminator ist eine halbe
+      Ellipse mit der Halbachse `R·(1−2k)`, und dieses eine Vorzeichen erledigt Sichel, Halbmond und
+      Dreiviertelmond ohne Fallunterscheidung. Die Geometrie liegt als `litSpan` frei und ist
+      geprüft — ein seitenverkehrter Mond bei 92 % fiele auf dem Bildschirm niemandem auf.
+      **Das Band** legt Mitternacht fest in die Mitte und zieht das Fenster symmetrisch so weit auf,
+      dass Auf- und Untergang hineinpassen. Damit heißt links immer „vor Mitternacht", und die
+      Asymmetrie einer Nacht, deren Dunkelheit erst um 22:07 beginnt und schon um 04:42 endet, wird
+      sichtbar, statt sich im Maßstab zu verstecken. Die Farbstützstellen sitzen genau auf den acht
+      Grenzen aus `NightTimes` — wo das Band die Farbe wechselt, steht auch die Markierung.
+- [ ] **Das Band auch in der Nächteliste.** Beim Aufklappen einer kommenden Nacht steht dort noch
+      die Kurve allein; dasselbe Band darüber würde den Vergleich zweier Nächte erst rund machen.
 - [ ] **Modelle nebeneinander zeigen.** Wenn ICON-D2 „teilweise" sagt und ECMWF „geeignet", ist
       genau das die interessante Information — bisher sieht man immer nur eines. Zwei Kurven
       übereinander oder ein Streuungsband wären der nächste Schritt.

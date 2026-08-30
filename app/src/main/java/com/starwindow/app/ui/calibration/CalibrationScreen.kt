@@ -280,7 +280,7 @@ private fun SensorHealthLine(attitude: DeviceAttitude?) {
         attitude.hasFieldDirectionDistortion -> Text(
             text = "Die Feldrichtung stimmt nicht – etwas Eisenhaltiges in der Nähe verbiegt das " +
                 "Erdmagnetfeld, ohne seine Stärke zu ändern. Ein paar Schritte weggehen; " +
-                "Nordrichtung wird solange vom Kreisel gehalten.",
+                "Nordrichtung wird so lange vom Kreisel gehalten.",
             style = MaterialTheme.typography.labelSmall,
             color = StarWindowColors.Crosshair,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
@@ -477,7 +477,14 @@ private fun PanSweepPanel(
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
         AssistChip(
             onClick = {},
-            label = { Text("${state.panSamples.size} Antippungen") },
+            // Der erste Antipper ist der interessanteste Moment dieser Anzeige — dann steht dort
+            // eine Eins, und „1 Antippungen" wäre ausgerechnet dort falsch.
+            label = {
+                Text(
+                    if (state.panSamples.size == 1) "1 Antippung"
+                    else "${state.panSamples.size} Antippungen"
+                )
+            },
         )
         viewport.visibleFovDeg?.let {
             AssistChip(onClick = {}, label = { Text("aktuell %.1f°".format(it)) })

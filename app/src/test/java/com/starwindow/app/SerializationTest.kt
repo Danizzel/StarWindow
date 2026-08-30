@@ -470,6 +470,30 @@ class SkyImageRequestTest {
         assertTrue(url.contains("CDS%2FP%2FDSS2%2Fcolor"), url)
     }
 
+    /**
+     * CDS betreibt hips2fits unter zwei unabhängigen Adressen, und sie fallen unabhängig aus.
+     *
+     * Mit nur einer hinterlegten Adresse verschwindet jedes Bild in der App, sobald diese eine
+     * Maschine nicht antwortet — genau das ist einmal passiert. Der Test hält fest, dass es zwei
+     * verschiedene Hosts sind; ob die Umschaltung greift, zeigt nur das Gerät.
+     */
+    @Test
+    fun `the loader knows both endpoints of the image service`() {
+        val hosts = SkyImageLoader.DEFAULT_BASE_URLS
+        assertEquals(2, hosts.size)
+        assertEquals(hosts.size, hosts.map { java.net.URI(it).host }.distinct().size)
+        assertTrue(hosts.all { it.startsWith("https://") }, "$hosts")
+    }
+
+    /** Dieselbe Anfrage, andere Maschine: Es darf sich nur der Host unterscheiden. */
+    @Test
+    fun `the same request maps onto every endpoint`() {
+        val request = SkyImageRequest(83.822, -5.391, 1.5, 512)
+        val urls = SkyImageLoader.DEFAULT_BASE_URLS.map { loader.urlFor(request, it) }
+        assertEquals(urls.size, urls.distinct().size)
+        assertEquals(1, urls.map { it.substringAfter('?') }.distinct().size)
+    }
+
     @Test
     fun `cache keys separate different frames and survive the file system`() {
         val a = SkyImageRequest(83.822, -5.391, 1.5).cacheKey

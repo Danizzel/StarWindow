@@ -24,8 +24,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.CloudQueue
 import androidx.compose.material.icons.filled.CropFree
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Explore
@@ -34,7 +32,6 @@ import androidx.compose.material.icons.filled.NightlightRound
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
@@ -82,15 +79,18 @@ import com.starwindow.app.ui.theme.StarWindowColors
  * The chrome is kept to two bands, one at each edge, because everything between them is the sky.
  * The top band answers "can the app trust what it is showing" and offers the search; the bottom
  * band is what the hands do. Nothing floats in the middle.
+ *
+ * Wetter, Kalender und Fensterliste standen früher als Symbole in der oberen Leiste und stehen
+ * jetzt in der Leiste am unteren Rand ([com.starwindow.app.ui.nav.StarWindowBottomBar]): Es waren
+ * nie Werkzeuge des Suchers, sondern andere Orte in der App, und oben, außer Reichweite des
+ * Daumens, sahen sie aus wie Knöpfe für den Bildausschnitt. Oben bleibt, was zum Sucher gehört —
+ * die Suche, die Nachtsicht und die Einstellungen samt Kalibrierung.
  */
 @Composable
 fun CaptureScreen(
     viewModel: CaptureViewModel,
-    onOpenWindows: () -> Unit,
     onOpenCalibration: () -> Unit,
     onOpenSearch: () -> Unit,
-    onOpenWeather: () -> Unit,
-    onOpenCalendar: () -> Unit,
     onOpenTrackedObject: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -218,9 +218,6 @@ fun CaptureScreen(
                     hasOrientationSensor = viewModel.hasOrientationSensor,
                     nightMode = state.settings.exposure.mode == ExposureMode.NIGHT,
                     onOpenSearch = onOpenSearch,
-                    onOpenWeather = onOpenWeather,
-                    onOpenCalendar = onOpenCalendar,
-                    onOpenWindows = onOpenWindows,
                     onOpenSettings = { showSettings = true },
                     onOpenNightVision = { showNightVision = true },
                 )
@@ -316,8 +313,8 @@ fun CaptureScreen(
         }
         Box(modifier = Modifier.fillMaxSize().safeDrawingPadding(), contentAlignment = Alignment.BottomCenter) {
             Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = StarWindowColors.NightSurfaceHigh,
+                shape = RoundedCornerShape(50),
+                color = StarWindowColors.NightSurfaceTop,
                 modifier = Modifier.padding(bottom = 120.dp),
             ) {
                 Text(
@@ -347,30 +344,13 @@ private fun CaptureHud(
     hasOrientationSensor: Boolean,
     nightMode: Boolean,
     onOpenSearch: () -> Unit,
-    onOpenWeather: () -> Unit,
-    onOpenCalendar: () -> Unit,
-    onOpenWindows: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenNightVision: () -> Unit,
 ) {
-    Surface(color = Color.Black.copy(alpha = 0.55f)) {
+    Surface(color = StarWindowColors.Night.copy(alpha = 0.82f)) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 SearchPill(onClick = onOpenSearch, modifier = Modifier.weight(1f))
-                IconButton(onClick = onOpenWeather) {
-                    Icon(
-                        Icons.Filled.CloudQueue,
-                        contentDescription = "Wetter für die Nacht",
-                        tint = StarWindowColors.Starlight,
-                    )
-                }
-                IconButton(onClick = onOpenCalendar) {
-                    Icon(
-                        Icons.Filled.CalendarMonth,
-                        contentDescription = "Kalender und Planung",
-                        tint = StarWindowColors.Starlight,
-                    )
-                }
                 IconButton(onClick = onOpenNightVision) {
                     Icon(
                         Icons.Filled.NightlightRound,
@@ -382,13 +362,6 @@ private fun CaptureHud(
                     Icon(
                         Icons.Filled.Settings,
                         contentDescription = "Einstellungen und Kalibrierung",
-                        tint = StarWindowColors.Starlight,
-                    )
-                }
-                IconButton(onClick = onOpenWindows) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ViewList,
-                        contentDescription = "Gespeicherte Fenster",
                         tint = StarWindowColors.Starlight,
                     )
                 }
@@ -522,8 +495,8 @@ private fun CaptureHud(
 @Composable
 private fun SearchPill(onClick: () -> Unit, modifier: Modifier = Modifier) {
     Surface(
-        color = StarWindowColors.NightSurface.copy(alpha = 0.92f),
-        shape = RoundedCornerShape(22.dp),
+        color = StarWindowColors.NightSurfaceHigh,
+        shape = RoundedCornerShape(50),
         modifier = modifier.clickable(onClick = onClick),
     ) {
         Row(
@@ -550,7 +523,7 @@ private fun SearchPill(onClick: () -> Unit, modifier: Modifier = Modifier) {
 
 @Composable
 private fun StatusPill(icon: ImageVector, text: String, tint: Color) {
-    Surface(color = Color.Black.copy(alpha = 0.35f), shape = RoundedCornerShape(10.dp)) {
+    Surface(color = StarWindowColors.tint(tint, 0.14f), shape = RoundedCornerShape(50)) {
         Row(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -578,7 +551,7 @@ private fun TrackedTargetBar(
 ) {
     val position = target?.direction
     val pathLabel = target?.pathLabel.orEmpty()
-    Surface(color = Color.Black.copy(alpha = 0.62f)) {
+    Surface(color = StarWindowColors.NightSurface.copy(alpha = 0.92f)) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(start = 14.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -656,7 +629,7 @@ private fun CaptureControls(
     onClear: () -> Unit,
     onSave: () -> Unit,
 ) {
-    Surface(color = Color.Black.copy(alpha = 0.6f)) {
+    Surface(color = StarWindowColors.Night.copy(alpha = 0.88f)) {
         Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 DrawMode.entries.forEach { mode ->
@@ -672,7 +645,12 @@ private fun CaptureControls(
 
             Text(
                 text = if (state.missingAnchors > 0) {
-                    "${state.mode.hint} · noch ${state.missingAnchors} Punkt(e)"
+                    // „Punkt(e)" spart eine Zeile Code und kostet die Zeile, die der Nutzer liest.
+                    if (state.missingAnchors == 1) {
+                        "${state.mode.hint} · noch ein Punkt"
+                    } else {
+                        "${state.mode.hint} · noch ${state.missingAnchors} Punkte"
+                    }
                 } else {
                     state.mode.hint
                 },

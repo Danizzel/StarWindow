@@ -24,7 +24,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
@@ -69,7 +68,10 @@ import com.starwindow.app.domain.AstroNight
 import com.starwindow.app.domain.AstroWeather
 import com.starwindow.app.domain.BortleScale
 import com.starwindow.app.domain.NightVerdict
+import com.starwindow.app.ui.components.SectionCard
+import com.starwindow.app.ui.components.SectionHeader
 import com.starwindow.app.ui.theme.StarWindowColors
+import com.starwindow.app.ui.theme.StarWindowSpacing
 import com.starwindow.app.ui.windows.formatDuration
 import java.time.Instant
 import java.time.LocalDate
@@ -94,7 +96,6 @@ import kotlin.math.roundToInt
 @Composable
 fun WeatherScreen(
     viewModel: WeatherViewModel,
-    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -108,7 +109,6 @@ fun WeatherScreen(
             place = state.place,
             onQueryChange = viewModel::setQuery,
             onClear = viewModel::clearQuery,
-            onBack = onBack,
             onUseCurrentLocation = {
                 keyboard?.hide()
                 viewModel.useCurrentLocation()
@@ -192,17 +192,17 @@ private fun PlaceBar(
     place: WeatherPlace?,
     onQueryChange: (String) -> Unit,
     onClear: () -> Unit,
-    onBack: () -> Unit,
     onUseCurrentLocation: () -> Unit,
     onRefresh: () -> Unit,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(start = 4.dp, end = 4.dp, top = 6.dp),
+        modifier = Modifier.fillMaxWidth().padding(
+            start = StarWindowSpacing.screen,
+            end = 4.dp,
+            top = 6.dp,
+        ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        IconButton(onClick = onBack) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
-        }
         OutlinedTextField(
             value = query,
             onValueChange = onQueryChange,
@@ -294,7 +294,7 @@ private fun EmptyState(error: String?) {
         )
         Spacer(Modifier.height(12.dp))
         Text(
-            text = error ?: "Noch keine Vorhersage — bitte oben einen Ort eingeben.",
+            text = error ?: "Noch keine Vorhersage – bitte oben einen Ort eingeben.",
             style = MaterialTheme.typography.bodyMedium,
             color = StarWindowColors.Muted,
             textAlign = TextAlign.Center,
@@ -310,51 +310,92 @@ private fun NightList(
 ) {
     val tonight = state.tonight ?: return
 
-    LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
-        item(key = "headline") {
-            NightHeadline(tonight)
-        }
-        item(key = "chart") {
-            AstroWeatherChart(
+    // Die heutige Nacht als eine Karte, jede weitere als eigene. Vorher lief alles als eine
+    // durchgehende Spalte mit Trennlinien, und die Frage „gehört das Diagramm noch zu heute Abend
+    // oder schon zur Liste darunter" ließ sich nur durch Lesen beantworten.
+    LazyColumn(
+        contentPadding = PaddingValues(
+            start = StarWindowSpacing.screen,
+            end = StarWindowSpacing.screen,
+            bottom = 24.dp,
+        ),
+        verticalArrangement = Arrangement.spacedBy(StarWindowSpacing.between),
+    ) {
+        // Erst die Antwort, dann die Begründung: Bewertung, Mond und Dämmerungsband oben, die
+        // Kurve und die Zahlen darunter für alle, die der Bewertung nicht glauben.
+        item(key = "rating") {
+            NightRatingCard(
                 night = tonight,
-                modifier = Modifier.padding(horizontal = 6.dp),
-            )
-        }
-        item(key = "details") {
-            NightDetails(
-                night = tonight,
-                place = state.place,
                 bortleLevel = state.bortleLevel,
                 bortleIsManual = state.bortleIsManual,
                 onEditBortle = onEditBortle,
-                modifier = Modifier.padding(horizontal = 16.dp),
             )
+        }
+
+        item(key = "tonight") {
+            SectionCard(contentPadding = 0.dp) {
+                AstroWeatherChart(
+                    night = tonight,
+                    modifier = Modifier.padding(start = 6.dp, end = 6.dp, top = 10.dp),
+                )
+                NightDetails(
+                    night = tonight,
+                    place = state.place,
+                    bortleLevel = state.bortleLevel,
+                    bortleIsManual = state.bortleIsManual,
+                    onEditBortle = onEditBortle,
+                    modifier = Modifier.padding(
+                        start = StarWindowSpacing.card,
+                        end = StarWindowSpacing.card,
+                        bottom = StarWindowSpacing.card,
+                    ),
+                )
+            }
         }
 
         if (state.upcoming.isNotEmpty()) {
             item(key = "upcoming_title") {
-                SectionTitle("Die nächsten Nächte")
+                SectionHeader(
+                    title = "Die nächsten Nächte",
+                    subtitle = "Antippen öffnet Diagramm und Zahlen",
+                    modifier = Modifier.padding(top = 6.dp),
+                )
             }
         }
 
         items(state.upcoming, key = { it.date.toString() }) { night ->
             val expanded = state.expandedDate == night.date
-            NightRow(night = night, expanded = expanded, onClick = { onToggleDay(night.date) })
-            AnimatedVisibility(visible = expanded) {
-                Column(modifier = Modifier.background(StarWindowColors.NightSurface)) {
-                    AstroWeatherChart(night = night, modifier = Modifier.padding(horizontal = 6.dp))
-                    NightDetails(
-                        night = night,
-                        place = state.place,
-                        bortleLevel = state.bortleLevel,
-                        bortleIsManual = state.bortleIsManual,
-                        onEditBortle = onEditBortle,
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                    )
-                    Spacer(Modifier.height(8.dp))
+            SectionCard(
+                contentPadding = 0.dp,
+                color = if (expanded) {
+                    StarWindowColors.NightSurfaceHigh
+                } else {
+                    StarWindowColors.NightSurface
+                },
+                onClick = { onToggleDay(night.date) },
+            ) {
+                NightRow(night = night, expanded = expanded)
+                AnimatedVisibility(visible = expanded) {
+                    Column {
+                        AstroWeatherChart(
+                            night = night,
+                            modifier = Modifier.padding(horizontal = 6.dp),
+                        )
+                        NightDetails(
+                            night = night,
+                            place = state.place,
+                            bortleLevel = state.bortleLevel,
+                            bortleIsManual = state.bortleIsManual,
+                            onEditBortle = onEditBortle,
+                            modifier = Modifier.padding(
+                                start = StarWindowSpacing.card,
+                                end = StarWindowSpacing.card,
+                                bottom = StarWindowSpacing.card,
+                            ),
+                        )
+                    }
                 }
             }
-            HorizontalDivider(color = StarWindowColors.NightSurfaceHigh)
         }
 
         item(key = "source") {
@@ -372,7 +413,14 @@ private fun NightList(
 @Composable
 private fun NightHeadline(night: AstroNight) {
     val today = LocalDate.now(night.zone)
-    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(
+            start = StarWindowSpacing.card,
+            end = StarWindowSpacing.card,
+            top = StarWindowSpacing.card,
+            bottom = 4.dp,
+        )
+    ) {
         Text(
             text = if (night.date == today) "Heute Abend" else "Diese Nacht",
             style = MaterialTheme.typography.labelLarge,
@@ -403,13 +451,11 @@ private fun NightHeadline(night: AstroNight) {
  * die Liste existiert. Der Rest kommt beim Antippen.
  */
 @Composable
-private fun NightRow(night: AstroNight, expanded: Boolean, onClick: () -> Unit) {
+private fun NightRow(night: AstroNight, expanded: Boolean) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .background(if (expanded) StarWindowColors.NightSurface else Color.Transparent)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = StarWindowSpacing.card, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -546,7 +592,7 @@ private fun NightDetails(
                 label = "Taupunkt",
                 value = best.weather.dewPointC?.let { "%.1f °C".format(it) },
                 hint = best.weather.dewSpreadK?.let { spread ->
-                    val warning = if (spread < 2.0) " — Taubeschlag erwarten" else ""
+                    val warning = if (spread < 2.0) " – Taubeschlag erwarten" else ""
                     "%.1f K Abstand%s".format(spread, warning)
                 },
             )
@@ -580,7 +626,7 @@ private fun NightDetails(
             DataRow(
                 label = "Position",
                 value = "%.4f°, %.4f°".format(it.latitudeDeg, it.longitudeDeg),
-                hint = it.elevationM.takeIf { m -> m > 0.5 }?.let { m -> "${m.roundToInt()} m über Meer" },
+                hint = it.elevationM.takeIf { m -> m > 0.5 }?.let { m -> "${m.roundToInt()} m über dem Meer" },
             )
         }
     }
@@ -646,7 +692,7 @@ private fun BortleRow(
                     "Antippen, um die Stufe zu ändern."
                 } else {
                     val from = place?.population?.let { "aus ${formatPopulation(it)} Einwohnern" } ?: ""
-                    "Schätzung $from — kein Lichtatlas. Antippen zum Korrigieren."
+                    "Schätzung $from – kein Lichtatlas. Antippen zum Korrigieren."
                 },
                 style = MaterialTheme.typography.labelSmall,
                 color = StarWindowColors.Muted,
@@ -719,9 +765,7 @@ private fun BortleDialog(
 
 @Composable
 private fun Footer(state: WeatherUiState) {
-    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp)) {
-        HorizontalDivider(color = StarWindowColors.NightSurfaceHigh)
-        Spacer(Modifier.height(8.dp))
+    Column(modifier = Modifier.fillMaxWidth().padding(top = 14.dp)) {
         Text(
             text = "Vorhersage: ${state.model.provider} ${state.model.label} " +
                 "(${state.model.resolutionLabel}) über ${OpenMeteo.SOURCE_LABEL}",
@@ -811,23 +855,23 @@ private fun DataRow(label: String, value: String?, hint: String? = null) {
  * lässt sich ausrechnen, und deswegen steht er hier im Satz: Eine wolkenlose Vollmondnacht
  * bekommt ihren Haken und dazu die Warnung, dass Deep Sky daraus trotzdem nichts wird.
  */
-private fun summaryOf(night: AstroNight): String = when (night.verdict) {
+internal fun summaryOf(night: AstroNight): String = when (night.verdict) {
     NightVerdict.GOOD -> if (night.moonSpoilsTheNight) {
-        "${formatDuration(night.clearDarkMillis)} klar — aber der Mond hellt die ganze Nacht auf."
+        "${formatDuration(night.clearDarkMillis)} klar – aber der Mond hellt die ganze Nacht auf."
     } else {
-        "${formatDuration(night.clearDarkMillis)} klare Dunkelheit — es lohnt sich."
+        "${formatDuration(night.clearDarkMillis)} klare Dunkelheit – es lohnt sich."
     }
     NightVerdict.PARTLY -> if (night.clearDarkMillis > 0) {
-        "Nur ${formatDuration(night.clearDarkMillis)} klar — Lücken abpassen."
+        "Nur ${formatDuration(night.clearDarkMillis)} klar – Lücken abpassen."
     } else {
-        "Durchweg bewölkt, aber mit Lücken — Lücken abpassen."
+        "Durchweg bewölkt, aber mit Lücken – Lücken abpassen."
     }
     NightVerdict.POOR -> {
         val cloud = night.meanCloudDarkPercent?.roundToInt()
-        if (cloud != null) "Bedeckt ($cloud % im Mittel) — kein Aufbau." else "Kein brauchbares Fenster."
+        if (cloud != null) "Bedeckt ($cloud % im Mittel) – kein Aufbau." else "Kein brauchbares Fenster."
     }
     NightVerdict.NO_DARKNESS ->
-        "Keine astronomische Dunkelheit — die Sonne bleibt zu hoch."
+        "Keine astronomische Dunkelheit – die Sonne bleibt zu hoch."
     NightVerdict.UNKNOWN -> "Für diese Nacht liegen keine Daten vor."
 }
 

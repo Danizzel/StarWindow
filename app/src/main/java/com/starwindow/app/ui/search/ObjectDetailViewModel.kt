@@ -12,6 +12,7 @@ import com.starwindow.app.core.astro.Precession
 import com.starwindow.app.core.sensors.LocationTracker
 import com.starwindow.app.data.catalog.CatalogRepository
 import com.starwindow.app.data.catalog.ObjectNotesRepository
+import com.starwindow.app.data.favorites.FavoritesRepository
 import com.starwindow.app.data.catalog.SkyObject
 import com.starwindow.app.data.planning.WatchScheduler
 import com.starwindow.app.data.planning.WatchlistRepository
@@ -34,6 +35,8 @@ data class ObjectDetailUiState(
     val isTracked: Boolean = false,
     /** True, wenn dieses Objekt auf der Merkliste steht. */
     val isWatched: Boolean = false,
+    /** True, wenn ein Herz daran hängt. */
+    val isFavorite: Boolean = false,
     val description: ObjectDescription? = null,
     val isLoading: Boolean = true,
     val error: String? = null,
@@ -55,6 +58,7 @@ class ObjectDetailViewModel(
     private val objectNotesRepository: ObjectNotesRepository,
     private val watchlistRepository: WatchlistRepository,
     private val watchScheduler: WatchScheduler,
+    private val favoritesRepository: FavoritesRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ObjectDetailUiState())
@@ -65,7 +69,7 @@ class ObjectDetailViewModel(
             val obj = catalogRepository.objects().firstOrNull { it.id == objectId }
             if (obj == null) {
                 _uiState.update {
-                    it.copy(isLoading = false, error = "Objekt \"$objectId\" ist nicht im Katalog")
+                    it.copy(isLoading = false, error = "Objekt „$objectId“ ist nicht im Katalog")
                 }
                 return@launch
             }
@@ -95,6 +99,24 @@ class ObjectDetailViewModel(
                 }
             }
         }
+        viewModelScope.launch {
+            favoritesRepository.load()
+            favoritesRepository.favorites.collect { favorites ->
+                _uiState.update { it.copy(isFavorite = objectId in favorites) }
+            }
+        }
+    }
+
+    /**
+     * Setzt oder entfernt das Herz.
+     *
+     * Ohne Rückfrage und ohne Nebenwirkung — das ist der Unterschied zum Vormerken: Ein Favorit
+     * legt keinen Alarm an, verlangt keine Berechtigung und kann nichts kaputt machen, weshalb er
+     * auch keinen Dialog verdient. Der Zustand kommt über den Fluss zurück, nicht aus dem Klick,
+     * damit zwei Bildschirme auf dasselbe Objekt nie Verschiedenes anzeigen.
+     */
+    fun toggleFavorite() {
+        viewModelScope.launch { favoritesRepository.toggle(objectId) }
     }
 
     /** Starts following the object; the viewfinder picks it up from the store. */
@@ -170,6 +192,7 @@ class ObjectDetailViewModel(
                     objectNotesRepository = container.objectNotesRepository,
                     watchlistRepository = container.watchlistRepository,
                     watchScheduler = container.watchScheduler,
+                    favoritesRepository = container.favoritesRepository,
                 )
             }
         }

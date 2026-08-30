@@ -40,6 +40,18 @@ data class Settings(
     val weatherPlace: WeatherPlace? = null,
     /** Das Wettermodell, mit dem die Vorhersage gerechnet wird. */
     val weatherModel: WeatherModel = WeatherModel.DEFAULT,
+    /** Das Gerät, mit dem fotografiert wird; siehe `SmartTelescopes`. */
+    val telescopeId: String? = null,
+    /**
+     * Eine von Hand gesetzte Bortle-Stufe, die die Schätzung überschreibt.
+     *
+     * Die Schätzung kommt aus Ortsgröße und Entfernung und kennt die Lichtglocke hinter dem Hügel
+     * nicht. Wer seinen Platz kennt, weiß es besser — und darf das eintragen, statt gegen eine
+     * Zahl zu planen, die er für falsch hält.
+     */
+    val bortleOverride: Int? = null,
+    /** Das zuletzt im Fotoguide gewählte Motiv, damit er dort weitermacht, wo man aufgehört hat. */
+    val guideObjectId: String? = null,
 )
 
 class SettingsStore(context: Context) {
@@ -67,6 +79,14 @@ class SettingsStore(context: Context) {
     fun setWeatherPlace(place: WeatherPlace?) = update { it.copy(weatherPlace = place) }
 
     fun setWeatherModel(model: WeatherModel) = update { it.copy(weatherModel = model) }
+
+    fun setTelescope(id: String?) = update { it.copy(telescopeId = id) }
+
+    /** Null setzt die Stufe wieder auf die Schätzung aus dem Ort zurück. */
+    fun setBortleOverride(level: Int?) =
+        update { it.copy(bortleOverride = level?.coerceIn(1, 9)) }
+
+    fun setGuideObject(objectId: String?) = update { it.copy(guideObjectId = objectId) }
 
     /** Applies [transform] to the stored settings and persists the result. */
     fun update(transform: (Settings) -> Settings) {

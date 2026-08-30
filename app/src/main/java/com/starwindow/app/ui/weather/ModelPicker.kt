@@ -30,10 +30,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.starwindow.app.data.weather.WeatherModel
 import com.starwindow.app.data.weather.WeatherModelStatus
 import com.starwindow.app.ui.theme.StarWindowColors
+import com.starwindow.app.ui.theme.StarWindowSpacing
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
@@ -60,7 +62,7 @@ fun ModelRow(
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         LazyRow(
-            contentPadding = PaddingValues(horizontal = 12.dp),
+            contentPadding = PaddingValues(horizontal = StarWindowSpacing.screen),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             items(WeatherModel.ORDERED, key = { it.name }) { model ->
@@ -109,7 +111,7 @@ private fun ModelStatusLine(state: WeatherUiState, onOpenDetails: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onOpenDetails)
-            .padding(start = 16.dp, end = 4.dp, top = 2.dp),
+            .padding(start = StarWindowSpacing.screen, end = 4.dp, top = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
@@ -139,6 +141,10 @@ private fun ModelStatusLine(state: WeatherUiState, onOpenDetails: () -> Unit) {
                 } else {
                     StarWindowColors.Muted
                 },
+                // Drei Zeilen Kleingedrucktes über der ersten Karte sahen aus, als hätte sich
+                // etwas verschoben. Eine Zeile mit Auslassung sagt dasselbe und bleibt eine Zeile.
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
         IconButton(onClick = onOpenDetails) {
@@ -166,7 +172,7 @@ fun ModelDialog(
         text = {
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 Text(
-                    text = "Feines Gitter heißt kurze Reichweite — das ist keine Einstellung, " +
+                    text = "Feines Gitter heißt kurze Reichweite – das ist keine Einstellung, " +
                         "sondern eine Abwägung. Für heute Abend das oberste, für die Planung das " +
                         "unterste.",
                     style = MaterialTheme.typography.bodySmall,
@@ -280,7 +286,11 @@ internal fun formatAge(millis: Long): String {
         minutes < 1 -> "gerade eben"
         minutes < 60 -> "vor $minutes min"
         minutes < 24 * 60 -> "vor %d h %02d min".format(minutes / 60, minutes % 60)
-        else -> "vor ${minutes / (24 * 60)} Tagen"
+        // Ein Tag ist kein „Tagen": Der Lauf eines Modells ist genau dann einen Tag alt, wenn
+        // etwas schiefgelaufen ist — also in dem Fall, in dem die Angabe gelesen wird.
+        else -> (minutes / (24 * 60)).let { days ->
+            if (days == 1L) "vor einem Tag" else "vor $days Tagen"
+        }
     }
 }
 

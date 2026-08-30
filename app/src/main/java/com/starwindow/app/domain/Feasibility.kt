@@ -28,7 +28,7 @@ enum class Feasibility(val label: String, val explanation: String) {
     ),
     TOO_FAINT(
         "zu schwach",
-        "Unter diesem Himmel und mit dieser Aufhellung geht es im Untergrund unter.",
+        "Unter diesem Himmel und mit dieser Aufhellung verschwindet es im Himmelshintergrund.",
     ),
     BELOW(
         "unter Horizont",

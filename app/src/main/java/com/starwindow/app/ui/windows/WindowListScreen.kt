@@ -1,5 +1,6 @@
 package com.starwindow.app.ui.windows
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -14,10 +15,9 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CenterFocusStrong
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.Card
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -26,18 +26,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.starwindow.app.core.astro.Angles
 import com.starwindow.app.core.geometry.SkyWindow
+import com.starwindow.app.ui.components.ScreenHeader
 import com.starwindow.app.ui.theme.StarWindowColors
+import com.starwindow.app.ui.theme.StarWindowSpacing
 
 @Composable
 fun WindowListScreen(
     viewModel: WindowListViewModel,
     onOpenWindow: (String) -> Unit,
-    onBack: () -> Unit,
     onTrackWindow: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -45,15 +47,10 @@ fun WindowListScreen(
     val trackedWindowId by viewModel.trackedWindowId.collectAsStateWithLifecycle()
 
     Column(modifier = modifier.fillMaxSize().safeDrawingPadding()) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
-            }
-            Text("Gespeicherte Fenster", style = MaterialTheme.typography.titleLarge)
-        }
+        ScreenHeader(
+            title = "Gespeicherte Fenster",
+            subtitle = if (windows.isEmpty()) null else "${windows.size} Ausschnitte am Himmel",
+        )
 
         if (windows.isEmpty()) {
             Column(
@@ -69,8 +66,12 @@ fun WindowListScreen(
             }
         } else {
             LazyColumn(
-                contentPadding = PaddingValues(12.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                contentPadding = PaddingValues(
+                    start = StarWindowSpacing.screen,
+                    end = StarWindowSpacing.screen,
+                    bottom = 24.dp,
+                ),
+                verticalArrangement = Arrangement.spacedBy(StarWindowSpacing.between),
             ) {
                 items(windows, key = { it.id }) { window ->
                     WindowCard(
@@ -97,9 +98,17 @@ private fun WindowCard(
     onTrack: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+    Surface(
+        shape = MaterialTheme.shapes.medium,
+        color = StarWindowColors.NightSurface,
+        border = BorderStroke(1.dp, StarWindowColors.Outline),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .clickable(onClick = onClick),
+    ) {
         Row(
-            modifier = Modifier.padding(14.dp),
+            modifier = Modifier.padding(start = 16.dp, end = 4.dp, top = 14.dp, bottom = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
@@ -131,7 +140,7 @@ private fun WindowCard(
             IconButton(onClick = onTrack) {
                 Icon(
                     Icons.Filled.CenterFocusStrong,
-                    contentDescription = "\"${window.name}\" im Sucher zeigen",
+                    contentDescription = "„${window.name}“ im Sucher zeigen",
                     tint = if (isTracked) {
                         StarWindowColors.TrackTarget
                     } else {
