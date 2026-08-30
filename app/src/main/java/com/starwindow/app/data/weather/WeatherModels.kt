@@ -86,27 +86,33 @@ data class WeatherPlace(
  * Jeder Wert ist optional, und das ist kein Übereifer: Welche Größen ein Lauf mitbringt, hängt am
  * Modell und am Vorhersagehorizont, und eine fehlende Bö ist etwas anderes als eine Bö von 0 km/h.
  * Die Anzeige lässt fehlende Zeilen weg, statt Nullen zu erfinden.
+ *
+ * Serialisierbar, weil der zuletzt geholte Lauf auf der Platte landet ([ForecastCache]): Eine
+ * Erinnerung um 17 Uhr läuft in einem frisch gestarteten Prozess und hätte ohne Ablage nichts, aus
+ * dem sie etwas über die Nacht sagen könnte. Alle Felder haben `null` als Vorgabe, damit ein alter
+ * Ablagestand auch dann noch lesbar bleibt, wenn hier später eine Größe dazukommt.
  */
+@Serializable
 data class WeatherHour(
     val millis: Long,
     /** Gesamtbedeckung in Prozent. */
-    val cloudTotalPercent: Double?,
-    val cloudLowPercent: Double?,
-    val cloudMidPercent: Double?,
-    val cloudHighPercent: Double?,
-    val temperatureC: Double?,
-    val dewPointC: Double?,
-    val humidityPercent: Double?,
-    val windSpeedKmh: Double?,
-    val windGustsKmh: Double?,
-    val precipitationMm: Double?,
-    val pressureHpa: Double?,
+    val cloudTotalPercent: Double? = null,
+    val cloudLowPercent: Double? = null,
+    val cloudMidPercent: Double? = null,
+    val cloudHighPercent: Double? = null,
+    val temperatureC: Double? = null,
+    val dewPointC: Double? = null,
+    val humidityPercent: Double? = null,
+    val windSpeedKmh: Double? = null,
+    val windGustsKmh: Double? = null,
+    val precipitationMm: Double? = null,
+    val pressureHpa: Double? = null,
     /**
      * Windgeschwindigkeit auf 250 hPa, also in Höhe des Jetstreams. Kein Bewölkungswert, sondern
      * der beste frei verfügbare Anhaltspunkt für das **Seeing**: Ein Jet direkt über dem Standort
      * bedeutet Scherung in der Höhe und damit unruhige Sterne, auch bei völlig klarem Himmel.
      */
-    val jetStreamKmh: Double?,
+    val jetStreamKmh: Double? = null,
 ) {
     /**
      * Die Bedeckung, mit der gerechnet wird.

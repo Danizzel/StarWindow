@@ -46,7 +46,7 @@ enum class WeatherModel(
         provider = "MeteoSchweiz",
         resolutionKm = 1.0,
         coverage = "Alpenraum",
-        about = "Das feinste Gitter über den Alpen. Löst einzelne Täler auf — dort, wo sich Nebel " +
+        about = "Das feinste Gitter über den Alpen. Löst einzelne Täler auf – dort, wo sich Nebel " +
             "und Föhnlücken auf wenigen Kilometern entscheiden, ist kein anderes Modell näher dran.",
         requestDays = 2,
     ),
@@ -57,7 +57,7 @@ enum class WeatherModel(
         provider = "Météo-France",
         resolutionKm = 1.5,
         coverage = "Frankreich, Benelux, Südwestdeutschland, Alpenrand",
-        about = "Sehr fein und stark bei konvektiver Bewölkung. Führt keine Gesamtbedeckung — die " +
+        about = "Sehr fein und stark bei konvektiver Bewölkung. Führt keine Gesamtbedeckung – die " +
             "App rechnet dann mit der dichtesten der drei Schichten.",
         requestDays = 3,
     ),
@@ -68,7 +68,7 @@ enum class WeatherModel(
         provider = "KNMI",
         resolutionKm = 2.0,
         coverage = "Nordwesteuropa, Nordsee, Norddeutschland",
-        about = "Rechnet stündlich neu und ist damit das aktuellste Modell der Liste — für die " +
+        about = "Rechnet stündlich neu und ist damit das aktuellste Modell der Liste – für die " +
             "Küste und die norddeutsche Tiefebene die erste Wahl.",
         requestDays = 3,
     ),
@@ -80,7 +80,7 @@ enum class WeatherModel(
         resolutionKm = 2.2,
         coverage = "Deutschland, Alpen, Nachbarländer",
         about = "Das Kurzfristmodell des DWD. Für heute Abend und morgen die genaueste Aussage " +
-            "über Wolkenlücken, die es frei gibt — dafür reicht es nur gut zwei Tage.",
+            "über Wolkenlücken, die es frei gibt – dafür reicht es nur gut zwei Tage.",
         requestDays = 3,
     ),
     ICON_EU(
@@ -101,7 +101,7 @@ enum class WeatherModel(
         provider = "ECMWF",
         resolutionKm = 25.0,
         coverage = "global",
-        about = "Grob im Gitter, aber als einziges 15 Tage weit — das Modell für die Frage, an " +
+        about = "Grob im Gitter, aber als einziges 15 Tage weit – das Modell für die Frage, an " +
             "welchem Abend der nächsten zwei Wochen man sich den Wecker stellt.",
         requestDays = 15,
     );

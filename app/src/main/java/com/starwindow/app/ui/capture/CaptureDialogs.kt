@@ -50,7 +50,7 @@ fun DiscardAnchorsDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Zu \"${mode.label}\" wechseln?") },
+        title = { Text("Zu „${mode.label}“ wechseln?") },
         text = {
             Text(
                 "Dabei gehen die schon gesetzten Punkte ($anchorCount) verloren – in jedem Modus " +
@@ -86,7 +86,7 @@ fun SaveWindowDialog(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Name (z. B. \"Lücke über der Garage\")") },
+                    label = { Text("Name (z. B. „Lücke über der Garage“)") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )

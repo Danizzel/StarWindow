@@ -116,6 +116,49 @@ data class AstroNight(
             usableDarkMillis < AstroWeather.PARTLY_NIGHT_MILLIS &&
             bestHour?.limiter == NightLimiter.MOON
 
+    /**
+     * Die ganze Nacht als eine Zahl, 0 bis 100.
+     *
+     * [bestScore] allein wäre die falsche Auskunft, obwohl er die Stunde beschreibt, für die man
+     * aufbaut: Er kennt nur den besten Augenblick. Eine Nacht mit einer perfekten Stunde und fünf
+     * bewölkten bekäme dieselbe Zahl wie eine, die durchgehend trägt — und wer nach einer einzigen
+     * Bewertung greift, will genau diesen Unterschied darin haben.
+     *
+     * Deshalb dämpft der **Anteil der brauchbaren Dunkelheit** den besten Wert, und zwar nur bis auf
+     * sechzig Prozent: Auch eine Nacht mit einem einzigen guten Loch ist etwas wert — man fährt
+     * dann eben für diese eine Stunde hinaus. Ganz auf null zu ziehen hieße zu behaupten, sie sei
+     * dasselbe wie eine geschlossene Wolkendecke.
+     */
+    val stargazingRating: Int
+        get() {
+            if (!hasData) return 0
+            val darkMillis = times.darkDurationMillis
+            val usableFraction = if (darkMillis <= 0L) {
+                0.0
+            } else {
+                (usableDarkMillis.toDouble() / darkMillis).coerceIn(0.0, 1.0)
+            }
+            return (bestScore * (0.6 + 0.4 * usableFraction)).toInt().coerceIn(0, 100)
+        }
+
+    /**
+     * Das Wort zur Zahl.
+     *
+     * Eigene Stufen statt [verdict], weil die beiden verschiedene Fragen beantworten: Das Urteil
+     * sagt, **woran** es liegt (Wolken, Mond, keine Dunkelheit), und muss deshalb auch „keine
+     * Dunkelheit" sagen können. Hier steht nur, **wie gut** — und dafür reichen vier Stufen.
+     */
+    val ratingLabel: String
+        get() = when {
+            !hasData -> "keine Daten"
+            times.darkDurationMillis <= 0L -> "keine Dunkelheit"
+            stargazingRating >= 75 -> "Sehr gut"
+            stargazingRating >= 55 -> "Gut"
+            stargazingRating >= 35 -> "Mäßig"
+            stargazingRating >= 15 -> "Schlecht"
+            else -> "Aussichtslos"
+        }
+
     companion object {
         /** Ab hier ist eine Stunde brauchbar — genug für Belichtungsreihen, nicht nur für Schnappschüsse. */
         const val USABLE_SCORE = 50

@@ -49,7 +49,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.starwindow.app.domain.ObjectSort
 import com.starwindow.app.domain.TonightEntry
 import com.starwindow.app.ui.components.ObjectRow
+import com.starwindow.app.ui.components.SectionCard
+import com.starwindow.app.ui.components.SectionHeader
 import com.starwindow.app.ui.theme.StarWindowColors
+import com.starwindow.app.ui.theme.StarWindowSpacing
 import com.starwindow.app.ui.windows.formatClock
 
 /**
@@ -118,7 +121,6 @@ fun ObjectSearchScreen(
 
         Spacer(Modifier.height(8.dp))
         ResultHeader(state)
-        HorizontalDivider(color = StarWindowColors.NightSurfaceHigh)
 
         when {
             state.isComputingWindow -> WindowSearchRunning(state)
@@ -134,6 +136,7 @@ fun ObjectSearchScreen(
             constellations = state.constellations,
             windows = state.windows,
             conditions = state.conditions,
+            favoriteCount = state.favorites.size,
             onChange = viewModel::setFilter,
             onDismiss = viewModel::closeFilterSheet,
         )
@@ -168,7 +171,7 @@ private fun SearchField(
             modifier = Modifier.weight(1f).focusRequester(focusRequester),
             singleLine = true,
             shape = RoundedCornerShape(24.dp),
-            placeholder = { Text("Name oder Katalognummer, z. B. M 42") },
+            placeholder = { Text("Name oder Katalognummer", maxLines = 1) },
             leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
             trailingIcon = {
                 if (query.isNotEmpty()) {
@@ -244,7 +247,9 @@ private fun FilterRow(
 @Composable
 private fun ResultHeader(state: ObjectSearchUiState) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = StarWindowSpacing.screen, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -297,33 +302,54 @@ private fun TonightBoardList(
     onOpenObject: (String) -> Unit,
     onHideKeyboard: () -> Unit,
 ) {
+    // Jede Sektion als eine Karte: Die drei Überschriften des Bretts sind drei verschiedene Fragen,
+    // und als durchgehende Liste mit Zwischenüberschriften sah es aus wie eine einzige Liste, in
+    // der jemand Zeilen eingezogen hat. Sechs Zeilen je Sektion sind wenig genug, dass sie ohne
+    // eigene Virtualisierung auskommen.
     LazyColumn(
-        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+        contentPadding = PaddingValues(
+            start = StarWindowSpacing.screen,
+            end = StarWindowSpacing.screen,
+            top = 6.dp,
+            bottom = 24.dp,
+        ),
+        verticalArrangement = Arrangement.spacedBy(StarWindowSpacing.between),
     ) {
-        state.board.forEach { group ->
-            item(key = "head-${group.section.name}") {
+        items(state.board, key = { it.section.name }) { group ->
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 SectionHeader(
                     title = if (group.section == com.starwindow.app.domain.TonightSection.IN_WINDOW) {
                         state.selectedWindow?.let { "Jetzt im Fenster „${it.name}“" } ?: group.section.title
                     } else {
                         group.section.title
                     },
-                    trailing = if (group.moreCount > 0) "+${group.moreCount}" else null,
-                )
-            }
-            items(group.entries, key = { "${group.section.name}-${it.obj.id}" }) { entry ->
-                ObjectRow(
-                    obj = entry.obj,
-                    altitudeDeg = entry.altitudeDeg,
-                    selected = entry.obj.id == state.trackedId,
-                    feasibility = entry.feasibility,
-                    trailing = boardTrailing(entry),
-                    onClick = {
-                        onHideKeyboard()
-                        onOpenObject(entry.obj.id)
+                    trailing = if (group.moreCount > 0) {
+                        {
+                            Text(
+                                "+${group.moreCount}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = StarWindowColors.Muted,
+                            )
+                        }
+                    } else {
+                        null
                     },
                 )
+                SectionCard(contentPadding = 4.dp) {
+                    group.entries.forEach { entry ->
+                        ObjectRow(
+                            obj = entry.obj,
+                            altitudeDeg = entry.altitudeDeg,
+                            selected = entry.obj.id == state.trackedId,
+                            feasibility = entry.feasibility,
+                            trailing = boardTrailing(entry),
+                            onClick = {
+                                onHideKeyboard()
+                                onOpenObject(entry.obj.id)
+                            },
+                        )
+                    }
+                }
             }
         }
     }
@@ -378,24 +404,6 @@ private fun boardTrailing(entry: TonightEntry): (@Composable () -> Unit)? {
             }
         }
         else -> null
-    }
-}
-
-@Composable
-private fun SectionHeader(title: String, trailing: String?) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 16.dp, top = 14.dp, bottom = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.labelLarge,
-            color = StarWindowColors.AnchorPoint,
-            modifier = Modifier.weight(1f),
-        )
-        if (trailing != null) {
-            Text(trailing, style = MaterialTheme.typography.labelSmall, color = StarWindowColors.Muted)
-        }
     }
 }
 
@@ -473,7 +481,7 @@ private fun EmptyState(state: ObjectSearchUiState) {
                 "Ein anderes Fenster wählen, oder den Fensterfilter abschalten."
 
         state.hasQuery ->
-            "Nichts gefunden für \"${state.query}\"." to
+            "Nichts gefunden für „${state.query}“." to
                 "Es geht mit Katalognummer (M 42, NGC 7000, Sh2-155) genauso wie mit dem Namen " +
                 "(Orionnebel, Plejaden, Wega). Vielleicht schränkt auch ein Filter zu stark ein."
 

@@ -80,8 +80,8 @@ class PlanningViewModel(
                 return@launch
             }
 
-            val place = settingsStore.current.weatherPlace
-            val observer = observerFor(place)
+            val location = PlanningLocation.resolve(settingsStore, locationTracker)
+            val observer = location.observer
             if (observer == null) {
                 _uiState.update {
                     it.copy(
@@ -94,7 +94,7 @@ class PlanningViewModel(
                 return@launch
             }
 
-            val zone = zoneFor(place)
+            val zone = location.zone
             val from = LocalDate.now(zone)
             val nights = withContext(Dispatchers.Default) {
                 ObservationPlanner.plan(obj, observer, zone, from)
@@ -107,7 +107,7 @@ class PlanningViewModel(
                     bestNights = ObservationPlanner.bestNights(nights),
                     season = ObservationPlanner.season(nights),
                     isYearRound = ObservationPlanner.isYearRound(nights),
-                    placeLabel = place?.label ?: "aktueller Standort",
+                    placeLabel = location.label,
                     observer = observer,
                     zone = zone,
                     isLoading = false,
@@ -144,27 +144,6 @@ class PlanningViewModel(
             }
         }
     }
-
-    private fun observerFor(place: WeatherPlace?): ObserverLocation? {
-        place?.let {
-            return ObserverLocation(
-                latitudeDeg = it.latitudeDeg,
-                longitudeDeg = it.longitudeDeg,
-                elevationM = it.elevationM,
-                manual = true,
-            )
-        }
-        return settingsStore.current.manualLocation ?: locationTracker.lastKnown()
-    }
-
-    /**
-     * The time zone of the place being planned for, not of the phone.
-     *
-     * Someone at home planning a trip two zones away wants that site's evenings, and a night named
-     * by the wrong zone would be off by a day at the edges.
-     */
-    private fun zoneFor(place: WeatherPlace?): ZoneId =
-        place?.timezoneId?.let { runCatching { ZoneId.of(it) }.getOrNull() } ?: ZoneId.systemDefault()
 
     companion object {
         fun factory(container: AppContainer, objectId: String) = viewModelFactory {

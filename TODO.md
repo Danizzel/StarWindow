@@ -1,8 +1,9 @@
 # StarWindow – was noch fehlt
 
 Stand: Grundgerüst, Nachtsicht-Sucher, Kalibrierung, Sternbilder, Laufbahnen, Deep-Sky-Katalog,
-Objektsuche und Verfolgung im Sucher, Wettervorhersage für die Nacht. Die Rechenkette
-Bildschirm → Himmel steht und ist durch 381 Unit-Tests abgesichert; die App übersetzt und läuft auf
+Objektsuche und Verfolgung im Sucher, Wettervorhersage für die Nacht, Jahresplanung mit
+Terminerinnerungen und Merkliste. Sonne und Mond sind Katalogobjekte. Die Rechenkette
+Bildschirm → Himmel steht und ist durch 410 Unit-Tests abgesichert; die App übersetzt und läuft auf
 einem echten Gerät.
 
 Reihenfolge ist bewusst: Abschnitt 2 sind Stellen, die ich beim Nachlesen des eigenen Codes als
@@ -15,13 +16,19 @@ mehr Code, sondern **Gegenprüfung am Himmel** – siehe Abschnitt 1.
 
 - [x] ~~Projekt synchronisieren und kompilieren.~~ Werkzeugkette auf Gradle 9.4.1, AGP 9.2.1,
       Kotlin 2.3.21, SDK 36 angehoben.
-- [x] ~~`./gradlew :app:testDebugUnitTest`~~ – 381 Tests, grün.
+- [x] ~~`./gradlew :app:testDebugUnitTest`~~ – 410 Tests, grün.
 - [x] ~~Auf echtem Gerät starten.~~ Läuft auf einem Pixel 9.
 - [ ] **Feldabgleich am Himmel:** auf einen bekannten hellen Stern zielen und prüfen, ob dessen
       Katalogmarkierung darauf sitzt. Sitzt sie daneben → Kompass kalibrieren (Achterbewegung).
       Wandert sie beim Schwenken schneller/langsamer als das Bild → Bildfeld-Faktor in den
       Einstellungen nachziehen. Das ist der eigentliche Abnahmetest der ganzen App.
 - [ ] Abgleich in **Hoch- und Querformat** sowie mit **Haupt- und Ultraweitwinkelkamera**.
+- [ ] **Benachrichtigungen auf dem Gerät gegenprüfen.** Die Rechnung dahinter ist getestet, die
+      Zustellung nicht — und sie ist der Teil, der still ausfallen kann. Zu prüfen: Kommt die
+      Erinnerung um 17 Uhr an, wenn das Handy den ganzen Tag unangetastet lag (Doze)? Wächst die
+      Wetterzeile ein paar Sekunden später nach, **ohne** ein zweites Mal zu klingeln? Kommt sie
+      auch ohne Netz — dann mit dem alten Stand und seinem Alter? Und überlebt die Kette der
+      täglichen Merklisten-Prüfungen mehrere Tage, also setzt jede Prüfung die nächste wirklich?
 - [ ] **Sensorfusion gegenprüfen:** steht in der Statusleiste „Kreisel + Kompass"? Stehen die
       Markierungen beim Stillhalten wirklich still? Meldet die App eine Magnetstörung, wenn man
       das Handy neben ein Auto hält, und hält sie danach die Nordrichtung? Die Fusionsmathematik
@@ -89,15 +96,27 @@ mehr Code, sondern **Gegenprüfung am Himmel** – siehe Abschnitt 1.
 - [x] ~~**Ephemeriden für Sonne und Mond.**~~ `core/astro/Ephemeris.kt` nach Meeus Kap. 25 und 47:
       Sonne auf 0,01°, Mond auf 0,02° in der Länge, samt Parallaxe, Beleuchtungsgrad und Phase.
       `Twilight` findet daraus Dämmerungsschwellen, Auf- und Untergänge.
-- [ ] **Mond und Sonne als Katalogobjekte.** Die Ephemeriden liegen vor, aber die
-      Durchgangsberechnung kennt weiterhin nur feste RA/Dec — „wann zieht der Mond durch mein
-      Fenster" ist die naheliegendste Frage überhaupt und geht noch nicht. Nötig: ein
-      `SkyObject`, dessen Position eine Funktion der Zeit ist, und ein `TransitCalculator`, der
-      das aushält.
-- [ ] **Planeten.** Brauchen zusätzlich VSOP87 oder eine gekürzte Fassung davon.
-- [ ] **Dämmerungszeiten und Mondstörung in der Fensteransicht:** ein Durchgang um 14 Uhr nützt
-      nichts. Die Rechnung dafür steht jetzt in `Twilight` und `AstroWeather` — sie muss nur noch
-      in die Durchgangsliste hinein.
+- [x] ~~**Mond und Sonne als Katalogobjekte.**~~ `SkyObject` hat ein optionales Feld
+      `body: EphemerisBody?`; ist es gesetzt, kommt die Position aus der Ephemeride statt aus dem
+      Katalog (`positionAtMillis`). Ein Feld und keine Klassenhierarchie — 22.528 Einträge über
+      eine virtuelle Methode zu führen, damit zwei sich anders verhalten, wäre der teurere Weg,
+      und die Katalogdateien bleiben unverändert. Der `TransitCalculator` rechnet für sie je
+      Abtastschritt neu, mit halbierter Schrittweite, und überspringt die Deklinationsvorprüfung:
+      Der Mond läuft über 57° Breite, damit ist keine feste Deklination zu prüfen. Auch die
+      Jahresplanung fragt jetzt je Nacht neu — dreizehn Grad pro Tag machen eine einmal gerechnete
+      Position innerhalb einer Woche wertlos. Damit geht „wann zieht der Mond durch mein Fenster".
+- [ ] **Mond in der Merkliste.** Vormerken lässt er sich nicht: Die Merkliste legt die Koordinaten
+      ihrer Einträge mit ab, damit die nächtliche Prüfung ohne den Katalog auskommt, und genau die
+      hat er nicht. Der Knopf fehlt dort deshalb, statt still etwas anderes zu tun.
+- [ ] **Planeten.** Brauchen zusätzlich VSOP87 oder eine gekürzte Fassung davon. Die Struktur
+      steht: ein Wert mehr in `EphemerisBody`, dessen `positionAt` anders rechnet.
+- [x] ~~**Dämmerungszeiten und Mondstörung in der Fensteransicht.**~~ Jeder Durchgang trägt jetzt,
+      wie viel von ihm in astronomischer Dunkelheit liegt und wie der Mond dabei steht — in der
+      Liste als „dunkel", „teils Dämmerung", „zu hell", ergänzt um „Mond 87 %". Dazu ein Schalter
+      **nur nachts** mit der Anzahl daneben und eine Reihenfolge nach dunkler Zeit. Die Dämmerung
+      wird über `DarkSpans` **einmal** für den ganzen Suchzeitraum gerechnet und danach nur noch
+      geschnitten: Sie hängt am Ort und am Zeitraum, nicht am Katalog, und mehrere hundert
+      Durchgänge einzeln gegen die Sonne zu rechnen wäre tausendfach dieselbe Rechnung.
 - [ ] **Satelliten (ISS, Starlink)** über TLE + SGP4 – passt konzeptionell perfekt zum Fenster,
       ist aber ein eigenes Teilprojekt.
 - [x] ~~OpenNGC lokal mitliefern.~~ Inzwischen der **vollständige** Bestand: 13.432 Deep-Sky-Objekte,
@@ -249,6 +268,99 @@ mehr Code, sondern **Gegenprüfung am Himmel** – siehe Abschnitt 1.
 
 ## 6. Bedienung
 
+- [x] ~~**Objektzeichen, die man erkennt statt lernt.**~~ Vorher standen dort die Zeichen des
+      gedruckten Sternatlas — Quadrat für Nebel, gestrichelter Kreis für offenen Sternhaufen, Kreis
+      mit Kreuz für Kugelsternhaufen. Exakt und über jede Karte hinweg gleich, aber **gelernt und
+      nicht erkannt**: Wer nie einen Atlas in der Hand hatte, sieht ein Quadrat und weiß nichts.
+      Jetzt steht dort, wonach das Objekt aussieht: Spirale für die Galaxie, Wolke für den Nebel,
+      Rauchring für den planetarischen, lockere Streuung für den offenen und ein dichter Ball für
+      den Kugelsternhaufen — der Unterschied zwischen den beiden Haufenarten *ist* locker gegen
+      dicht, und genau das zeigt das Zeichen jetzt. Emissions-, Reflexions- und Haufennebel tragen
+      dieselbe Wolke mit einer aufgehellten Marke innen, daneben oder als Sterne darin.
+      Gebaut für sechzehn Punkte: höchstens zwei Aussagepunkte je Zeichen, keine Linie dünner als
+      ein Zehntel der Kantenlänge, helle Nebel als gefüllte Flächen statt als Konturen. Zwei Dinge
+      mussten nach dem ersten Blick aufs Gerät nachgebessert werden — die halbdurchsichtige Wolke
+      des Emissionsnebels wurde zum braunen Fleck, und die Spiralarme liefen nach einer
+      Vierteldrehung aus dem Bild, sodass ein „S" übrig blieb.
+      Der Preis ist die Anschlussfähigkeit an die Papierkarte. Wer aus dem Atlas kommt, muss die
+      neuen Zeichen einmal lesen; wer nicht, muss gar nichts mehr lernen.
+- [ ] **Zeichen über dem Kamerabild ansehen.** Dieselben Zeichen liegen als Marker über dem
+      Sucher, dort aber in anderer Größe und über einem Livebild. Geprüft ist das bisher nur in den
+      Listen — der Sucher zeigte beim Test nach unten, und ohne Objekte am Bildschirm war nichts zu
+      sehen.
+- [x] ~~**Ein Gestaltungssystem statt neun Bildschirmen.**~~ Vorher hatte jeder Bildschirm seine
+      eigenen Maße: acht verschiedene Eckenradien zwischen 3 und 50 Punkten, Kopfzeilen mal mit 4,
+      mal mit 8 Punkten Abstand, Trennlinien in einem Bildschirm und Karten im nächsten. Jetzt
+      liegen Farbebenen, Radien, Abstände und Typografie in `Theme.kt` und die Bausteine in
+      `ui/components/Design.kt` (`SectionCard`, `SectionHeader`, `ScreenHeader`, `StatTile`,
+      `StatusPill`, `ValueRow`).
+      **Vier Flächenebenen statt einer:** Im Dunkelmodus gibt es keine Schatten — Tiefe entsteht
+      dadurch, dass Näherliegendes heller ist, und wo das nicht reicht, durch eine Haarlinie
+      (`Outline`) statt eines Schlagschattens, den ohnehin niemand sähe. Der Grundton ist ein tiefes
+      Indigo statt Fast-Schwarz: Auf einem OLED wirkt reines Schwarz wie ein Loch, an dem jede Kante
+      hart abbricht.
+      **Karten statt Trennlinien:** Eine Linie sagt „hier endet etwas", eine Karte sagt „das gehört
+      zusammen" — und nur das Zweite erfasst man mit einem Blick. Umgestellt sind Wetter, Kalender,
+      Suche, Fensterliste, Objektblatt und die Sucher-Chrome; Hub und Fotoguide waren schon so
+      gebaut und teilen jetzt dieselben Werte.
+      **Statuspillen tragen ihre Farbe als Fläche:** Grün auf Grau muss man lesen, Grün auf Grün
+      erkennt man. Dasselbe in der unteren Leiste, wo das gewählte Ziel eine getönte Kapsel bekommt
+      — sechs kleine Symbole allein über die Farbe zu unterscheiden funktioniert nicht, und für
+      Farbenblinde gar nicht.
+- [ ] **Bewegung.** Die Umstellung ist statisch geblieben: Karten erscheinen ohne Übergang,
+      Jahreszeitenwechsel im Hub springt. Ein knapper Ein-/Ausblendübergang je Karte wäre der
+      nächste Schritt — aber einer, der sich am Gerät entscheiden muss, nicht am Schreibtisch.
+- [ ] **Helles Thema.** `LightScheme` ist bis heute eine Notlösung aus zwei Farben. Solange die App
+      nachts benutzt wird, ist das vertretbar; für den Einsatz am Tag (Planung, Fensterliste) wäre
+      ein echtes helles Thema fällig — die Tokens dafür stehen jetzt an einer Stelle.
+- [x] ~~**Leiste am unteren Rand.**~~ Sucher, Motive, Kalender, Wetter und Fenster stehen jetzt in
+      einer Leiste unten (`StarWindowBottomBar`), getragen vom `Scaffold` im `StarWindowNavHost` und
+      nur auf diesen fünf Zielen sichtbar. Vorher hingen Wetter, Kalender und Fensterliste als
+      Symbole oben neben der Suche – außer Reichweite des Daumens und optisch verwechselbar mit
+      Knöpfen für den Bildausschnitt. Oben bleibt, was zum Sucher gehört: Suchfeld, Nachtsicht,
+      Einstellungen. Der Wechsel läuft über `popUpTo(CAPTURE) { saveState = true }`, damit der
+      Stapel nicht mitwächst und jedes Ziel seinen Scrollstand behält.
+- [x] ~~**Stargazing Hub.**~~ Eigener Bereich in der Leiste: was an *diesem* Ort in *dieser*
+      Jahreszeit zu fotografieren ist, als Aufmacher plus Reihen von Bildkarten, die sich nach links
+      und rechts blättern lassen. `SeasonalHighlights` mischt dafür drei Zahlen – die Nachtrechnung
+      aus `ObservationPlanner` (Höhe, Dunkelheit, Mond, für **eine konkrete Nacht**), den
+      fotografischen Wert aus `PhotographicInterest` und eine kuratierte Beliebtheit (`Popularity`,
+      aus den gängigen Saisonlisten). Weil die Nacht konkret ist, verschiebt sich der Hub von Monat
+      zu Monat, obwohl die vier Reiter dieselben bleiben; weil der Ort eingeht, zeigt er südlich des
+      Äquators einen anderen Himmel **und** die umgekehrte Jahreszeit. Bilder kommen wie im
+      Info-Blatt aus `SkyImageLoader`, der dafür einen kleinen Speicher für dekodierte Bilder
+      bekommen hat.
+- [x] ~~**Bilddienst über beide CDS-Adressen.**~~ `alasky.cds.unistra.fr` brach den TLS-Handschlag
+      mit `Connection reset` ab, `alaskybis.cds.unistra.fr` beantwortete dieselbe Anfrage in einer
+      Sekunde – und weil die Adresse fest verdrahtet war, verschwand *jedes* Bild der App, im Hub
+      wie im Info-Blatt. hips2fits ist ausdrücklich als zwei unabhängige Endpunkte dokumentiert;
+      `SkyImageLoader` fragt jetzt beide der Reihe nach und merkt sich die erste, die antwortet, so
+      dass den Ausfall nur das erste Bild bezahlt. Weitergereicht wird bei Netzfehler und 5xx, nicht
+      bei 4xx – daran änderte die zweite Maschine nichts. Verbindungszeitgrenze auf 5 s, weil sie
+      im Fehlerfall zweimal anfällt.
+- [x] ~~**Favoriten.**~~ Ein Herz oben auf dem Objektblatt, `FavoritesRepository` als Liste von
+      Kennungen in `filesDir`, und ein Schalter „Nur Favoriten" ganz oben im Filterblatt. Bewusst
+      **nicht** mit der Merkliste zusammengelegt: Die ist ein Auftrag („sag mir Bescheid") und trägt
+      Alarm, Bedingung und Ruhezeit; ein Favorit ist eine Meinung und trägt nichts. Der Filter greift
+      **vor** dem 200er-Limit der Suche — dahinter blieb die Liste leer, weil ein Favorit irgendwo
+      unter 22.530 Einträgen steht und bei leerer Eingabe nie unter den ersten 200.
+- [x] ~~**Fotoguide.**~~ Eigener Reiter: Ziel, Gerät (Seestar S30/S30 Pro/S50, DWARF 3/Mini) und
+      Bortle-Stufe hinein, heraus kommen Filter, Einzelbelichtung, Gesamtzeit, Mosaik, Tau und ein
+      Urteil. `PhotoGuide` rechnet das nicht aus Faustregeln, sondern über `t ∝ Hintergrund/Signal²`:
+      Der Dualbandfilter dämpft beides, und welche Dämpfung überwiegt, entscheidet von allein, ob er
+      zu empfehlen ist — bei Nebeln ja, bei Galaxien um das Fünfzehnfache nein. Aus derselben Formel
+      fallen der Mondaufschlag, die Bortle-Kosten und der Öffnungsvorteil (quadratisch: das S30
+      braucht die 2,8-fache Zeit eines S50). Passt die empfohlene Zeit in keine Nacht, wird sie als
+      Zahl von Nächten ausgewiesen statt als unlesbare Stundenzahl.
+- [ ] **Geräteliste erweitern.** Bisher nur die fünf Smart-Teleskope. Für ein klassisches Setup aus
+      Optik, Kamera und Montierung müsste der Nutzer Brennweite, Pixelgröße und Sensorformat
+      eintragen — die Rechnung selbst kann das bereits, es fehlt nur die Eingabe.
+- [ ] **Eigene Aufnahmen im Hub.** Bisher zeigt jede Karte den Survey-Ausschnitt. Wer ein Motiv
+      schon einmal fotografiert hat, sollte dort sein eigenes Bild sehen – und daneben, was sich
+      seitdem geändert hat.
+- [ ] **Ausrüstung im Hub berücksichtigen.** Ob ein Motiv ins Bildfeld passt, weiß die App über
+      `fillFactor` bereits; im Hub steht es noch nicht. Mit hinterlegter Brennweite und Sensorgröße
+      ließen sich die Karten danach sortieren statt nur nach Himmel und Beliebtheit.
 - [x] ~~**Jahresplanung.**~~ Neuer Kalender-Tab in der Kameraansicht und ein Knopf **Planung** unten
       im Info-Blatt jedes Objekts. `ObservationPlanner` rechnet für jede Nacht des kommenden Jahres
       aus, wie lange das Objekt gleichzeitig über 30° steht **und** der Himmel dunkel ist – das ist
@@ -256,15 +368,30 @@ mehr Code, sondern **Gegenprüfung am Himmel** – siehe Abschnitt 1.
       Dämmerungsgrenzen werden analytisch gelöst statt abgetastet (ein Jahr in Millisekunden statt
       zweihunderttausend Ephemeriden), gegengeprüft gegen `Twilight` auf unter sechs Minuten.
       Vorgemerkte Nächte liegen in `PlanRepository`.
-- [ ] **Wetter mit der Planung verbinden.** Der Kalender kennt die Nächte, die Wetteransicht kennt
-      15 Tage Vorhersage – für die vorgemerkten Nächte in Reichweite ließe sich beides
-      zusammenbringen („Freitag geplant, Prognose sagt bedeckt").
+- [x] ~~**Wetter mit der Planung verbinden.**~~ Der Kalender holt die Vorhersage einmal und legt sie
+      über jeden kommenden Termin in Reichweite: eine Zeile in der Kachel „nächster Termin", eine
+      unter jeder Terminzeile und ein Abschnitt im Terminblatt, jeweils mit Modell und Alter der
+      Aussage. Die **gespeicherten** Zahlen des Termins bleiben unangetastet — sie sind die
+      Aufzeichnung einer Entscheidung, das Wetter legt sich daneben. Termine jenseits des Laufs
+      bekommen gar keine Zeile statt einer, die „keine Daten" sagt und elf Monate lang stehen
+      bliebe.
 - [x] ~~**Erinnerung an eine geplante Nacht.**~~ Je Termin einstellbar: 1 Woche, 3 Tage, 1 Tag
       vorher oder am Tag selbst, jeweils um 17 Uhr, mehrere gleichzeitig. Über `AlarmManager` als
       **ungenaue** Alarme (`setAndAllowWhileIdle`) – Minutengenauigkeit ist eine Woche im Voraus
       wertlos, und `SCHEDULE_EXACT_ALARM` dafür zu verlangen wäre ein schlechter Tausch. Ein
       `BootReceiver` setzt sie nach einem Neustart neu auf. Dazu eine **Notiz** je Termin, die mit
       in die Benachrichtigung wandert.
+- [x] ~~**Termine am Tag statt über dem Raster.**~~ Ein Antippen öffnete die Auswahl bisher als
+      Liste **oben** über dem Kalender — bei einem Raster, durch das man monatelang scrollt, hieß
+      das: Der Finger bleibt am 3. November, die Antwort erscheint drei Bildschirmhöhen weiter oben
+      außerhalb des Sichtfelds. Jetzt hängt ein Blatt an der Kachel selbst (`DayPopup`), mit einem
+      eigenen `PopupPositionProvider`: unter der Kachel, notfalls darüber, und am Bildschirmrand
+      eingerückt — der 31. eines Monats liegt oft genug ganz rechts.
+      Das Blatt listet **alle** Ziele des Abends, weil an einer Nacht mehr als eines hängen kann;
+      die Kachel trägt dafür oben rechts die Anzahl. Die Punktreihe, die dort stand, beantwortete
+      „ist etwas geplant", aber nicht „wie viel" — und drei von vier Punkten unterscheidet auf einer
+      Kachel dieser Größe ohnehin niemand. Die Auswahl eines Ziels öffnet unverändert das
+      Terminblatt mit Bahn und Erinnerung; das Blatt entscheidet nur, *welcher* Termin gemeint ist.
 - [x] ~~**Nächster Termin im Kalender.**~~ Eigene Kachel ganz oben mit Countdown, Eckdaten, Notiz
       und der nächsten fälligen Erinnerung.
 - [x] ~~**Pfad am Himmel zeigen.**~~ „Pfad zeigen" am Termin öffnet die Kamera und zeichnet die
@@ -272,11 +399,29 @@ mehr Code, sondern **Gegenprüfung am Himmel** – siehe Abschnitt 1.
       statt zur aktuellen Position – bei einer Nacht drei Monate im Voraus liegen die an
       entgegengesetzten Enden des Himmels. Beantwortet die Frage, die man draußen nicht beantworten
       kann: steht in sechs Wochen um zwei Uhr ein Dach im Weg?
-- [ ] **Erinnerung nur bei brauchbarem Wetter.** Die Benachrichtigung kommt heute unabhängig von der
-      Vorhersage. Für den 1-Tag- und den Am-Tag-Vorlauf ließe sich die Nachtbewertung nachschlagen
-      und „aber es ist bedeckt" dazuschreiben.
-- [ ] **Erinnerung an eine Nacht ohne Termin.** Nur vorgemerkte Nächte melden sich; „sag mir
-      Bescheid, wenn M31 wieder gut steht" gibt es nicht.
+- [x] ~~**Erinnerung mit der Wetterlage dran.**~~ Und zwar in dieser Reihenfolge: Die Erinnerung wird
+      **zuerst** gepostet, ohne irgendetwas nachzuschlagen — das ist die Zusage, und sie hängt
+      weder am Empfang noch am Wetterdienst noch daran, ob ein Ort eingestellt ist. Danach wird
+      dieselbe Benachrichtigung ergänzt, erst aus der Ablage auf der Platte (sofort da, mit ihrem
+      Alter angeschrieben), dann aus einem frischen Abruf mit knappem Zeitbudget. Ergänzt wird über
+      dieselbe ID mit `setOnlyAlertOnce`, also ohne zweiten Ton. Bei schlechter Prognose steht
+      „Der Termin bleibt stehen, die Vorhersage spricht dagegen" dabei — abgesagt wird nichts, das
+      ist die Entscheidung des Nutzers. Der umgekehrte Weg — erst fragen, dann posten — hätte
+      Verlässlichkeit gegen Ausschmückung getauscht.
+- [x] ~~**Erinnerung an eine Nacht ohne Termin.**~~ Die **Merkliste**: „Bescheid geben" auf dem
+      Objektblatt merkt ein Ziel vor, ohne eine Nacht festzulegen. Ein Alarm um 15 Uhr prüft
+      täglich die ganze Liste (`WatchCheckReceiver`) und meldet sich, wenn **beides gleichzeitig**
+      zutrifft: Das Objekt steht lange genug über seiner Mindesthöhe und im Dunkeln, **und** die
+      Nachtbewertung trägt in genau diesem Abschnitt. Gerechnet wird die Überschneidung, nicht
+      zwei getrennte Urteile — ein Objekt von 20 bis 23 Uhr und eine Wolkenlücke von 2 bis 5 Uhr
+      ergeben zusammen nichts. Ohne Vorhersage wird bis zu zweimal nachgefragt und danach
+      geschwiegen: Eine Meldung „steht heute gut" schickt jemanden mit schwerem Gepäck vor die
+      Tür. Je Eintrag einstellbar sind Mindesthöhe, Mindestdauer und wie sicher das Wetter sein
+      muss; nach einer Meldung folgen drei Nächte Ruhe, sonst sagt eine Hochdrucklage fünf Abende
+      hintereinander dasselbe.
+- [ ] **Merkliste gegen ein Fenster rechnen.** Sie nimmt den freien Horizont an. Wer ein Fenster
+      gespeichert hat, will „sag mir Bescheid, wenn M31 *dort hindurch* zieht" — derselbe offene
+      Punkt wie bei der Jahresplanung eine Zeile weiter.
 - [ ] **Planung gegen ein Fenster rechnen.** Die Jahresplanung nimmt den freien Horizont an; wer ein
       Fenster gespeichert hat, will die Nächte, in denen das Objekt *dort hindurch* zieht.
 - [ ] **Zeitpunkt wählen** in der Detailansicht (aktuell immer „ab jetzt"). Für Planung braucht man
@@ -352,6 +497,23 @@ mehr Code, sondern **Gegenprüfung am Himmel** – siehe Abschnitt 1.
       (2,2 km), ICON-EU (7 km) und ECMWF IFS (25 km, 15 Tage, Voreinstellung). Zu jedem steht der
       Zeitpunkt des letzten Laufs aus `meta.json` des Dienstes, dazu Laufintervall und Reichweite;
       Modelle außerhalb ihres Gebiets sind ausgegraut.
+- [x] ~~**Bewertung, Mond und Dämmerungsband oben in der Wetteransicht.**~~ Drei Dinge, die vorher
+      über Kurve, Datentafel und Mondzeile verteilt waren, jetzt als erste Karte.
+      **Die Bewertung** (`AstroNight.stargazingRating`) ist nicht `bestScore`: Der kennt nur den
+      besten Augenblick, und eine Nacht mit einer perfekten Stunde und fünf bewölkten bekäme
+      dieselbe Zahl wie eine, die durchgehend trägt. Der Anteil der brauchbaren Dunkelheit dämpft
+      ihn deshalb — aber nur bis auf 60 %, denn für ein gutes Loch fährt man notfalls trotzdem raus.
+      **Der Mond** wird gezeichnet statt aus Symbolen ausgewählt: Der Terminator ist eine halbe
+      Ellipse mit der Halbachse `R·(1−2k)`, und dieses eine Vorzeichen erledigt Sichel, Halbmond und
+      Dreiviertelmond ohne Fallunterscheidung. Die Geometrie liegt als `litSpan` frei und ist
+      geprüft — ein seitenverkehrter Mond bei 92 % fiele auf dem Bildschirm niemandem auf.
+      **Das Band** legt Mitternacht fest in die Mitte und zieht das Fenster symmetrisch so weit auf,
+      dass Auf- und Untergang hineinpassen. Damit heißt links immer „vor Mitternacht", und die
+      Asymmetrie einer Nacht, deren Dunkelheit erst um 22:07 beginnt und schon um 04:42 endet, wird
+      sichtbar, statt sich im Maßstab zu verstecken. Die Farbstützstellen sitzen genau auf den acht
+      Grenzen aus `NightTimes` — wo das Band die Farbe wechselt, steht auch die Markierung.
+- [ ] **Das Band auch in der Nächteliste.** Beim Aufklappen einer kommenden Nacht steht dort noch
+      die Kurve allein; dasselbe Band darüber würde den Vergleich zweier Nächte erst rund machen.
 - [ ] **Modelle nebeneinander zeigen.** Wenn ICON-D2 „teilweise" sagt und ECMWF „geeignet", ist
       genau das die interessante Information — bisher sieht man immer nur eines. Zwei Kurven
       übereinander oder ein Streuungsband wären der nächste Schritt.
@@ -361,5 +523,8 @@ mehr Code, sondern **Gegenprüfung am Himmel** – siehe Abschnitt 1.
 - [ ] **Wetter mit den Fenstern verbinden:** „In deinem Fenster zieht am Donnerstag M31 durch, und
       das Wetter passt." Braucht nur, dass die Durchgangsliste die Nachtbewertung nachschlägt.
 - [ ] **Benachrichtigung bei Aufklaren** für eine Nacht, die man vorgemerkt hat.
-- [ ] **Vorhersage zwischenspeichern**, damit die Ansicht auch ohne Netz noch die letzte bekannte
-      Lage zeigt. Derzeit hält der Zwischenspeicher nur die laufende Sitzung.
+- [x] ~~**Vorhersage zwischenspeichern.**~~ `ForecastCache` legt die letzten drei Läufe als JSON in
+      `filesDir` ab. Nötig geworden nicht für die Ansicht, sondern für die Erinnerung: Ein Alarm um
+      17 Uhr läuft in einem Prozess, den das System dafür gestartet hat, und hat ohne Ablage
+      nichts, woraus er etwas über die Nacht sagen könnte. Der Speicher im Arbeitsspeicher bleibt
+      davor — gefragt wird die Platte erst, wenn das Netz nichts hergibt.

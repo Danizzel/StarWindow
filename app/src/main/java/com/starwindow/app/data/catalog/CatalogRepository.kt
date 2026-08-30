@@ -29,7 +29,13 @@ class CatalogRepository(private val sources: List<CatalogSource>) {
      */
     suspend fun objectsVisibleFrom(latitudeDeg: Double, magnitudeLimit: Double?): List<SkyObject> =
         objects().filter { obj ->
-            val maxAltitude = 90.0 - kotlin.math.abs(latitudeDeg - obj.decDeg)
+            // Sonne und Mond haben keine feste Deklination, an der sich das prüfen ließe — sie
+            // wandern über gut 57° Breite und gehen von jedem bewohnten Ort der Erde auf.
+            val maxAltitude = if (obj.isMoving) {
+                90.0
+            } else {
+                90.0 - kotlin.math.abs(latitudeDeg - obj.decDeg)
+            }
             maxAltitude > 0.0 && isBrightEnough(obj, magnitudeLimit)
         }
 
@@ -43,9 +49,16 @@ class CatalogRepository(private val sources: List<CatalogSource>) {
         cached = loadAll()
     }
 
-    private suspend fun loadAll(): List<SkyObject> = sources
-        .mapNotNull { it.load().getOrNull() }
-        .flatten()
+    /**
+     * Sonne und Mond kommen aus keiner Datei, sondern aus der Ephemeride — und sie kommen immer,
+     * auch wenn keine einzige Katalogdatei geladen werden konnte.
+     *
+     * Sie stehen am Anfang der Liste, weil sie nach Helligkeit ohnehin dorthin gehören: Es gibt
+     * nichts Helleres.
+     */
+    private suspend fun loadAll(): List<SkyObject> = (
+        EphemerisCatalog.all + sources.mapNotNull { it.load().getOrNull() }.flatten()
+        )
         .distinctBy { it.id }
         .sortedBy { it.magnitude ?: 99.0 }
 

@@ -44,6 +44,21 @@ class Precession private constructor(
 
     val yearsSinceJ2000: Double get() = julianCenturies * 100.0
 
+    /**
+     * Der Zeitpunkt, für den diese Präzession gebaut wurde.
+     *
+     * Gebraucht von den Objekten, deren Position keine Konstante ist: Sonne und Mond bekommen
+     * dieselbe Präzession gereicht wie alles andere, können damit aber nichts anfangen — sie
+     * brauchen den **Zeitpunkt**, nicht die Drehung. Statt jeden Aufrufer zu zwingen, ihn ein
+     * zweites Mal mitzugeben, wird er hier zurückgerechnet; die Umkehrung ist exakt dieselbe
+     * Formel, die [forEpoch] hineingerechnet hat.
+     *
+     * Bei [NONE] ist das J2000 selbst — für ein Objekt ohne Zeitbezug ein ebenso guter Zeitpunkt
+     * wie jeder andere.
+     */
+    val epochMillis: Long
+        get() = AstroTime.epochMillis(AstroTime.J2000_JD + julianCenturies * 36525.0)
+
     /** A catalogue (J2000) position, brought to the equator and equinox of this moment. */
     fun toDate(j2000: Equatorial): Equatorial =
         Equatorial.fromVector(rotation.apply(j2000.toVector()))

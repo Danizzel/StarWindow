@@ -27,6 +27,18 @@ enum class ObjectType {
     @SerialName("OPEN_CLUSTER") OPEN_CLUSTER,
     @SerialName("GLOBULAR_CLUSTER") GLOBULAR_CLUSTER,
     @SerialName("CLUSTER_NEBULA") CLUSTER_NEBULA,
+
+    /**
+     * Sonne und Mond — alles, dessen Position eine Funktion der Zeit ist.
+     *
+     * Eine eigene Art, weil sich für sie **jede** Frage anders beantwortet: Ihre Deklination ist
+     * keine Konstante, ihre Größe und Helligkeit ändern sich, und was ein Durchgang durch ein
+     * Fenster ist, muss für sie über die Zeit gerechnet statt aus einer festen Position abgeleitet
+     * werden. Sie unter [OTHER] zu führen hieße, genau die Eigenschaft zu verstecken, an der
+     * überall etwas anderes hängt.
+     */
+    @SerialName("SOLAR_SYSTEM") SOLAR_SYSTEM,
+
     @SerialName("OTHER") OTHER;
 
     val label: String
@@ -44,6 +56,7 @@ enum class ObjectType {
             OPEN_CLUSTER -> "Offener Sternhaufen"
             GLOBULAR_CLUSTER -> "Kugelsternhaufen"
             CLUSTER_NEBULA -> "Sternhaufen mit Nebel"
+            SOLAR_SYSTEM -> "Sonnensystem"
             OTHER -> "Sonstiges"
         }
 
@@ -110,6 +123,17 @@ data class SkyObject(
     val alternativeNames: List<String> = emptyList(),
     /** Which catalogue this came from, so mixed local/online results stay traceable. */
     val source: String = "local",
+    /**
+     * Gesetzt bei Sonne und Mond: Ihre Position kommt aus einer Ephemeride statt aus dem Katalog.
+     *
+     * Ein Feld statt einer Klassenhierarchie. Die Alternative wäre gewesen, [SkyObject] zu einer
+     * Schnittstelle zu machen und 22.528 Einträge über eine virtuelle Methode zu führen, damit
+     * zwei von ihnen sich anders verhalten — teuer an jeder Stelle, an der bisher eine
+     * Datenklasse steht (Serialisierung, `copy`, Vergleich), und das für zwei Objekte. So bleibt
+     * der Katalog, was er ist, die Dateien bleiben unverändert (`null` als Vorgabe), und die
+     * wenigen Stellen, die tatsächlich über die Zeit rechnen, fragen [isMoving].
+     */
+    val body: EphemerisBody? = null,
 ) {
     /**
      * The position as the catalogue records it, epoch J2000.
@@ -122,7 +146,25 @@ data class SkyObject(
     val equatorialJ2000: Equatorial get() = Equatorial(raDeg, decDeg)
 
     /** Where the object actually stands at a given moment, precession since J2000 included. */
-    fun positionAt(precession: Precession): Equatorial = precession.toDate(equatorialJ2000)
+    fun positionAt(precession: Precession): Equatorial =
+        body?.let { return it.positionAt(precession.epochMillis) } ?: precession.toDate(equatorialJ2000)
+
+    /**
+     * Die Position zu einem Zeitpunkt, in Millisekunden.
+     *
+     * Für alles Feste dasselbe wie [positionAt] — nur eben mit der Präzession, die zu diesem
+     * Zeitpunkt gehört. Für Sonne und Mond ist es der einzige richtige Weg: Ihre Position ist keine
+     * Konstante, die man einmal auf das Datum bringt, sondern eine Funktion der Zeit, und sie
+     * ändert sich innerhalb einer Nacht um Grade statt um Bogensekunden.
+     *
+     * Teurer als [positionAt] mit vorgerechneter Präzession, weshalb die Durchgangsrechnung
+     * weiterhin nur dort je Abtastschritt neu rechnet, wo sich tatsächlich etwas bewegt.
+     */
+    fun positionAtMillis(millis: Long): Equatorial =
+        body?.positionAt(millis) ?: positionAt(Precession.forEpoch(millis))
+
+    /** True für Sonne und Mond: alles, was über die Zeit gerechnet werden muss. */
+    val isMoving: Boolean get() = body != null
 
     val displayName: String get() = if (name.isBlank() || name == id) id else "$id · $name"
 

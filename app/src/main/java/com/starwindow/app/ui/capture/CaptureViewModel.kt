@@ -374,7 +374,7 @@ class CaptureViewModel(
         viewModelScope.launch {
             windowRepository.save(window)
             _uiState.update {
-                it.copy(anchors = emptyList(), message = "\"${window.name}\" gespeichert")
+                it.copy(anchors = emptyList(), message = "„${window.name}“ gespeichert")
             }
         }
     }

@@ -3,6 +3,8 @@ package com.starwindow.app.domain
 import com.starwindow.app.core.astro.AstroTime
 import com.starwindow.app.core.astro.CoordinateTransforms
 import com.starwindow.app.core.astro.Equatorial
+import com.starwindow.app.core.astro.LunarEphemeris
+import com.starwindow.app.core.astro.ObserverLocation
 import com.starwindow.app.core.astro.Precession
 import com.starwindow.app.core.astro.Horizontal
 import com.starwindow.app.core.geometry.SkyWindow
@@ -17,6 +19,18 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 
+/** Wie brauchbar ein Durchgang ist — die Frage, die die reine Geometrie offenlässt. */
+enum class TransitDarkness(val label: String) {
+    /** Vollständig in astronomischer Dunkelheit. */
+    DARK("dunkel"),
+
+    /** Teils dunkel, teils Dämmerung — der Anfang oder das Ende ist zu hell. */
+    PARTLY("teils Dämmerung"),
+
+    /** Kein Anteil in astronomischer Dunkelheit. */
+    BRIGHT("zu hell"),
+}
+
 /** One continuous stretch during which an object sits inside the window. */
 data class TransitInterval(
     val enterMillis: Long,
@@ -28,8 +42,49 @@ data class TransitInterval(
     /** Highest altitude reached while inside, and when. */
     val bestAltitudeDeg: Double,
     val bestMillis: Long,
+    /**
+     * Wie viel des Durchgangs in astronomischer Dunkelheit liegt.
+     *
+     * Die Angabe, die aus einer geometrischen Aussage eine brauchbare macht: Ein Durchgang um
+     * 14 Uhr sieht ohne sie genauso aus wie einer um zwei Uhr nachts.
+     */
+    val darkMillis: Long = 0L,
+    /** Höhe des Mondes in der Mitte des Durchgangs; unter null stört er nicht. */
+    val moonAltitudeDeg: Double = -90.0,
+    /** Beleuchteter Anteil des Mondes in Prozent, zur selben Zeit. */
+    val moonIlluminationPercent: Double = 0.0,
 ) {
     val durationMillis: Long get() = exitMillis - enterMillis
+
+    val darkness: TransitDarkness
+        get() = when {
+            darkMillis <= 0L -> TransitDarkness.BRIGHT
+            // Ein Rest von einer Minute Dämmerung macht aus einer dunklen Stunde keine halbe
+            // Sache; erst wenn ein nennenswerter Teil hell ist, gehört das gesagt.
+            darkMillis >= durationMillis * FULLY_DARK_FRACTION -> TransitDarkness.DARK
+            else -> TransitDarkness.PARTLY
+        }
+
+    /**
+     * Der Mond steht dabei über dem Horizont und ist hell genug, dass es auffällt.
+     *
+     * Dieselbe Schwelle wie in der Jahresplanung: unter 30 % beleuchtet ist er ein Lichtpunkt, kein
+     * Störlicht.
+     */
+    val moonInterferes: Boolean get() = moonAltitudeDeg > 0.0 && moonIlluminationPercent >= 30.0
+
+    /** Kurzfassung für die Liste: „dunkel · Mond 87 %". */
+    val conditionLabel: String get() = buildString {
+        append(darkness.label)
+        if (moonInterferes) {
+            append(" · Mond ").append(Math.round(moonIlluminationPercent)).append(" %")
+        }
+    }
+
+    private companion object {
+        /** Ab diesem Anteil gilt ein Durchgang als ganz dunkel. */
+        const val FULLY_DARK_FRACTION = 0.9
+    }
 }
 
 /** Everything the search found for one catalogue object. */
@@ -40,6 +95,23 @@ data class ObjectTransit(
     val totalDurationMillis: Long get() = intervals.sumOf { it.durationMillis }
     val firstEntryMillis: Long get() = intervals.minOf { it.enterMillis }
     val isInsideAtStart: Boolean get() = intervals.any { it.clippedAtStart }
+
+    /** Wie viel der Durchgänge insgesamt in der Dunkelheit liegt. */
+    val darkDurationMillis: Long get() = intervals.sumOf { it.darkMillis }
+
+    /** True, wenn wenigstens ein Durchgang überhaupt in der Dunkelheit liegt. */
+    val hasDarkTime: Boolean get() = darkDurationMillis > 0L
+
+    /**
+     * Der Durchgang, auf den es ankommt: der mit der meisten dunklen Zeit.
+     *
+     * Bei Gleichstand — etwa wenn keiner davon in die Nacht fällt — entscheidet die Dauer, damit
+     * auch dann der aussagekräftigste oben steht statt des ersten.
+     */
+    val bestInterval: TransitInterval?
+        get() = intervals.maxWithOrNull(
+            compareBy<TransitInterval> { it.darkMillis }.thenBy { it.durationMillis }
+        )
 }
 
 data class TransitSearchResult(
@@ -84,10 +156,15 @@ class TransitCalculator(
 
         // Two rejections before any object is scanned over time, because the scan is what costs:
         // each survivor is sampled several hundred times, each non-survivor not at all.
+        //
+        // Sonne und Mond sind von beiden ausgenommen, und zwar zwangsläufig: Beide Prüfungen
+        // rechnen mit einer festen Deklination, und der Mond hat keine — er läuft im Lauf eines
+        // Monats über 57° Breite, also über weit mehr, als eine Vorprüfung an Spielraum
+        // verkraftet. Kosten tut die Ausnahme nichts: Es sind zwei Objekte.
         val windowDec = declinationOfDirection(window.shape.center(), latitude)
         val reach = window.shape.angularRadiusDeg() + DECLINATION_MARGIN_DEG
         val candidates = objects.filter {
-            it.canReachDeclination(windowDec, reach) && it.canReach(bounds, latitude)
+            it.isMoving || (it.canReachDeclination(windowDec, reach) && it.canReach(bounds, latitude))
         }
 
         // Precession is computed once for the whole search and each object is brought to date once,
@@ -99,10 +176,21 @@ class TransitCalculator(
         // without any coordination. `inside` is a pure closure over immutable geometry and is
         // shared deliberately: building one tangent plane per chunk would undo the point of
         // `membershipTest` existing.
+        // Die Dämmerung hängt nur am Zeitraum und am Ort, nicht am Katalog — einmal gerechnet und
+        // dann für jeden der mehreren hundert Durchgänge nur noch geschnitten.
+        val dark = DarkSpans.over(fromMillis, toMillis, window.observer)
+
         val transits = scanInParallel(candidates) { obj ->
-            val position = obj.positionAt(precession)
-            val intervals = intervalsFor(position, inside, latitude, longitude, fromMillis, toMillis)
-            if (intervals.isEmpty()) null else ObjectTransit(obj, intervals)
+            val intervals = if (obj.isMoving) {
+                movingIntervalsFor(obj, inside, latitude, longitude, fromMillis, toMillis)
+            } else {
+                intervalsFor(obj.positionAt(precession), inside, latitude, longitude, fromMillis, toMillis)
+            }
+            if (intervals.isEmpty()) {
+                null
+            } else {
+                ObjectTransit(obj, intervals.map { it.withConditions(dark, window.observer) })
+            }
         }.sortedBy { it.firstEntryMillis }
 
         TransitSearchResult(
@@ -126,11 +214,56 @@ class TransitCalculator(
         val precession = Precession.forEpoch(atMillis)
         return objects.mapNotNull { obj ->
             val position = CoordinateTransforms.apparentHorizontalAtLst(
-                obj.positionAt(precession),
+                if (obj.isMoving) obj.positionAtMillis(atMillis) else obj.positionAt(precession),
                 window.observer.latitudeDeg,
                 lst,
             )
             if (inside(position)) obj to position else null
+        }
+    }
+
+    /**
+     * Dasselbe für ein Objekt, dessen Position eine Funktion der Zeit ist.
+     *
+     * Der einzige Unterschied ist, **wann** die Position gerechnet wird: bei einem Katalogobjekt
+     * einmal vor dem Scan, hier bei jeder Abtastung neu. Das ist teurer — eine Mondposition sind
+     * dreißig Reihenglieder statt einer Drehung —, aber es sind zwei Objekte, und für sie gibt es
+     * keine Abkürzung: Der Mond wandert in einer Stunde um seinen eigenen Durchmesser weiter, und
+     * ein Fenster ist oft nicht viel größer.
+     *
+     * Ebenso wird feiner abgetastet. Die 60 Sekunden für ein Katalogobjekt sind 0,25° Erddrehung;
+     * beim Mond kommt seine Eigenbewegung dazu, aber sie läuft der Drehung entgegen und
+     * verlangsamt ihn — die Schrittweite bleibt damit auf der sicheren Seite. Sie wird trotzdem
+     * halbiert, weil der Fehler beim Ein- und Austritt sonst gerade an der Kante liegt, an der die
+     * Frage „zieht der Mond durch mein Fenster" entschieden wird.
+     */
+    private fun movingIntervalsFor(
+        obj: SkyObject,
+        inside: (Horizontal) -> Boolean,
+        latitudeDeg: Double,
+        longitudeDeg: Double,
+        fromMillis: Long,
+        toMillis: Long,
+    ): List<TransitInterval> {
+        val positionAt: (Long) -> Horizontal = { millis ->
+            positionAt(obj.positionAtMillis(millis), latitudeDeg, longitudeDeg, millis)
+        }
+        return IntervalScanner.scan(
+            fromMillis = fromMillis,
+            toMillis = toMillis,
+            stepMillis = stepSeconds * 500L,
+            refineIterations = refineIterations,
+            isInside = { millis -> inside(positionAt(millis)) },
+            score = { millis -> positionAt(millis).altitudeDeg },
+        ).map { interval ->
+            TransitInterval(
+                enterMillis = interval.enterMillis,
+                exitMillis = interval.exitMillis,
+                clippedAtStart = interval.clippedAtStart,
+                clippedAtEnd = interval.clippedAtEnd,
+                bestAltitudeDeg = interval.bestScore,
+                bestMillis = interval.bestMillis,
+            )
         }
     }
 
@@ -252,3 +385,23 @@ private fun SkyObject.canReachDeclination(windowDecDeg: Double, reachDeg: Double
 
 /** Refraction, precession and a little room to spare. */
 private const val DECLINATION_MARGIN_DEG = 1.5
+
+/**
+ * Ergänzt einen Durchgang um Dämmerung und Mondstand.
+ *
+ * Der Mond wird in der **Mitte** des Durchgangs ausgewertet und nicht an seinem Anfang: Ein
+ * Durchgang dauert Minuten bis Stunden, der Mond steht in dieser Zeit ungefähr gleich, und die
+ * Mitte ist der Zeitpunkt, der für den ganzen Abschnitt am wenigsten daneben liegt.
+ */
+private fun TransitInterval.withConditions(
+    dark: DarkSpans,
+    observer: ObserverLocation,
+): TransitInterval {
+    val middle = (enterMillis + exitMillis) / 2
+    val moon = LunarEphemeris.at(middle)
+    return copy(
+        darkMillis = dark.overlap(enterMillis, exitMillis),
+        moonAltitudeDeg = LunarEphemeris.topocentricAltitudeDeg(moon, observer, middle),
+        moonIlluminationPercent = LunarEphemeris.illuminationAt(middle).percent,
+    )
+}

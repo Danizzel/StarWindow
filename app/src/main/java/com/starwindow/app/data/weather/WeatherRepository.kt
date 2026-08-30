@@ -28,12 +28,20 @@ class OutsideModelAreaException(val model: WeatherModel) : IOException(
  * gegen JSON, der Rest des Projekts kommt ohne Netzwerkbibliothek aus, und eine Abhängigkeit für
  * drei Anfragen wäre der teurere Weg.
  *
- * Der Zwischenspeicher sitzt im Arbeitsspeicher und nicht auf der Platte. Eine Vorhersage ist nach
- * ein paar Stunden veraltet — sie zu überleben lohnt den Aufwand nicht —, aber innerhalb einer
- * Sitzung zwischen Modellen und Tagen hin und her zu springen darf nicht jedes Mal ans Netz gehen.
+ * Zwei Zwischenspeicher, und sie beantworten verschiedene Fragen. Der im **Arbeitsspeicher** trägt
+ * die laufende Sitzung: zwischen Modellen und Tagen hin und her zu springen darf nicht jedes Mal
+ * ans Netz gehen. Der auf der **Platte** ([ForecastCache]) trägt alles, was danach kommt — die
+ * Ansicht ohne Netz und vor allem die Erinnerung um 17 Uhr, die in einem frisch gestarteten Prozess
+ * läuft und deren Speicher deshalb leer ist. Er ist bewusst nachgeordnet: gefragt wird er erst,
+ * wenn das Netz nichts hergibt.
  */
 class WeatherRepository(
     private val fetch: suspend (String) -> String = ::httpGet,
+    /**
+     * Die Ablage auf der Platte. Null in Tests und überall dort, wo kein `Context` zur Hand ist —
+     * das Netzverhalten ändert sich dadurch nicht, es fehlt nur der Rückfall.
+     */
+    private val diskCache: ForecastCache? = null,
 ) {
 
     private val cache = LinkedHashMap<String, WeatherForecast>()
@@ -66,6 +74,7 @@ class WeatherRepository(
                     continue
                 }
                 remember(key, forecast)
+                diskCache?.store(forecast)
                 return@withContext Result.success(forecast)
             } catch (cancelled: CancellationException) {
                 throw cancelled
@@ -79,8 +88,31 @@ class WeatherRepository(
         // wie alt sie ist. Bei einem Ort außerhalb des Gebiets gibt es nichts zu retten.
         if (lastFailure !is OutsideModelAreaException) {
             cache[key]?.let { return@withContext Result.success(it) }
+            diskCache?.load(place, model)?.let {
+                remember(key, it)
+                return@withContext Result.success(it)
+            }
         }
         Result.failure(lastFailure ?: IOException("Keine Vorhersagedaten erhalten"))
+    }
+
+    /**
+     * Der letzte bekannte Lauf, ohne das Netz auch nur zu versuchen.
+     *
+     * Für Aufrufer, die keine Wartezeit haben: eine Benachrichtigung, die gleich gepostet wird, und
+     * eine Ansicht, die schon etwas zeigen will, während der Abruf läuft. [fallbackToAnyModel] gibt
+     * im Notfall auch den Lauf eines anderen Modells für denselben Ort zurück — für die Frage „wird
+     * die Nacht was" ist irgendeine Aussage mehr wert als keine, und welches Modell sie gemacht
+     * hat, wird ohnehin dazugeschrieben.
+     */
+    suspend fun lastKnown(
+        place: WeatherPlace,
+        model: WeatherModel,
+        fallbackToAnyModel: Boolean = false,
+    ): WeatherForecast? = withContext(Dispatchers.IO) {
+        cache[cacheKey(place, model)]
+            ?: diskCache?.load(place, model)
+            ?: if (fallbackToAnyModel) diskCache?.loadAny(place) else null
     }
 
     /**

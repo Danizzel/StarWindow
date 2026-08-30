@@ -9,6 +9,7 @@ import com.starwindow.app.core.astro.ObserverLocation
 import com.starwindow.app.core.geometry.SkyWindow
 import com.starwindow.app.core.sensors.LocationTracker
 import com.starwindow.app.data.catalog.CatalogRepository
+import com.starwindow.app.data.favorites.FavoritesRepository
 import com.starwindow.app.data.catalog.SkyObject
 import com.starwindow.app.data.tracking.TrackingStore
 import com.starwindow.app.data.windows.SettingsStore
@@ -52,6 +53,8 @@ data class ObjectSearchUiState(
     val filterSheetOpen: Boolean = false,
     /** Constellation abbreviations present in the catalogue, for the filter sheet. */
     val constellations: List<String> = emptyList(),
+    /** Die Kennungen der Favoriten — für den Filter und für das Herz an jeder Zeile. */
+    val favorites: Set<String> = emptySet(),
 ) {
     val hasQuery: Boolean get() = query.isNotBlank()
 
@@ -91,6 +94,7 @@ class ObjectSearchViewModel(
     private val trackingStore: TrackingStore,
     private val windowRepository: SkyWindowRepository,
     private val transitCalculator: TransitCalculator,
+    private val favoritesRepository: FavoritesRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ObjectSearchUiState())
@@ -126,6 +130,15 @@ class ObjectSearchViewModel(
         }
         viewModelScope.launch {
             windowRepository.load()
+        }
+        // Ein Herz, das auf dem Objektblatt gesetzt wird, muss in der Liste dahinter ankommen —
+        // und wenn nach Favoriten gefiltert wird, muss die Zeile dann auch verschwinden.
+        viewModelScope.launch {
+            favoritesRepository.load()
+            favoritesRepository.favorites.collect { favorites ->
+                _uiState.update { it.copy(favorites = favorites.toSet()) }
+                if (_uiState.value.filter.onlyFavorites) recompute(debounce = false)
+            }
         }
         viewModelScope.launch {
             windowRepository.windows.collect { windows ->
@@ -205,6 +218,13 @@ class ObjectSearchViewModel(
             val hits = withContext(Dispatchers.Default) {
                 val candidates = catalog.asSequence()
                     .filter { throughWindow == null || throughWindow.containsKey(it.id) }
+                    // **Vor** der Suche und nicht wie die übrigen Filter danach: Die Suche liefert
+                    // die besten 200 Treffer, und ein Favorit steht irgendwo unter 22.530 Einträgen
+                    // — bei leerer Eingabe fast nie unter den ersten 200. Nachher gefiltert blieb
+                    // deshalb eine leere Liste übrig, obwohl Objekte mit Herz vorhanden waren.
+                    // Die Prüfung darf hier stehen, weil sie nur die Kennung braucht und nicht die
+                    // Höhe, die die Suche erst ausrechnet.
+                    .filter { !state.filter.onlyFavorites || it.id in state.favorites }
                     .toList()
 
                 val found = ObjectSearch.search(
@@ -217,7 +237,11 @@ class ObjectSearchViewModel(
                 // The remaining filters are applied after ranking rather than before it, so the
                 // altitude they test is the one the search already computed.
                 found
-                    .filter { state.filter.matches(it.obj, it.altitudeDeg, state.conditions) }
+                    .filter {
+                        state.filter.matches(
+                            it.obj, it.altitudeDeg, state.conditions, state.favorites,
+                        )
+                    }
                     .map { hit ->
                         throughWindow?.get(hit.obj.id)
                             ?.let { minutes -> hit.copy(minutesLeftInWindow = minutes) }
@@ -346,6 +370,7 @@ class ObjectSearchViewModel(
                     trackingStore = container.trackingStore,
                     windowRepository = container.windowRepository,
                     transitCalculator = container.transitCalculator,
+                    favoritesRepository = container.favoritesRepository,
                 )
             }
         }

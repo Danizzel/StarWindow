@@ -352,6 +352,7 @@ class CalibrationViewModel(
                 message = if (it.panSamples.isEmpty()) {
                     "Merkmal aufgenommen. Jetzt schwenken und dasselbe Merkmal erneut antippen."
                 } else {
+                    // Ab hier immer mindestens zwei: Der erste Antipper hat den Zweig darüber.
                     "${it.panSamples.size + 1} Antippungen aufgenommen"
                 },
                 error = null,

@@ -60,6 +60,7 @@ import com.starwindow.app.data.images.SkyImageLoader
 import com.starwindow.app.domain.ObjectTransit
 import com.starwindow.app.domain.AccuracyBand
 import com.starwindow.app.domain.ResultFilter
+import com.starwindow.app.domain.TransitDarkness
 import com.starwindow.app.domain.TransitSort
 import com.starwindow.app.domain.WindowAccuracy
 import com.starwindow.app.domain.accuracy
@@ -223,6 +224,18 @@ fun WindowDetailScreen(
                         }
                     }
                     Spacer(Modifier.height(8.dp))
+                    // Die Dämmerung war bisher die eine Größe, die der Durchgangsliste fehlte:
+                    // Ein Durchgang um 14 Uhr stand darin wie jeder andere.
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(
+                            selected = state.onlyDark,
+                            onClick = { viewModel.setOnlyDark(!state.onlyDark) },
+                            label = {
+                                Text("nur nachts (${state.darkObjectCount} von ${state.totalObjects})")
+                            },
+                        )
+                    }
+                    Spacer(Modifier.height(8.dp))
                     Text("Reihenfolge", style = MaterialTheme.typography.titleSmall)
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         items(TransitSort.entries.toList(), key = { it.name }) { sort ->
@@ -266,7 +279,7 @@ fun WindowDetailScreen(
                 state.isEmpty -> item {
                     Text(
                         if (state.hasQuery) {
-                            "Nichts im Ergebnis passt zu \"${state.query}\". Der Suchbegriff " +
+                            "Nichts im Ergebnis passt zu „${state.query}“. Der Suchbegriff " +
                                 "filtert nur, was durch dieses Fenster zieht – im Katalog steht " +
                                 "das Objekt vielleicht trotzdem."
                         } else {
@@ -676,6 +689,22 @@ private fun TransitCard(
                 toLabel = if (interval.clippedAtEnd) "läuft" else formatClock(interval.exitMillis),
                 duration = formatDuration(interval.durationMillis),
                 peak = "max %.0f°".format(interval.bestAltitudeDeg),
+            )
+            // Die Bedingungen stehen unter der Zeit und nicht daneben: Sie sind die Antwort auf
+            // eine andere Frage als „wann", und in derselben Zeile las sich beides als ein Satz.
+            Text(
+                text = interval.conditionLabel,
+                style = MaterialTheme.typography.labelSmall,
+                color = when (interval.darkness) {
+                    TransitDarkness.DARK ->
+                        if (interval.moonInterferes) {
+                            StarWindowColors.AnchorPoint
+                        } else {
+                            StarWindowColors.WindowStroke
+                        }
+                    TransitDarkness.PARTLY -> StarWindowColors.AnchorPoint
+                    TransitDarkness.BRIGHT -> StarWindowColors.Muted
+                },
             )
         }
         if (transit.intervals.size > 1) {

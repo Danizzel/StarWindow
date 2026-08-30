@@ -18,7 +18,16 @@ enum class TransitSort(val label: String) {
     BRIGHTNESS("Hell"),
 
     /** Largest first, which for a camera is nearly the same question as brightness. */
-    SIZE("Größe");
+    SIZE("Größe"),
+
+    /**
+     * Am meisten dunkle Zeit zuerst.
+     *
+     * Die Reihenfolge, die die anderen fünf nicht ersetzen können: Eine Lücke, durch die ein Objekt
+     * zwei Stunden zieht, ist wertlos, wenn davon anderthalb in der Dämmerung liegen — und in jeder
+     * anderen Sortierung steht sie trotzdem oben.
+     */
+    DARK("Dunkelheit");
 
     /** What the list header says the order is, in words. */
     val listNote: String
@@ -28,6 +37,7 @@ enum class TransitSort(val label: String) {
             DURATION -> "längster Durchgang zuerst"
             BRIGHTNESS -> "hellste zuerst"
             SIZE -> "größte zuerst"
+            DARK -> "meiste Zeit in der Dunkelheit zuerst"
         }
 }
 
@@ -57,12 +67,21 @@ object TransitListView {
         filter: ResultFilter,
         query: String = "",
         sort: TransitSort = TransitSort.INTEREST,
+        /**
+         * Nur Durchgänge, die wenigstens teilweise in der Dunkelheit liegen.
+         *
+         * Aus statt an als Vorgabe, weil die Liste sonst stillschweigend etwas weglässt: Wer um
+         * Mitternacht sucht, sieht ohnehin fast nur Nächtliches, und wer wissen will, wann der
+         * Mond mittags durch die Lücke zieht, soll das nicht abgeschaltet bekommen.
+         */
+        onlyDark: Boolean = false,
     ): List<ObjectTransit> {
         if (!filter.showsObjects) return emptyList()
 
         val needle = ObjectSearch.fold(query)
         val matching = transits.filter { transit ->
             filter.matches(transit.obj) &&
+                (!onlyDark || transit.hasDarkTime) &&
                 (needle.isEmpty() || ObjectSearch.score(needle, transit.obj) != ObjectSearch.NO_MATCH)
         }
         return sorted(matching, sort, needle)
@@ -92,6 +111,12 @@ object TransitListView {
         sort == TransitSort.DURATION -> transits.sortedByDescending { it.totalDurationMillis }
 
         sort == TransitSort.BRIGHTNESS -> transits.sortedBy { it.obj.magnitude ?: 99.0 }
+
+        sort == TransitSort.DARK -> transits.sortedWith(
+            compareByDescending<ObjectTransit> { it.darkDurationMillis }
+                // Ohne dunkle Zeit sind alle gleich; dann entscheidet wieder, was sich lohnt.
+                .thenByDescending { PhotographicInterest.score(it.obj) }
+        )
 
         else -> transits.sortedByDescending { it.obj.sizeArcmin ?: -1.0 }
     }

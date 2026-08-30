@@ -29,11 +29,20 @@ data class CatalogFilter(
     val onlyThroughWindow: Boolean = false,
     /** Which saved window [onlyThroughWindow] refers to; null means the most recent one. */
     val windowId: String? = null,
+    /**
+     * Nur die Objekte mit einem Herz.
+     *
+     * Der einzige Filter, der nichts über den Himmel weiß: Alle anderen fragen den Katalog oder die
+     * Nacht, dieser fragt den Nutzer. Genau deshalb steht er in der Liste ganz oben — er ist der
+     * kürzeste Weg von dreizehntausend Einträgen zu den fünf, um die es tatsächlich geht.
+     */
+    val onlyFavorites: Boolean = false,
 ) {
     /** True when nothing is restricted and the list is the whole catalogue. */
     val isEmpty: Boolean
         get() = kind == ResultFilter.ALL && magnitudeLimit == null && minSizeArcmin == null &&
-            constellation == null && minAltitudeDeg == null && !hideImpossible && !onlyThroughWindow
+            constellation == null && minAltitudeDeg == null && !hideImpossible &&
+            !onlyThroughWindow && !onlyFavorites
 
     val activeCount: Int
         get() = listOf(
@@ -44,6 +53,7 @@ data class CatalogFilter(
             minAltitudeDeg != null,
             hideImpossible,
             onlyThroughWindow,
+            onlyFavorites,
         ).count { it }
 
     /**
@@ -54,6 +64,7 @@ data class CatalogFilter(
      */
     val activeLabels: List<FilterChip>
         get() = buildList {
+            if (onlyFavorites) add(FilterChip(FilterField.FAVORITES, "Favoriten"))
             if (kind != ResultFilter.ALL) add(FilterChip(FilterField.KIND, kind.label))
             magnitudeLimit?.let { add(FilterChip(FilterField.MAGNITUDE, "< %.1f mag".format(it))) }
             minSizeArcmin?.let {
@@ -70,12 +81,18 @@ data class CatalogFilter(
      *
      * The window is deliberately left out: answering it needs a transit search over hours, not a
      * predicate over one row, so the view model does that separately and passes the survivors in.
+     *
+     * @param favorites die Kennungen der Favoriten. Als Parameter und nicht als Feld des Filters,
+     *   weil sie sich unabhängig von ihm ändern: Ein Herz, das während einer offenen Ergebnisliste
+     *   gesetzt wird, soll dort ankommen, ohne dass der Filter neu gebaut werden muss.
      */
     fun matches(
         obj: SkyObject,
         altitudeDeg: Double?,
         conditions: SkyConditions,
+        favorites: Set<String> = emptySet(),
     ): Boolean {
+        if (onlyFavorites && obj.id !in favorites) return false
         if (!kind.matches(obj)) return false
         magnitudeLimit?.let { if ((obj.magnitude ?: 99.0) > it) return false }
         minSizeArcmin?.let { if ((obj.sizeArcmin ?: 0.0) < it) return false }
@@ -98,6 +115,7 @@ data class CatalogFilter(
         FilterField.ALTITUDE -> copy(minAltitudeDeg = null)
         FilterField.FEASIBILITY -> copy(hideImpossible = false)
         FilterField.WINDOW -> copy(onlyThroughWindow = false)
+        FilterField.FAVORITES -> copy(onlyFavorites = false)
     }
 
     companion object {
@@ -110,6 +128,6 @@ data class CatalogFilter(
 }
 
 /** Which part of a [CatalogFilter] a chip stands for, so it can be cleared individually. */
-enum class FilterField { KIND, MAGNITUDE, SIZE, CONSTELLATION, ALTITUDE, FEASIBILITY, WINDOW }
+enum class FilterField { KIND, MAGNITUDE, SIZE, CONSTELLATION, ALTITUDE, FEASIBILITY, WINDOW, FAVORITES }
 
 data class FilterChip(val field: FilterField, val label: String)
