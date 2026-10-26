@@ -25,12 +25,25 @@ festlegen will, merkt ein Ziel vor – die App meldet sich dann von selbst, soba
 3. Gradle-Sync abwarten, dann `app` auf einem **echten Gerät** starten – Emulatoren haben weder
    brauchbaren Kompass noch Kamera für den Himmel.
 
-Anforderungen: Android Studio Ladybug oder neuer, JDK 17, Android SDK 35, minSdk 26.
+Welche Variante gestartet wird, steht im Fenster *Build Variants* beim Modul `app`:
+
+| Variante | Wofür |
+|---|---|
+| `debug` | Entwickeln und Debuggen. Spürbar langsamer als die echte App – wie flüssig sie läuft, nie hieran beurteilen. |
+| `benchmarkRelease` | Der optimierte Build mit R8, so wie ihn Nutzer bekämen. Mit dem Debug-Schlüssel signiert: Er installiert sich über eine vom selben Rechner aufgespielte Debug-Version, die Daten bleiben erhalten. Ein Debugger lässt sich nicht anhängen. |
+| `release` | Noch nicht installierbar, weil eine Release-Signierung fehlt. |
+| `nonMinifiedRelease` | Nur für die Erzeugung des Baseline Profile. |
+
+Anforderungen: ein Android Studio, das AGP 9.2 unterstützt (gebaut mit 2026.1.3), JDK 17 oder neuer
+– das von Android Studio mitgebrachte genügt –, Android SDK 36, minSdk 26.
 
 ```
-./gradlew :app:assembleDebug     # APK bauen
-./gradlew :app:testDebugUnitTest # 410 Unit-Tests
+./gradlew :app:assembleDebug       # APK bauen
+./gradlew :app:testDebugUnitTest   # 462 Unit-Tests
+./gradlew :app:assembleRelease     # Release mit R8 – fängt fehlende Keep-Regeln ab
 ```
+
+Baseline Profile erzeugen und Start- und Bildzeiten messen: [DEV_PLAN.md](DEV_PLAN.md), Abschnitt 11.
 
 ---
 
@@ -400,12 +413,12 @@ sehr deutlich.
 
 ### Sternbilder
 
-Mitgeliefert sind 29 Sternbildfiguren mit 203 Figursternen. Bewusst die **Figuren**, nicht die
-amtlichen IAU-Flächen: Ein Fenster von wenigen Grad enthält so gut wie nie eine ganze
-Sternbildfläche, wohl aber Orions Gürtel. Deshalb gilt ein Sternbild als durchziehend, solange
-mindestens ein Figurstern im Fenster steht, und zu jedem Durchgang steht dabei, wie viel der Figur
-gleichzeitig zu sehen war („höchstens 5 von 7 Figursternen"). Bei ausgewähltem Sternbild zeichnet
-die Fensteransicht die Figur zum günstigsten Zeitpunkt mit ein.
+Mitgeliefert sind alle 88 Sternbildfiguren mit 767 Figursternen, die Linienzüge aus d3-celestial.
+Bewusst die **Figuren**, nicht die amtlichen IAU-Flächen: Ein Fenster von wenigen Grad enthält so
+gut wie nie eine ganze Sternbildfläche, wohl aber Orions Gürtel. Deshalb gilt ein Sternbild als
+durchziehend, solange mindestens ein Figurstern im Fenster steht, und zu jedem Durchgang steht
+dabei, wie viel der Figur gleichzeitig zu sehen war („höchstens 5 von 7 Figursternen"). Bei
+ausgewähltem Sternbild zeichnet die Fensteransicht die Figur zum günstigsten Zeitpunkt mit ein.
 
 ## Durchgangsberechnung
 
@@ -930,22 +943,30 @@ als Ergänzung für ungewöhnlich tiefe Suchen, nicht als Ersatz.
 ```
 app/src/main/java/com/starwindow/app/
 ├── core/
-│   ├── astro/       Zeit, Koordinaten, Ephemeriden, Dämmerung  (reine Mathematik, testbar)
-│   ├── geometry/    Kugelgeometrie, Fensterformen
-│   ├── camera/      Kameraoptik, Bildschirm ⇄ Himmel
-│   └── sensors/     Lage- und Standortverfolgung
+│   ├── astro/        Zeit, Koordinaten, Präzession, Ephemeriden, Dämmerung  (reine Mathematik)
+│   ├── geometry/     Kugelgeometrie, Fensterformen
+│   ├── camera/       Kameraoptik, Bildschirm ⇄ Himmel, Belichtungssteuerung
+│   ├── calibration/  Ausgleichsrechnung für Lage und Bildfeld
+│   └── sensors/      Lage- und Standortverfolgung
 ├── data/
-│   ├── catalog/     Katalogquellen und -modell, Sonne und Mond als Ephemeriden-Einträge
-│   ├── planning/    Termine, Merkliste, Alarme und Benachrichtigungen
-│   ├── tracking/    Das verfolgte Objekt, über Neustarts hinweg
-│   ├── weather/     Vorhersage, Ortssuche (Open-Meteo) und die Ablage auf der Platte
-│   └── windows/     Persistenz (JSON) und Einstellungen
-├── domain/          Durchgangsberechnung, Katalogsuche, Nachtbewertung, Jahresplanung, Bortle
-└── ui/              Compose-Oberfläche (Kamera, Suche, Liste, Detail, Wetter, Kalender)
+│   ├── catalog/      Katalogquellen und -modell, Sonne und Mond als Ephemeriden-Einträge
+│   ├── favorites/    Favoriten
+│   ├── gear/         Smart-Teleskope für den Fotoguide
+│   ├── images/       Himmelsausschnitte über hips2fits
+│   ├── planning/     Termine, Merkliste, Alarme und Benachrichtigungen
+│   ├── tracking/     Das verfolgte Objekt, über Neustarts hinweg
+│   ├── weather/      Vorhersage, Ortssuche (Open-Meteo) und die Ablage auf der Platte
+│   └── windows/      Persistenz (JSON) und Einstellungen
+├── domain/           Durchgangsberechnung, Katalogsuche, Nachtbewertung, Jahresplanung, Bortle
+└── ui/               Compose-Oberfläche, ein Paket je Bereich
 ```
 
-`core/` hat bis auf die Sensorschicht keine Android-Abhängigkeiten – deswegen laufen die Tests als
-normale JVM-Unit-Tests ohne Emulator.
+Daneben steht das Modul `baselineprofile/`: Es erzeugt das Baseline Profile und misst Start- und
+Bildzeiten auf dem Gerät.
+
+Die Rechenschicht – `core/astro`, `core/geometry`, `core/calibration` und `domain` – hat keine
+Android-Abhängigkeiten; deswegen laufen die Tests als normale JVM-Unit-Tests ohne Emulator. Android
+steckt nur in Sensoren, Kamerasteuerung, Datenablage und Oberfläche.
 
 Bewusste Entscheidungen: kein Dependency-Injection-Framework (`AppContainer` reicht bei dieser
 Größe), keine Play Services (`LocationManager` genügt für eine Genauigkeit von einigen hundert
@@ -957,7 +978,7 @@ Abhängigkeit). Jede dieser Stellen ist eine einzelne Naht, die sich später aus
 
 ## Tests
 
-410 Unit-Tests in `app/src/test/`, alle grün. Sie prüfen nicht nur, dass Funktionen etwas
+462 Unit-Tests in `app/src/test/`, alle grün. Sie prüfen nicht nur, dass Funktionen etwas
 zurückgeben, sondern physikalische Invarianten:
 
 * GMST zur Epoche J2000 gegen die IAU-Konstante, siderischer Tag gegen Sonnentag,
@@ -995,7 +1016,8 @@ zurückgeben, sondern physikalische Invarianten:
   sie durchwinkt und die Neigungsprüfung sie fängt; das ist der Fall, für den es sie gibt,
 * gespeicherte Fenster überstehen den JSON-Umlauf, Basiskatalog und Sternbildfiguren werden gegen
   veröffentlichte J2000-Positionen geprüft – und kein Figurabschnitt darf unplausibel lang sein,
-  was einen Tippfehler in einer der 203 Koordinaten sofort auffliegen lässt,
+  was eine falsche Stunde oder ein gekipptes Vorzeichen in einer der 767 importierten Koordinaten
+  sofort auffliegen lässt,
 * die Sonnenephemeride trifft Meeus' durchgerechnetes Beispiel auf 0,01°, erreicht zu den
   Sonnenwenden genau die Schiefe der Ekliptik, geht zum Frühlingspunkt durch RA 0 und kulminiert auf
   die von der Geometrie geforderte Höhe – letzteres prüft Ephemeride und Koordinatenwandlung in
@@ -1051,6 +1073,8 @@ daraus:
 
 * **Zuerst:** Feldabgleich an einem bekannten Stern – das ist der eigentliche Abnahmetest, und den
   kann kein Unit-Test ersetzen.
+* **Performance und Struktur:** Der Ausbauplan steht in [DEV_PLAN.md](DEV_PLAN.md), Abschnitt 11 –
+  als Erstes das Baseline Profile auf einem Gerät erzeugen und die Ausgangswerte messen.
 * Nachtsicht und Kalibrierung sind gebaut, aber noch auf keiner echten Kamera gelaufen – die
   erreichbaren Belichtungszeiten und die Schwenkmethode gehören als Erstes aufs Gerät.
 * Bildstapelung, damit auch schwächere Sterne im Sucher erscheinen.

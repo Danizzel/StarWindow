@@ -35,6 +35,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.RangeSlider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -191,15 +192,57 @@ fun WindowDetailScreen(
 
             item {
                 Column {
-                    Text("Zeitraum", style = MaterialTheme.typography.titleSmall)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf(6, 12, 24, 48).forEach { hours ->
-                            FilterChip(
-                                selected = state.hoursAhead == hours,
-                                onClick = { viewModel.setHoursAhead(hours) },
-                                label = { Text("$hours h") },
-                            )
-                        }
+                    val now = System.currentTimeMillis()
+                    val fromMillis = now + state.startHoursOffset * 3_600_000L
+                    val untilMillis = now + state.endHoursOffset * 3_600_000L
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text("Zeitraum", style = MaterialTheme.typography.titleSmall)
+                        Text(
+                            text = "${formatClock(fromMillis)} – ${formatClock(untilMillis)} (${state.endHoursOffset - state.startHoursOffset} h)",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = StarWindowColors.WindowStroke,
+                            fontWeight = FontWeight.Medium,
+                        )
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    RangeSlider(
+                        value = state.startHoursOffset.toFloat()..state.endHoursOffset.toFloat(),
+                        onValueChange = { range ->
+                            val start = range.start.toInt()
+                            val end = range.endInclusive.toInt().coerceAtLeast(start + 1)
+                            viewModel.setTimeRange(start, end)
+                        },
+                        valueRange = 0f..48f,
+                        steps = 47,
+                        onValueChangeFinished = {
+                            viewModel.search()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(
+                            text = "jetzt (${formatClock(now)})",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = StarWindowColors.Muted,
+                        )
+                        Text(
+                            text = "+24 h (${formatClock(now + 24 * 3_600_000L)})",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = StarWindowColors.Muted,
+                        )
+                        Text(
+                            text = "+48 h (${formatClock(now + 48 * 3_600_000L)})",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = StarWindowColors.Muted,
+                        )
                     }
                     Spacer(Modifier.height(8.dp))
                     Text("Grenzgröße", style = MaterialTheme.typography.titleSmall)

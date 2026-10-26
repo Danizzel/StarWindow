@@ -22,3 +22,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "StarWindow"
 include(":app")
+include(":baselineprofile")

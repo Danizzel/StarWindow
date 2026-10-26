@@ -1,5 +1,4 @@
 package com.starwindow.app.ui.windows
-
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
@@ -37,7 +36,8 @@ data class WindowDetailUiState(
     val window: SkyWindow? = null,
     val result: TransitSearchResult? = null,
     val constellations: List<ConstellationTransit> = emptyList(),
-    val hoursAhead: Int = 24,
+    val startHoursOffset: Int = 0,
+    val endHoursOffset: Int = 24,
     val magnitudeLimit: Double = 8.0,
     val filter: ResultFilter = ResultFilter.ALL,
     /** Free text over the result list; the whole catalogue is not searched here, only the hits. */
@@ -120,9 +120,11 @@ class WindowDetailViewModel(
         }
     }
 
-    fun setHoursAhead(hours: Int) {
-        _uiState.update { it.copy(hoursAhead = hours) }
-        search()
+
+    fun setTimeRange(startHours: Int, endHours: Int) {
+        val start = startHours.coerceIn(0, 47)
+        val end = endHours.coerceIn(start + 1, 48)
+        _uiState.update { it.copy(startHoursOffset = start, endHoursOffset = end) }
     }
 
     fun setMagnitudeLimit(limit: Double) {
@@ -183,9 +185,10 @@ class WindowDetailViewModel(
         val transit = state.result?.transits?.firstOrNull { it.obj.id == objectId } ?: return
 
         val now = System.currentTimeMillis()
-        val until = now + state.hoursAhead * 3_600_000L
+        val from = now + state.startHoursOffset * 3_600_000L
+        val until = now + state.endHoursOffset * 3_600_000L
         val obj = transit.obj
-        val precession = Precession.forEpoch(now)
+        val precession = Precession.forEpoch(from)
 
         // Built in one go rather than filled in afterwards: the notes come off disk the first time,
         // and a sheet that pops open and then grows a paragraph reads as a glitch.
@@ -200,7 +203,7 @@ class WindowDetailViewModel(
                             label = obj.name.ifBlank { obj.id },
                             equatorial = obj.positionAt(precession),
                             observer = window.observer,
-                            fromMillis = now,
+                            fromMillis = from,
                             toMillis = until,
                         ),
                         passes = transit.intervals.map { interval ->
@@ -229,18 +232,19 @@ class WindowDetailViewModel(
             _uiState.update { it.copy(isSearching = true, error = null) }
             val state = _uiState.value
             val now = System.currentTimeMillis()
-            val until = now + state.hoursAhead * 3_600_000L
+            val from = now + state.startHoursOffset * 3_600_000L
+            val until = now + state.endHoursOffset * 3_600_000L
 
             val outcome = runCatching {
                 val objects = catalogRepository.objectsVisibleFrom(
                     latitudeDeg = window.observer.latitudeDeg,
                     magnitudeLimit = state.magnitudeLimit,
                 )
-                val transits = transitCalculator.search(window, objects, now, until)
+                val transits = transitCalculator.search(window, objects, from, until)
                 val figures = constellationTransitCalculator.search(
                     window,
                     constellationRepository.constellations(),
-                    now,
+                    from,
                     until,
                 )
                 transits to figures

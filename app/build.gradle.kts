@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.androidx.baselineprofile)
 }
 
 android {
@@ -21,7 +22,10 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // R8 ist für Compose kein Größen-, sondern ein Laufzeitthema: Ohne die Optimierung läuft
+            // die Oberfläche spürbar langsamer. Flüssigkeit deshalb nur an einem Release-Build beurteilen.
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
@@ -51,6 +55,34 @@ kotlin {
     }
 }
 
+baselineProfile {
+    // Der Kaltstart-Teil des Profils ordnet zusätzlich die DEX-Dateien so, dass beim Start weniger
+    // Code von der Platte gelesen werden muss.
+    dexLayoutOptimization = true
+}
+
+// Umgeht einen Fehler des Baseline-Profile-Plugins (1.5.0, noch in 1.6.0-alpha01): Es kopiert die
+// Kotlin-Quellordner von `release` als Text in seine eigenen Buildtypen. AGP 9 führt diese Ordner als
+// Provider, und als Text wird daraus der Pfad „provider(?)" — unter Windows ein ungültiger Pfad, an
+// dem `compileNonMinifiedReleaseKotlin` abbricht. Hier stehen die gemeinten Ordner ausgeschrieben.
+// Kann weg, sobald `./gradlew :app:assembleNonMinifiedRelease` ohne diesen Block durchläuft.
+androidComponents {
+    finalizeDsl { android ->
+        for (buildType in listOf("nonMinifiedRelease", "benchmarkRelease")) {
+            android.sourceSets.findByName(buildType)?.kotlin {
+                setSrcDirs(
+                    listOf(
+                        "src/$buildType/kotlin",
+                        "src/$buildType/java",
+                        "src/release/kotlin",
+                        "src/release/java",
+                    )
+                )
+            }
+        }
+    }
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
@@ -72,6 +104,10 @@ dependencies {
     implementation(libs.androidx.camera.view)
 
     implementation(libs.kotlinx.serialization.json)
+
+    // Spielt das Baseline Profile auch ein, wenn die App nicht aus dem Play Store kommt.
+    implementation(libs.androidx.profileinstaller)
+    baselineProfile(project(":baselineprofile"))
 
     debugImplementation(libs.androidx.compose.ui.tooling)
 
